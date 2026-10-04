@@ -228,7 +228,7 @@ function getUserBySyncId(syncId) {
   return user ? toPublicUser(user) : null;
 }
 
-function updateUserProfile(syncId, rawName, avatarUrl) {
+async function updateUserProfile(syncId, rawName, avatarUrl) {
   const db = readDb();
   const user = db.users.find((u) => u.syncId === syncId);
   if (!user) throw new Error("Usuario no encontrado");
@@ -241,7 +241,7 @@ function updateUserProfile(syncId, rawName, avatarUrl) {
   if (avatarUrl !== undefined) {
     user.avatarUrl = avatarUrl;
   }
-  writeDb(db);
+  await writeDb(db);
 
   return toPublicUser(user);
 }

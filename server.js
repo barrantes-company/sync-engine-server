@@ -312,10 +312,11 @@ app.post("/api/save-subscription", requireAuth, async (req, res) => {
 });
 
 // Rutas de Usuario y Perfil
-app.post("/api/user/profile", requireAuth, (req, res) => {
+app.post("/api/user/profile", requireAuth, async (req, res) => {
   try {
     const { displayName, avatarUrl } = req.body || {};
-    const updated = db.updateUserProfile(req.user.syncId, displayName, avatarUrl);
+    const updated = await db.updateUserProfile(req.user.syncId, displayName, avatarUrl);
+    io.emit("user-profile-updated", updated);
     res.json({ ok: true, user: updated });
   } catch (err) {
     res.status(400).json({ error: err.message || "Error al actualizar perfil" });

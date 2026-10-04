@@ -130,7 +130,6 @@
               <span class="text-gray-400 mx-1">-</span>
               <span id="header-user-clean-name" class="text-[#0F172A]">Usuario</span>
             </span>
-            <button id="open-edit-profile-btn" type="button" title="Editar perfil y foto circular (1080x1080)" class="text-[#C5A059] hover:text-[#0284C7] text-xs pl-1 cursor-pointer transition-colors">✎</button>
           </div>
 
           <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[#C5A059]">
@@ -178,6 +177,44 @@
         </div>
 
         <div id="contacts-list" class="flex-1 min-h-0 overflow-y-auto divide-y divide-[rgba(197,160,89,0.08)] p-1.5 space-y-1 bg-white"></div>
+
+        <div id="edit-profile-modal" class="profile-settings-popover hidden" role="dialog" aria-modal="false" aria-labelledby="profile-settings-title">
+          <div class="bg-white rounded-2xl p-4 flex flex-col gap-3 shadow-xl border border-[rgba(197,160,89,0.3)] text-[#0F172A]">
+            <div class="flex items-center justify-between">
+              <h3 id="profile-settings-title" class="font-bold text-sm text-[#0F172A] font-title flex items-center gap-2">
+                <span>👤</span> Configuración de perfil
+              </h3>
+              <button id="close-profile-modal-btn" type="button" aria-label="Cerrar configuración" class="text-[#64748B] hover:text-[#0F172A] p-1 text-sm cursor-pointer">✕</button>
+            </div>
+
+            <div id="avatar-drop-zone" class="profile-avatar-drop-zone flex flex-col items-center gap-2 rounded-xl border border-dashed border-[rgba(197,160,89,0.45)] p-3 text-center" tabindex="0" role="button" aria-label="Arrastra una imagen aquí o selecciona un avatar">
+              <div class="avatar-preview-box flex items-center justify-center relative group">
+                <img id="profile-avatar-preview" src="" alt="Vista previa del avatar" class="w-full h-full object-cover hidden">
+                <div id="profile-avatar-fallback" class="w-full h-full bg-gradient-to-tr from-[#C5A059] to-[#0284C7] text-white font-bold text-2xl flex items-center justify-center font-mono">0000</div>
+                <button id="trigger-avatar-btn" type="button" title="Seleccionar foto" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity cursor-pointer">📷 Cambiar</button>
+              </div>
+              <p class="text-[10px] text-[#64748B]">Arrastra una imagen aquí o selecciona una foto. Se recortará a 1080 × 1080 px.</p>
+              <button id="select-avatar-btn" type="button" class="text-xs text-[#C5A059] hover:text-[#99793D] font-bold cursor-pointer transition-colors">Elegir imagen</button>
+              <input type="file" id="profile-avatar-input" accept="image/*" title="Seleccionar foto de perfil" aria-label="Seleccionar foto de perfil" class="hidden">
+            </div>
+
+            <div>
+              <label for="profile-name-input" class="block text-xs font-semibold text-[#0F172A] mb-1">Nombre personalizado</label>
+              <input type="text" id="profile-name-input" maxlength="35" title="Nombre personalizado, sin emojis" placeholder="ej. Laptop de Jose" class="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0F172A]">
+              <p class="text-[10px] text-[#64748B] mt-1 font-mono">Formato: [ID] - [Nombre] · Los emojis se eliminan automáticamente.</p>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-[rgba(197,160,89,0.18)]">
+              <button id="cancel-profile-modal-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0F172A] cursor-pointer">Cancelar</button>
+              <button id="save-profile-btn" type="button" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs transition-all cursor-pointer">Guardar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-shrink-0 items-center justify-between border-t border-[rgba(197,160,89,0.18)] px-3 py-1.5">
+          <span class="text-[10px] text-[#64748B] font-medium">Perfil y preferencias</span>
+          <button id="open-edit-profile-btn" type="button" title="Configuración del perfil" aria-label="Abrir configuración del perfil" aria-haspopup="dialog" class="h-7 w-7 rounded-lg text-[#64748B] hover:text-[#C5A059] hover:bg-[#F8FAFC] flex items-center justify-center text-sm transition-colors cursor-pointer">⚙</button>
+        </div>
 
         <div class="flex flex-shrink-0 items-center justify-center border-t border-[rgba(197,160,89,0.18)] p-2">
           <div class="logo-electric-stream" aria-label="SYNC ENGINE BY BARRANTES CO.">
@@ -608,6 +645,13 @@
 
   </div>
 
+  <div id="network-loading-screen" class="network-loading-screen hidden" role="status" aria-live="polite" aria-label="Conectando con SYNC ENGINE">
+    <div class="network-loading-card">
+      <img src="/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png" alt="SYNC ENGINE BY BARRANTES CO." class="network-loading-logo">
+      <p id="network-loading-message" class="text-xs font-semibold tracking-wide text-[#64748B]">Conectando con el servidor...</p>
+    </div>
+  </div>
+
   <!-- PANTALLA DE AUTENTICACIÓN -->
   <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4 bg-[#F8FAFC]">
     <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md flex flex-col gap-6 shadow-xl border border-[rgba(197,160,89,0.25)]">
@@ -660,49 +704,6 @@
   </div>
 
   <!-- MODAL: EDITAR PERFIL Y FOTO DE PERFIL CIRCULAR (1080 × 1080 px) -->
-  <div id="edit-profile-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4 shadow-2xl border border-[rgba(197,160,89,0.25)] text-[#0F172A]">
-      <div class="flex items-center justify-between">
-        <h3 class="font-bold text-base text-[#0F172A] font-title flex items-center gap-2">
-          <span>👤</span> Editar Perfil
-        </h3>
-        <button id="close-profile-modal-btn" class="text-[#64748B] hover:text-[#0F172A] p-1 text-sm cursor-pointer">✕</button>
-      </div>
-
-      <!-- Foto de Perfil: Recorte Automático Circular 1080x1080 px -->
-      <div class="flex flex-col items-center gap-2.5 py-1 border-b border-[rgba(197,160,89,0.18)]">
-        <div class="avatar-preview-box flex items-center justify-center relative group">
-          <img id="profile-avatar-preview" src="" alt="Avatar de perfil" class="w-full h-full object-cover hidden">
-          <div id="profile-avatar-fallback" class="w-full h-full bg-gradient-to-tr from-[#C5A059] to-[#0284C7] text-white font-bold text-2xl flex items-center justify-center font-mono">
-            0000
-          </div>
-          <button id="trigger-avatar-btn" type="button" title="Seleccionar foto de perfil" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity cursor-pointer">
-            📷 Cambiar
-          </button>
-        </div>
-        <div class="text-center">
-          <button id="select-avatar-btn" type="button" class="text-xs text-[#C5A059] hover:text-[#99793D] font-bold flex items-center gap-1 cursor-pointer transition-colors mx-auto">
-            <span>📷</span> Subir Foto (1080 × 1080 px circular)
-          </button>
-          <span class="text-[10px] text-[#64748B] block mt-0.5">Recorte automático circular a alta resolución</span>
-        </div>
-        <input type="file" id="profile-avatar-input" accept="image/*" title="Seleccionar foto de perfil" aria-label="Seleccionar foto de perfil" class="hidden">
-      </div>
-
-      <div>
-        <label for="profile-name-input" class="block text-xs font-semibold text-[#0F172A] mb-1">Nombre Personalizado (sin emojis)</label>
-        <input type="text" id="profile-name-input" maxlength="35" title="Nombre personalizado" placeholder="ej. Laptop de Jose"
-          class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0F172A]">
-        <p class="text-[10px] text-[#64748B] mt-1 font-mono">Formato canónico: [ID] - [Nombre]</p>
-      </div>
-
-      <div class="flex items-center justify-end gap-3 pt-2 border-t border-[rgba(197,160,89,0.18)]">
-        <button id="cancel-profile-modal-btn" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0F172A] cursor-pointer">Cancelar</button>
-        <button id="save-profile-btn" type="button" class="px-5 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs transition-all cursor-pointer">Guardar Cambios</button>
-      </div>
-    </div>
-  </div>
-
   <!-- VISOR LIGHTBOX MULTIMEDIA CANÓNICO BARRANTES CO. -->
   <div id="lightbox-modal" class="hidden">
     <div class="lightbox-content-box">
@@ -948,6 +949,8 @@
 
   // Referencias DOM
   const appContainer = document.getElementById('app-container');
+  const networkLoadingScreen = document.getElementById('network-loading-screen');
+  const networkLoadingMessage = document.getElementById('network-loading-message');
   const authScreen = document.getElementById('auth-screen');
   const authForm = document.getElementById('auth-form');
   const tabLogin = document.getElementById('tab-login');
@@ -1031,7 +1034,9 @@
   const profileAvatarInput = document.getElementById('profile-avatar-input');
   const profileAvatarPreview = document.getElementById('profile-avatar-preview');
   const profileAvatarFallback = document.getElementById('profile-avatar-fallback');
+  const avatarDropZone = document.getElementById('avatar-drop-zone');
   let currentSelectedAvatarData = null;
+  let networkLoadingTimeout = null;
 
   // Visor Lightbox Canónico Barrantes Co.
   const lightboxModal = document.getElementById('lightbox-modal');
@@ -1633,12 +1638,53 @@
     }
   }
 
+  function showNetworkLoading() {
+    if (!networkLoadingScreen) return;
+    if (networkLoadingMessage) networkLoadingMessage.textContent = 'Conectando con el servidor...';
+    networkLoadingScreen.classList.remove('hidden');
+    if (networkLoadingTimeout) clearTimeout(networkLoadingTimeout);
+    networkLoadingTimeout = setTimeout(hideNetworkLoading, 10000);
+  }
+
+  function hideNetworkLoading() {
+    if (networkLoadingTimeout) {
+      clearTimeout(networkLoadingTimeout);
+      networkLoadingTimeout = null;
+    }
+    if (networkLoadingScreen) networkLoadingScreen.classList.add('hidden');
+  }
+
+  function applyProfileUpdate(user) {
+    if (!user || !user.syncId) return;
+
+    const contact = contactsMap.get(user.syncId);
+    if (contact) Object.assign(contact, user);
+
+    if (currentUser && currentUser.syncId === user.syncId) {
+      currentUser = { ...currentUser, ...user };
+      headerUserCleanName.textContent = currentUser.cleanDisplayName;
+      if (currentUser.avatarUrl) {
+        headerUserAvatar.src = currentUser.avatarUrl;
+        headerUserAvatar.classList.remove('hidden');
+      } else {
+        headerUserAvatar.removeAttribute('src');
+        headerUserAvatar.classList.add('hidden');
+      }
+    }
+
+    if (activeContactSyncId === user.syncId) {
+      activeChatName.textContent = user.formattedName || `${user.syncId} - ${user.cleanDisplayName || ''}`;
+      if (contact) updateDrawerContact(contact);
+    }
+  }
+
   function showApp() {
     authScreen.classList.add('hidden');
     authScreen.style.setProperty('display', 'none', 'important');
     appContainer.classList.remove('hidden');
     appContainer.style.removeProperty('display');
     initWebNotifications();
+    showNetworkLoading();
 
     headerUserSyncId.textContent = currentUser.syncId;
     headerUserCleanName.textContent = purgeEmojis(currentUser.cleanDisplayName);
@@ -1701,26 +1747,53 @@
     });
   }
 
+  async function loadProfileAvatarFile(file) {
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')) {
+      triggerPopupNotification('Avatar', 'Selecciona un archivo de imagen válido.', '⚠️');
+      return;
+    }
+
+    try {
+      const croppedDataUrl = await processProfileAvatar(file);
+      currentSelectedAvatarData = croppedDataUrl;
+      profileAvatarPreview.src = croppedDataUrl;
+      profileAvatarPreview.classList.remove('hidden');
+      profileAvatarFallback.classList.add('hidden');
+    } catch (err) {
+      triggerPopupNotification('Avatar', 'No se pudo procesar la imagen: ' + err.message, '⚠️');
+    }
+  }
+
   if (selectAvatarBtn) selectAvatarBtn.addEventListener('click', () => profileAvatarInput.click());
   if (triggerAvatarBtn) triggerAvatarBtn.addEventListener('click', () => profileAvatarInput.click());
 
   if (profileAvatarInput) {
     profileAvatarInput.addEventListener('change', async (e) => {
       const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      try {
-        const croppedDataUrl = await processProfileAvatar(file);
-        currentSelectedAvatarData = croppedDataUrl;
-        profileAvatarPreview.src = croppedDataUrl;
-        profileAvatarPreview.classList.remove('hidden');
-        profileAvatarFallback.classList.add('hidden');
-      } catch (err) {
-        alert('Error al procesar foto de perfil: ' + err.message);
-      }
+      await loadProfileAvatarFile(file);
+      profileAvatarInput.value = '';
     });
   }
 
-  openEditProfileBtn.addEventListener('click', () => {
+  if (avatarDropZone) {
+    avatarDropZone.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      avatarDropZone.classList.add('is-dragging');
+    });
+    avatarDropZone.addEventListener('dragleave', (event) => {
+      if (!avatarDropZone.contains(event.relatedTarget)) {
+        avatarDropZone.classList.remove('is-dragging');
+      }
+    });
+    avatarDropZone.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      avatarDropZone.classList.remove('is-dragging');
+      await loadProfileAvatarFile(event.dataTransfer && event.dataTransfer.files[0]);
+    });
+  }
+
+  function openProfileSettings() {
     profileNameInput.value = currentUser ? purgeEmojis(currentUser.cleanDisplayName) : '';
     currentSelectedAvatarData = null;
     if (currentUser && currentUser.avatarUrl) {
@@ -1733,10 +1806,16 @@
       profileAvatarFallback.textContent = currentUser ? currentUser.syncId.replace('SYNC-', '') : '0000';
     }
     editProfileModal.classList.remove('hidden');
-  });
+  }
+
+  if (openEditProfileBtn) openEditProfileBtn.addEventListener('click', openProfileSettings);
 
   closeProfileModalBtn.addEventListener('click', () => editProfileModal.classList.add('hidden'));
   cancelProfileModalBtn.addEventListener('click', () => editProfileModal.classList.add('hidden'));
+
+  profileNameInput.addEventListener('input', () => {
+    profileNameInput.value = profileNameInput.value.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/gu, '');
+  });
 
   saveProfileBtn.addEventListener('click', async () => {
     const rawName = profileNameInput.value;
@@ -1744,6 +1823,7 @@
     if (!cleanName) return;
 
     try {
+      saveProfileBtn.disabled = true;
       const res = await fetch('/api/user/profile', {
         method: 'POST',
         headers: {
@@ -1756,19 +1836,17 @@
         })
       });
       const data = await res.json();
-      if (data.ok && data.user) {
-        currentUser = data.user;
-        headerUserCleanName.textContent = currentUser.cleanDisplayName;
-        if (currentUser.avatarUrl) {
-          headerUserAvatar.src = currentUser.avatarUrl;
-          headerUserAvatar.classList.remove('hidden');
-        }
-        editProfileModal.classList.add('hidden');
-        triggerPopupNotification('Perfil Actualizado', `${currentUser.syncId} - ${currentUser.cleanDisplayName}`, '👤');
-        loadContacts();
+      if (!res.ok || !data.ok || !data.user) {
+        throw new Error(data.error || 'No se pudo guardar el perfil.');
       }
+      applyProfileUpdate(data.user);
+      editProfileModal.classList.add('hidden');
+      triggerPopupNotification('Perfil Actualizado', `${currentUser.syncId} - ${currentUser.cleanDisplayName}`, '👤');
+      loadContacts();
     } catch (err) {
-      alert('Error al guardar perfil: ' + err.message);
+      triggerPopupNotification('Error al guardar perfil', err.message, '⚠️');
+    } finally {
+      saveProfileBtn.disabled = false;
     }
   });
 
@@ -2922,8 +3000,10 @@
     });
 
     socket.off('connect');
+    socket.off('connect_error');
     socket.off('authenticated');
     socket.off('auth-error');
+    socket.off('user-profile-updated');
     socket.off('contact-status-changed');
     socket.off('receive-private-message');
     socket.off('message-reaction-updated');
@@ -2940,11 +3020,33 @@
     socket.off('notification-mirrored');
 
     socket.on('connect', () => {
+      if (networkLoadingMessage) networkLoadingMessage.textContent = 'Verificando sesión segura...';
       socket.emit('authenticate', { token: currentToken });
     });
 
     socket.on('authenticated', () => {
+      hideNetworkLoading();
       loadContacts();
+    });
+
+    socket.on('auth-error', () => {
+      hideNetworkLoading();
+    });
+
+    socket.on('connect_error', () => {
+      const wasShowingLoader = networkLoadingScreen && !networkLoadingScreen.classList.contains('hidden');
+      hideNetworkLoading();
+      if (wasShowingLoader) {
+        triggerPopupNotification('Conexión', 'No se pudo completar el handshake. Puedes seguir intentando.', '⚠️');
+      }
+    });
+
+    socket.on('user-profile-updated', (user) => {
+      if (!user || !user.syncId) return;
+      applyProfileUpdate(user);
+      if (!currentUser || currentUser.syncId !== user.syncId) {
+        loadContacts();
+      }
     });
 
     socket.on('contact-status-changed', (data) => {
