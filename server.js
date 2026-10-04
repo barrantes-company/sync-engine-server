@@ -65,7 +65,7 @@ if (!isTargetOnline) {
     title: 'Nuevo mensaje de ' + sender.formattedName,
     body: text.length > 100 ? text.slice(0, 97) + '...' : text,
     icon: '/assets/logo.png',
-    data: { syncId: targetSyncId, type: 'message' }
+    data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
   };
   sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
 }
@@ -638,7 +638,7 @@ io.on("connection", function (socket) {
           title: `Nuevo mensaje de ${sender.formattedName}`,
           body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
           icon: '/assets/logo.png',
-          data: { syncId: targetSyncId, type: 'message' }
+          data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
         };
         sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
       }

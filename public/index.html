@@ -4574,8 +4574,19 @@
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
         const notifData = event.data.data || {};
-        if (notifData.fromSyncId) {
+        const fromSyncId = notifData.fromSyncId;
+        if (fromSyncId) {
           selectContact(notifData.fromSyncId);
+        }
+        if (event.data.action === 'reply' && event.data.reply && fromSyncId) {
+          if (socket && socket.connected && currentUser) {
+            socket.emit('quick-reply', {
+              toSyncId: fromSyncId,
+              text: event.data.reply
+            });
+          } else {
+            triggerPopupNotification('Respuesta no enviada', 'Conéctate para enviar la respuesta rápida.', '⚠️');
+          }
         }
       }
     });
