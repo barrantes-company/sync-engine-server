@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0A1A3A">
+  <title>SYNC ENGINE | Widget</title>
+  <link rel="stylesheet" href="/widget.css">
+  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" defer></script>
+  <script src="/widget.js" defer></script>
+</head>
+<body>
+  <main class="widget-card" aria-labelledby="widget-title">
+    <header class="widget-header">
+      <div>
+        <p class="eyebrow">SYNC ENGINE</p>
+        <h1 id="widget-title">Panel ejecutivo</h1>
+      </div>
+      <div class="sync-status" id="sync-status" data-state="offline">
+        <span class="sync-dot" aria-hidden="true"></span>
+        <span id="sync-label">Sin conexión</span>
+      </div>
+    </header>
+
+    <section class="time-weather" aria-label="Hora y clima local">
+      <div>
+        <p class="section-label">Hora local</p>
+        <time id="clock" class="clock">--:--:--</time>
+        <p id="date" class="date">Cargando fecha…</p>
+      </div>
+      <div class="weather" aria-live="polite">
+        <span id="weather-icon" class="weather-icon" aria-hidden="true">⛅</span>
+        <span id="temperature" class="temperature">--°C</span>
+        <span id="weather-description" class="weather-description">Clima local</span>
+      </div>
+    </section>
+
+    <section class="contact-select">
+      <label for="contact-select">Enviar captura a</label>
+      <select id="contact-select" disabled>
+        <option value="">Inicia sesión para cargar contactos</option>
+      </select>
+    </section>
+
+    <section class="controls" aria-label="Acciones del widget">
+      <div class="notification-control">
+        <div class="notification-copy">
+          <span class="section-label">Mensajes sin leer</span>
+          <span id="unread-count" class="unread-badge" aria-live="polite">0</span>
+        </div>
+        <div class="button-row">
+          <button id="mute-button" class="button button-secondary" type="button" aria-pressed="false" disabled>
+            Silenciar
+          </button>
+          <button id="open-chat-button" class="button button-secondary" type="button">
+            Abrir chat
+          </button>
+        </div>
+      </div>
+      <button id="capture-button" class="button button-capture" type="button" disabled>
+        <span aria-hidden="true">📸</span>
+        <span id="capture-label">Capturar pantalla</span>
+      </button>
+    </section>
+
+    <p id="widget-notice" class="widget-notice" role="status" aria-live="polite"></p>
+    <div id="incoming-notice" class="incoming-notice" role="status" aria-live="polite" hidden></div>
+    <input id="camera-input" type="file" accept="image/*" capture="environment" hidden>
+  </main>
+</body>
+</html>
