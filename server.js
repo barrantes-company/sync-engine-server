@@ -111,6 +111,13 @@ app.use(cors());
 // Configuración de body-parser para soporte de transferencias pesadas de hasta 2 GB
 app.use(express.json({ limit: "2gb" }));
 app.use(express.urlencoded({ limit: "2gb", extended: true }));
+app.use(
+  "/.well-known",
+  express.static(path.join(__dirname, "public", ".well-known"), {
+    dotfiles: "allow",
+    setHeaders: (res) => res.setHeader("Content-Type", "application/json; charset=utf-8")
+  })
+);
 app.use(express.static(path.join(__dirname, "public")));
 app.use((err, req, res, next) => {
   if (req.path === "/api/save-subscription" && err instanceof SyntaxError && err.status === 400) {
