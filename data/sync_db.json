@@ -2,5 +2,6 @@
   "users": [],
   "sessions": [],
   "contacts": {},
-  "messages": []
+  "messages": [],
+  "pinnedMessages": {}
 }

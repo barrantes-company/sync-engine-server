@@ -1,11 +1,13 @@
 const fs = require("fs");
 const http = require("http");
+const https = require("https");
 const os = require("os");
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const { Server } = require("socket.io");
+const selfsigned = require("selfsigned");
 const db = require("./db");
 
 const PORT = process.env.PORT || 3000;
@@ -263,6 +265,29 @@ app.get("/api/messages/:contactSyncId", requireAuth, (req, res) => {
   res.json({ ok: true, messages: messages, pinnedMessage: pinnedMessage });
 });
 
+// Endpoint para vaciar historial completo con un contacto
+app.delete("/api/messages/:contactSyncId", requireAuth, (req, res) => {
+  const { contactSyncId } = req.params;
+  const targetSyncId = contactSyncId.toUpperCase();
+  const deletedCount = db.clearMessagesBetween(req.user.syncId, targetSyncId);
+
+  const eventData = {
+    fromSyncId: req.user.syncId,
+    contactSyncId: targetSyncId
+  };
+
+  const userSockets = onlineUsers.get(req.user.syncId);
+  if (userSockets) {
+    userSockets.forEach((sockId) => io.to(sockId).emit("chat-history-cleared", eventData));
+  }
+  const targetSockets = onlineUsers.get(targetSyncId);
+  if (targetSockets) {
+    targetSockets.forEach((sockId) => io.to(sockId).emit("chat-history-cleared", eventData));
+  }
+
+  res.json({ ok: true, deletedCount: deletedCount });
+});
+
 // Endpoint auxiliar para vista previa de enlaces
 app.get("/api/link-preview", requireAuth, async (req, res) => {
   const { url } = req.query;
@@ -377,6 +402,34 @@ app.get('/api/status', function (_req, res) {
   });
 });
 
+// Configuración de Certificados SSL Autofirmados para soporte HTTPS (Requerido para iOS WebRTC y Micrófono)
+const SSL_DIR = path.join(__dirname, "data", "ssl");
+if (!fs.existsSync(SSL_DIR)) {
+  fs.mkdirSync(SSL_DIR, { recursive: true });
+}
+const CERT_FILE = path.join(SSL_DIR, "cert.pem");
+const KEY_FILE = path.join(SSL_DIR, "key.pem");
+
+let sslOptions = null;
+try {
+  if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
+    sslOptions = {
+      cert: fs.readFileSync(CERT_FILE),
+      key: fs.readFileSync(KEY_FILE)
+    };
+  } else {
+    const pems = selfsigned.generate(
+      [{ name: "commonName", value: "sync-engine-server" }],
+      { days: 365, keySize: 2048 }
+    );
+    fs.writeFileSync(CERT_FILE, pems.cert, "utf8");
+    fs.writeFileSync(KEY_FILE, pems.private, "utf8");
+    sslOptions = { cert: pems.cert, key: pems.private };
+  }
+} catch (sslErr) {
+  console.warn("[SSL] No se pudo inicializar certificado SSL:", sslErr.message);
+}
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -385,6 +438,17 @@ const io = new Server(server, {
   },
   maxHttpBufferSize: 50e6
 });
+
+let httpsServer = null;
+const HTTPS_PORT = process.env.HTTPS_PORT || (Number(PORT) + 443);
+if (sslOptions) {
+  try {
+    httpsServer = https.createServer(sslOptions, app);
+    io.attach(httpsServer);
+  } catch (err) {
+    console.warn("[HTTPS] Error al iniciar servidor HTTPS:", err.message);
+  }
+}
 
 // Registro de Usuarios Online: Map<syncId, Set<socketId>>
 const onlineUsers = new Map();
@@ -455,23 +519,41 @@ io.on("connection", function (socket) {
       messageObj.fromName = sender.formattedName;
       messageObj.toSyncId = targetSyncId;
     } else {
-      // Transferencia Efímera (Archivos, Imágenes y Notas de Voz)
-      messageObj = {
-        id: clientMsgId || ("ephem_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
+      let finalAudioData = audioData || null;
+
+      // Si es audio en Base64, persistirlo en disco en /uploads/ para soporte de streaming y Range requests en iOS
+      if (msgType === "audio" && audioData && typeof audioData === "string" && audioData.startsWith("data:audio/")) {
+        try {
+          const matches = audioData.match(/^data:audio\/([a-zA-Z0-9_\-+.]+);base64,(.+)$/);
+          if (matches) {
+            const rawFormat = matches[1].toLowerCase();
+            const ext = rawFormat.includes("mp4") || rawFormat.includes("m4a") || rawFormat.includes("aac") 
+              ? "mp4" 
+              : (rawFormat.includes("wav") ? "wav" : "webm");
+            const buffer = Buffer.from(matches[2], "base64");
+            const audioFileName = `voice-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+            const audioFilePath = path.join(UPLOADS_DIR, audioFileName);
+            fs.writeFileSync(audioFilePath, buffer);
+            finalAudioData = `/uploads/${audioFileName}`;
+          }
+        } catch (err) {
+          console.warn("[AUDIO] Error al persistir audio en disco:", err.message);
+        }
+      }
+
+      messageObj = db.saveMessage({
+        id: clientMsgId || null,
         fromId: sender.syncId,
-        fromName: sender.formattedName,
         toId: targetSyncId,
         type: msgType,
-        text: text || (msgType === "audio" ? "Nota de voz" : "Archivo"),
-        audioData: audioData || null,
+        text: text || (msgType === "audio" ? "Nota de voz" : (fileData && fileData.name ? fileData.name : "Archivo")),
+        audioData: finalAudioData,
         fileData: fileData || null,
         replyTo: replyTo || null,
-        reactions: {},
-        timestamp: Date.now(),
-        status: initialStatus,
-        read: false,
-        deletedForEveryone: false
-      };
+        status: initialStatus
+      });
+      messageObj.fromName = sender.formattedName;
+      messageObj.toSyncId = targetSyncId;
     }
 
     // Entregar a todos los sockets activos del destinatario

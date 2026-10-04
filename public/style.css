@@ -27,6 +27,7 @@ html, body {
   background-color: var(--bg-main) !important;
   color: var(--text-primary) !important;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   padding: 0;
   font-family: var(--font-body);
@@ -71,11 +72,19 @@ h1, h2, h3, h4, h5, h6, .font-title, .brand-title {
   margin-left: auto;
   margin-right: auto;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-main);
   box-shadow: 0 0 60px rgba(0, 0, 0, 0.08), 0 0 1px var(--border-subtle);
   position: relative;
+}
+
+/* Safe Area Inset en Cabecera Superior */
+header.sticky {
+  padding-top: max(0.625rem, env(safe-area-inset-top, 0px)) !important;
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
 }
 
 #app-container.hidden {
@@ -98,6 +107,7 @@ h1, h2, h3, h4, h5, h6, .font-title, .brand-title {
   position: relative;
   overflow: hidden;
   height: calc(100vh - 62px);
+  height: calc(100dvh - 62px);
 }
 
 /* ==========================================================================
@@ -308,6 +318,36 @@ h1, h2, h3, h4, h5, h6, .font-title, .brand-title {
   }
   #drawer-backdrop.hidden {
     display: none !important;
+  }
+}
+
+/* ==========================================================================
+   GESTIÓN DE SAFE AREAS (MUESCAS, NOTCH Y DOCK DE GESTOS MÓVILES)
+   Garantiza que la barra inferior de chat (#input-container) y elementos flotantes
+   nunca queden solapados bajo el dock de gestos de iOS ni la barra de navegación de Android.
+   ========================================================================== */
+#input-container {
+  padding-bottom: max(0.875rem, calc(0.625rem + env(safe-area-inset-bottom, 0px))) !important;
+  padding-left: max(0.625rem, calc(0.5rem + env(safe-area-inset-left, 0px))) !important;
+  padding-right: max(0.625rem, calc(0.5rem + env(safe-area-inset-right, 0px))) !important;
+  background-color: var(--bg-main);
+}
+
+#emoji-picker {
+  bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+#recording-bar {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (max-width: 1023px) {
+  #contacts-list {
+    padding-bottom: max(1.25rem, calc(0.75rem + env(safe-area-inset-bottom, 0px))) !important;
+  }
+
+  #info-drawer-panel {
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   }
 }
 

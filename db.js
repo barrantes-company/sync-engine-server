@@ -22,7 +22,14 @@ function ensureDbFile() {
   }
 }
 
+let cachedDb = null;
+const writeQueue = [];
+let isProcessingQueue = false;
+
 function readDb() {
+  if (cachedDb) {
+    return cachedDb;
+  }
   ensureDbFile();
   try {
     const raw = fs.readFileSync(DB_FILE, "utf8");
@@ -32,18 +39,54 @@ function readDb() {
     if (!data.contacts) data.contacts = {};
     if (!data.messages) data.messages = [];
     if (!data.pinnedMessages) data.pinnedMessages = {};
-    return data;
+    cachedDb = data;
+    return cachedDb;
   } catch (err) {
     console.error("[DB] Error al leer base de datos, inicializando respaldo:", err.message);
-    return { users: [], sessions: [], contacts: {}, messages: [], pinnedMessages: {} };
+    cachedDb = { users: [], sessions: [], contacts: {}, messages: [], pinnedMessages: {} };
+    return cachedDb;
   }
 }
 
+async function processWriteQueue() {
+  if (isProcessingQueue || writeQueue.length === 0) {
+    return;
+  }
+  isProcessingQueue = true;
+
+  while (writeQueue.length > 0) {
+    const item = writeQueue[0];
+    const tmpFile = `${DB_FILE}.tmp.${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    try {
+      ensureDbFile();
+      await fs.promises.writeFile(tmpFile, item.content, "utf8");
+      await fs.promises.rename(tmpFile, DB_FILE);
+      writeQueue.shift();
+      item.resolve();
+    } catch (err) {
+      console.error("[DB] Error en escritura atómica:", err.message);
+      try {
+        if (fs.existsSync(tmpFile)) {
+          await fs.promises.unlink(tmpFile);
+        }
+      } catch (_) {}
+      writeQueue.shift();
+      item.reject(err);
+    }
+  }
+
+  isProcessingQueue = false;
+}
+
 function writeDb(data) {
-  ensureDbFile();
-  const tmpFile = DB_FILE + ".tmp." + Date.now();
-  fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), "utf8");
-  fs.renameSync(tmpFile, DB_FILE);
+  cachedDb = data;
+  const content = JSON.stringify(data, null, 2);
+  const promise = new Promise((resolve, reject) => {
+    writeQueue.push({ content, resolve, reject });
+    processWriteQueue();
+  });
+  promise.catch(() => {});
+  return promise;
 }
 
 function removeEmojis(str) {
@@ -253,8 +296,17 @@ function getUserContacts(userSyncId, onlineSyncIds = new Set()) {
         .filter((m) => (m.fromId === userSyncId && m.toId === id) || (m.fromId === id && m.toId === userSyncId))
         .sort((a, b) => b.timestamp - a.timestamp)[0];
       
+      let lastText = '';
+      if (lastMsg) {
+        if (lastMsg.deletedForEveryone) lastText = '🚫 Este mensaje fue eliminado';
+        else if (lastMsg.type === 'audio') lastText = '🎤 Nota de voz';
+        else if (lastMsg.type === 'file') lastText = '📎 ' + (lastMsg.fileData?.name || lastMsg.fileName || 'Archivo');
+        else if (lastMsg.type === 'call') lastText = lastMsg.text || '📞 Llamada de voz';
+        else lastText = lastMsg.text || '';
+      }
+
       pub.lastMessage = lastMsg ? {
-        text: lastMsg.deletedForEveryone ? '🚫 Este mensaje fue eliminado' : (lastMsg.type === 'audio' ? '🎤 Nota de voz' : (lastMsg.type === 'file' ? '📎 ' + (lastMsg.fileName || 'Archivo') : lastMsg.text)),
+        text: lastText,
         timestamp: lastMsg.timestamp,
         fromId: lastMsg.fromId,
         status: lastMsg.status || (lastMsg.read ? 'read' : 'delivered')
@@ -267,31 +319,48 @@ function getUserContacts(userSyncId, onlineSyncIds = new Set()) {
   return contactsList;
 }
 
-function saveTextMessage(fromId, toId, text, customId = null, replyTo = null, linkPreview = null, status = 'sent') {
+function saveMessage(msgData) {
   const db = readDb();
   const newMsg = {
-    id: customId || ("msg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
-    fromId: fromId,
-    toId: toId,
-    type: "text",
-    text: text,
-    replyTo: replyTo || null,
-    linkPreview: linkPreview || null,
-    reactions: {},
-    timestamp: Date.now(),
-    status: status, // 'sent' | 'delivered' | 'read'
-    read: status === 'read',
+    id: msgData.id || ("msg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
+    fromId: String(msgData.fromId).trim().toUpperCase(),
+    toId: String(msgData.toId).trim().toUpperCase(),
+    type: msgData.type || "text",
+    text: msgData.text || "",
+    audioData: msgData.audioData || null,
+    fileData: msgData.fileData || null,
+    callData: msgData.callData || null,
+    replyTo: msgData.replyTo || null,
+    linkPreview: msgData.linkPreview || null,
+    reactions: msgData.reactions || {},
+    timestamp: msgData.timestamp || Date.now(),
+    status: msgData.status || 'sent', // 'sent' | 'delivered' | 'read'
+    read: Boolean(msgData.read || msgData.status === 'read'),
     deletedForEveryone: false
   };
 
   db.messages.push(newMsg);
-  
-  if (db.messages.length > 3000) {
-    db.messages = db.messages.slice(-3000);
+
+  if (db.messages.length > 5000) {
+    db.messages = db.messages.slice(-5000);
   }
 
   writeDb(db);
   return newMsg;
+}
+
+function saveTextMessage(fromId, toId, text, customId = null, replyTo = null, linkPreview = null, status = 'sent') {
+  return saveMessage({
+    id: customId,
+    fromId: fromId,
+    toId: toId,
+    type: "text",
+    text: text,
+    replyTo: replyTo,
+    linkPreview: linkPreview,
+    status: status,
+    read: status === 'read'
+  });
 }
 
 function updateMessageReaction(messageId, userSyncId, emoji) {
@@ -402,9 +471,29 @@ function unpinMessage(user1Id, user2Id) {
 
 function getMessagesBetween(user1Id, user2Id) {
   const db = readDb();
+  const u1 = String(user1Id).trim().toUpperCase();
+  const u2 = String(user2Id).trim().toUpperCase();
   return db.messages.filter((m) => {
-    return (m.fromId === user1Id && m.toId === user2Id) || (m.fromId === user2Id && m.toId === user1Id);
+    const mFrom = String(m.fromId).trim().toUpperCase();
+    const mTo = String(m.toId).trim().toUpperCase();
+    return (mFrom === u1 && mTo === u2) || (mFrom === u2 && mTo === u1);
   }).sort((a, b) => a.timestamp - b.timestamp);
+}
+
+function clearMessagesBetween(user1Id, user2Id) {
+  const db = readDb();
+  const u1 = String(user1Id).trim().toUpperCase();
+  const u2 = String(user2Id).trim().toUpperCase();
+  const initialCount = db.messages.length;
+  db.messages = db.messages.filter((m) => {
+    const mFrom = String(m.fromId).trim().toUpperCase();
+    const mTo = String(m.toId).trim().toUpperCase();
+    return !((mFrom === u1 && mTo === u2) || (mFrom === u2 && mTo === u1));
+  });
+  const key = getConversationKey(u1, u2);
+  delete db.pinnedMessages[key];
+  writeDb(db);
+  return initialCount - db.messages.length;
 }
 
 module.exports = {
@@ -417,6 +506,7 @@ module.exports = {
   updateUserProfile,
   addContact,
   getUserContacts,
+  saveMessage,
   saveTextMessage,
   updateMessageReaction,
   updateMessageStatus,
@@ -425,5 +515,7 @@ module.exports = {
   getPinnedMessage,
   setPinnedMessage,
   unpinMessage,
-  getMessagesBetween
+  getMessagesBetween,
+  clearMessagesBetween,
+  writeDb
 };
