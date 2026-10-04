@@ -10,7 +10,7 @@ const { Server } = require("socket.io");
 const selfsigned = require("selfsigned");
 const db = require("./db");
 
-const PORT = process.env.PORT || 3000;
+const PORT = (process.env.PORT && process.env.PORT !== "8080") ? process.env.PORT : 3000;
 const HOST = "0.0.0.0";
 
 function getLocalIPv4Addresses() {
@@ -418,13 +418,24 @@ try {
       key: fs.readFileSync(KEY_FILE)
     };
   } else {
-    const pems = selfsigned.generate(
+    const pemsOrPromise = selfsigned.generate(
       [{ name: "commonName", value: "sync-engine-server" }],
       { days: 365, keySize: 2048 }
     );
-    fs.writeFileSync(CERT_FILE, pems.cert, "utf8");
-    fs.writeFileSync(KEY_FILE, pems.private, "utf8");
-    sslOptions = { cert: pems.cert, key: pems.private };
+    if (pemsOrPromise && typeof pemsOrPromise.then === "function") {
+      pemsOrPromise.then((pems) => {
+        if (pems && pems.cert && pems.private) {
+          try {
+            fs.writeFileSync(CERT_FILE, pems.cert, "utf8");
+            fs.writeFileSync(KEY_FILE, pems.private, "utf8");
+          } catch (_) {}
+        }
+      }).catch(() => {});
+    } else if (pemsOrPromise && pemsOrPromise.cert && pemsOrPromise.private) {
+      fs.writeFileSync(CERT_FILE, pemsOrPromise.cert, "utf8");
+      fs.writeFileSync(KEY_FILE, pemsOrPromise.private, "utf8");
+      sslOptions = { cert: pemsOrPromise.cert, key: pemsOrPromise.private };
+    }
   }
 } catch (sslErr) {
   console.warn("[SSL] No se pudo inicializar certificado SSL:", sslErr.message);

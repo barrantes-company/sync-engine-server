@@ -4,8 +4,10 @@
   "private": true,
   "main": "server.js",
   "scripts": {
+    "dev": "node server.js",
     "start": "node server.js",
-    "build": "webpack --config webpack.config.js"
+    "build": "webpack --config webpack.config.js",
+    "lint": "node --check server.js db.js"
   },
   "dependencies": {
     "@google-cloud/pubsub": "4.9.0",
