@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "node",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\REPOSITORIOS_BARRANTESCO\\sync-engine-server"],
+      "env": {},
+      "disabled": false
+    }
+  }
+}

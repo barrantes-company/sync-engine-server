@@ -59,45 +59,60 @@ self.addEventListener('fetch', (event) => {
 
 // Manejo de Notificaciones Web Push y Espejo en Segundo Plano
 self.addEventListener('push', (event) => {
-  let data = {
-    title: 'SYNC ENGINE',
+  let payload = {
+    title: 'SYNC ENGINE | Barrantes Co.',
     body: 'Nuevo mensaje recibido',
     icon: '/assets/logo.png',
     badge: '/assets/logo.png',
-    tag: 'sync-engine-msg',
-    timestamp: Date.now()
+    tag: 'sync-msg-' + Date.now(),
+    data: {}
   };
 
   if (event.data) {
     try {
       const parsed = event.data.json();
-      data = Object.assign(data, parsed);
-    } catch (e) {
-      data.body = event.data.text();
+      payload = Object.assign(payload, parsed);
+    } catch (_) {
+      try {
+        payload.body = event.data.text();
+      } catch (__) {}
     }
   }
 
+  const isCall = payload.data && payload.data.type === 'call';
+
   const options = {
-    body: data.body,
-    icon: data.icon || '/assets/logo.png',
-    badge: data.badge || '/assets/logo.png',
-    tag: data.tag || 'sync-msg',
-    data: data,
-    vibrate: [100, 50, 100],
-    actions: [
-      { action: 'reply', title: 'Responder' },
-      { action: 'open', title: 'Abrir Chat' }
-    ]
+    body: payload.body,
+    icon: payload.icon || '/assets/logo.png',
+    badge: payload.badge || '/assets/logo.png',
+    tag: payload.tag || (isCall ? `sync-call-${payload.data?.fromSyncId || Date.now()}` : `sync-msg-${payload.data?.fromSyncId || Date.now()}`),
+    renotify: true,
+    data: payload.data || {},
+    vibrate: isCall ? [300, 100, 300, 100, 300, 100, 500] : [100, 50, 100],
+    actions: isCall
+      ? [
+          { action: 'open', title: '📞 Atender' },
+          { action: 'dismiss', title: '✕ Ignorar' }
+        ]
+      : [
+          { action: 'open', title: '💬 Abrir Chat' },
+          { action: 'dismiss', title: '✕ Descartar' }
+        ]
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(payload.title, options)
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const notifData = event.notification.data || {};
+  const targetUrl = notifData.url || '/';
+
+  if (event.action === 'dismiss') {
+    return;
+  }
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
@@ -112,7 +127,7 @@ self.addEventListener('notificationclick', (event) => {
         }
       }
       if (self.clients.openWindow) {
-        return self.clients.openWindow('/');
+        return self.clients.openWindow(targetUrl);
       }
     })
   );

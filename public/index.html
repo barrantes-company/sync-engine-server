@@ -2281,6 +2281,84 @@
     }
   }
 
+  function createLinkCardElement(link) {
+    if (!link || !link.url) return null;
+    const linkCard = document.createElement('div');
+    linkCard.className = 'link-preview-card mt-2.5 block rounded-xl overflow-hidden border border-[rgba(197,160,89,0.25)] bg-[#F8FAFC] hover:bg-[#F1F5F9] shadow-sm transition-all group text-left';
+
+    const imageHtml = link.image ? `
+      <div class="w-full h-32 bg-black/5 overflow-hidden relative border-b border-[rgba(197,160,89,0.18)]">
+        <img src="${escapeHtml(link.image)}" alt="${escapeHtml(link.title || 'Vista previa')}" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-200" onerror="this.parentElement.style.display='none'">
+      </div>
+    ` : '';
+
+    const descHtml = link.description ? `
+      <p class="text-[11px] text-[#64748B] line-clamp-2 mt-0.5">${escapeHtml(link.description)}</p>
+    ` : '';
+
+    linkCard.innerHTML = `
+      ${imageHtml}
+      <div class="p-2.5 flex flex-col gap-1">
+        <div class="flex items-center justify-between gap-1.5">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <img src="https://www.google.com/s2/favicons?domain=${escapeHtml(link.domain)}&sz=32" alt="" class="w-3.5 h-3.5 rounded-xs object-contain" onerror="this.style.display='none'">
+            <span class="text-[10px] uppercase font-bold text-[#C5A059] tracking-wider truncate">${escapeHtml(link.domain)}</span>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <button type="button" class="preview-open-web-btn px-2 py-0.5 rounded-lg bg-[#C5A059]/15 hover:bg-[#C5A059] text-[#C5A059] hover:text-[#070F1E] text-[10px] font-bold transition-all border border-[#C5A059]/30 cursor-pointer" title="Abrir en Panel Web">
+              🌐 Panel
+            </button>
+            <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded-lg bg-black/5 hover:bg-black/10 text-[#0F172A] text-[10px] font-bold transition-all cursor-pointer" title="Abrir en pestaña nueva">
+              ↗
+            </a>
+          </div>
+        </div>
+        <p class="font-bold text-xs text-[#0F172A] line-clamp-1 group-hover:text-[#0284C7] transition-colors cursor-pointer">${escapeHtml(link.title || link.domain)}</p>
+        ${descHtml}
+      </div>
+    `;
+
+    const titleEl = linkCard.querySelector('p.font-bold');
+    if (titleEl) {
+      titleEl.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        openInWebPanel(link.url);
+      });
+    }
+    const previewBtn = linkCard.querySelector('.preview-open-web-btn');
+    if (previewBtn) {
+      previewBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        openInWebPanel(link.url);
+      });
+    }
+
+    return linkCard;
+  }
+
+  function updateMessagePreviewUI(data) {
+    if (!data || !data.messageId || !data.linkPreview) return;
+    const cached = activeConversationMessages.find((m) => m.id === data.messageId);
+    if (cached) {
+      cached.linkPreview = data.linkPreview;
+    }
+    const msgEl = document.getElementById('msg-' + data.messageId);
+    if (!msgEl) return;
+    const bubble = msgEl.querySelector('.message-bubble');
+    if (!bubble) return;
+    if (bubble.querySelector('.link-preview-card')) return;
+
+    const linkCard = createLinkCardElement(data.linkPreview);
+    if (linkCard) {
+      const footerBar = bubble.querySelector('.message-footer-bar');
+      if (footerBar) {
+        bubble.insertBefore(linkCard, footerBar);
+      } else {
+        bubble.appendChild(linkCard);
+      }
+    }
+  }
+
   // BUSCADOR INTERNO EN EL HISTORIAL DE CHAT
   function openChatSearch() {
     chatSearchBar.classList.remove('hidden');
@@ -2884,6 +2962,10 @@
       updateMessageReactionsUI(data);
     });
 
+    socket.on('message-preview-updated', (data) => {
+      updateMessagePreviewUI(data);
+    });
+
     // RECIBO DE LECTURA (DOBLE CHECK AZUL)
     socket.on('messages-read-receipt', (data) => {
       if (!data || !Array.isArray(data.messageIds)) return;
@@ -3296,62 +3378,14 @@
 
       // VISTA PREVIA DE ENLACES (RICH LINK CARDS)
       if (msg.linkPreview && msg.linkPreview.url) {
-        const link = msg.linkPreview;
-        const linkCard = document.createElement('div');
-        linkCard.className = 'mt-2.5 block rounded-xl overflow-hidden border border-[rgba(197,160,89,0.25)] bg-[#F8FAFC] hover:bg-[#F1F5F9] shadow-sm transition-all group text-left';
-
-        const imageHtml = link.image ? `
-          <div class="w-full h-32 bg-black/5 overflow-hidden relative border-b border-[rgba(197,160,89,0.18)]">
-            <img src="${escapeHtml(link.image)}" alt="${escapeHtml(link.title || 'Vista previa')}" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-200" onerror="this.parentElement.style.display='none'">
-          </div>
-        ` : '';
-
-        const descHtml = link.description ? `
-          <p class="text-[11px] text-[#64748B] line-clamp-2 mt-0.5">${escapeHtml(link.description)}</p>
-        ` : '';
-
-        linkCard.innerHTML = `
-          ${imageHtml}
-          <div class="p-2.5 flex flex-col gap-1">
-            <div class="flex items-center justify-between gap-1.5">
-              <div class="flex items-center gap-1.5 min-w-0">
-                <img src="https://www.google.com/s2/favicons?domain=${escapeHtml(link.domain)}&sz=32" alt="" class="w-3.5 h-3.5 rounded-xs object-contain" onerror="this.style.display='none'">
-                <span class="text-[10px] uppercase font-bold text-[#C5A059] tracking-wider truncate">${escapeHtml(link.domain)}</span>
-              </div>
-              <div class="flex items-center gap-1 flex-shrink-0">
-                <button type="button" class="preview-open-web-btn px-2 py-0.5 rounded-lg bg-[#C5A059]/15 hover:bg-[#C5A059] text-[#C5A059] hover:text-[#070F1E] text-[10px] font-bold transition-all border border-[#C5A059]/30 cursor-pointer" title="Abrir en Panel Web">
-                  🌐 Panel
-                </button>
-                <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded-lg bg-black/5 hover:bg-black/10 text-[#0F172A] text-[10px] font-bold transition-all cursor-pointer" title="Abrir en pestaña nueva">
-                  ↗
-                </a>
-              </div>
-            </div>
-            <p class="font-bold text-xs text-[#0F172A] line-clamp-1 group-hover:text-[#0284C7] transition-colors cursor-pointer">${escapeHtml(link.title || link.domain)}</p>
-            ${descHtml}
-          </div>
-        `;
-
-        const titleEl = linkCard.querySelector('p.font-bold');
-        if (titleEl) {
-          titleEl.addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            openInWebPanel(link.url);
-          });
+        const linkCard = createLinkCardElement(msg.linkPreview);
+        if (linkCard) {
+          bubble.appendChild(linkCard);
         }
-        const previewBtn = linkCard.querySelector('.preview-open-web-btn');
-        if (previewBtn) {
-          previewBtn.addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            openInWebPanel(link.url);
-          });
-        }
-
-        bubble.appendChild(linkCard);
       }
 
       const footerBar = document.createElement('div');
-      footerBar.className = `mt-2 flex items-center justify-end gap-2 pt-1 border-t border-[rgba(197,160,89,0.18)]`;
+      footerBar.className = `message-footer-bar mt-2 flex items-center justify-end gap-2 pt-1 border-t border-[rgba(197,160,89,0.18)]`;
 
       const copyBtn = document.createElement('button');
       copyBtn.type = 'button';

@@ -1,3 +1,74 @@
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+
+// ==== Web Push Setup ====
+const webPush = require('web-push');
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BD7oG-w_r6z79_nS7N4K43m_B9k4vN5uP8q9l2m3n4o5p6q7r8s9t0u1v2w3x4y5z_SYNC_ENGINE_KEY";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "YOUR_PRIVATE_VAPID_KEY_PLACEHOLDER";
+const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@syncengine.local';
+let webPushConfigured = false;
+try {
+  webPush.setVapidDetails(
+    VAPID_EMAIL,
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+  );
+  webPushConfigured = true;
+} catch (err) {
+  console.warn('[Push] Web Push deshabilitado: configure claves VAPID válidas.', err.message);
+}
+
+// Helper to store subscription per syncId (multiple devices allowed)
+function storeSubscription(syncId, subscription) {
+  const dbData = db.readDb ? db.readDb() : db.readDb(); // Ensure db is loaded
+  if (!dbData.subscriptions) dbData.subscriptions = {};
+  if (!Array.isArray(dbData.subscriptions[syncId])) {
+    dbData.subscriptions[syncId] = [];
+  }
+  // Avoid duplicates based on endpoint
+  const exists = dbData.subscriptions[syncId].some(sub => sub.endpoint === subscription.endpoint);
+  if (!exists) {
+    dbData.subscriptions[syncId].push(subscription);
+    db.writeDb(dbData);
+  }
+}
+
+// Helper to send push notification to all stored subscriptions for a syncId
+async function sendPushNotification(syncId, payload) {
+  if (!webPushConfigured) {
+    return;
+  }
+  const dbData = db.readDb();
+  const subs = (dbData.subscriptions && dbData.subscriptions[syncId]) || [];
+  const promises = subs.map(sub =>
+    webPush.sendNotification(sub, JSON.stringify(payload)).catch(err => {
+      // Remove invalid subscription
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        const idx = subs.findIndex(s => s.endpoint === sub.endpoint);
+        if (idx !== -1) subs.splice(idx, 1);
+        db.writeDb(dbData);
+      }
+    })
+  );
+  await Promise.all(promises);
+}
+
+// Extend send-private-message logic for offline push notification
+// (Insert after line 560 where message is emitted to target sockets)
+// Note: The following code snippet will be inserted at the appropriate location in the existing function.
+/*
+if (!isTargetOnline) {
+  // Prepare minimal push payload
+  const pushPayload = {
+    title: 'Nuevo mensaje de ' + sender.formattedName,
+    body: text.length > 100 ? text.slice(0, 97) + '...' : text,
+    icon: '/assets/logo.png',
+    data: { syncId: targetSyncId, type: 'message' }
+  };
+  sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
+}
+*/
+
+// ==== End of Web Push Additions ====
 const fs = require("fs");
 const http = require("http");
 const https = require("https");
@@ -9,6 +80,7 @@ const multer = require("multer");
 const { Server } = require("socket.io");
 const selfsigned = require("selfsigned");
 const db = require("./db");
+const { startChatSubscriptionListener, publishChatMessage } = require("./pubsub-service");
 
 const PORT = (process.env.PORT && process.env.PORT !== "8080") ? process.env.PORT : 3000;
 const HOST = "0.0.0.0";
@@ -38,7 +110,12 @@ app.use(cors());
 app.use(express.json({ limit: "2gb" }));
 app.use(express.urlencoded({ limit: "2gb", extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
-
+app.use((err, req, res, next) => {
+  if (req.path === "/api/save-subscription" && err instanceof SyntaxError && err.status === 400) {
+    return res.status(500).json({ ok: false, error: "Error al procesar el payload de suscripción" });
+  }
+  next(err);
+});
 // Directorio y almacenamiento Multer para documentos y archivos pesados (hasta 2 GB sin compresión)
 const UPLOADS_DIR = path.join(__dirname, "public", "uploads");
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -80,6 +157,21 @@ function requireAuth(req, res, next) {
   req.user = user;
   next();
 }
+
+// Endpoint to receive subscription from client
+app.post('/api/notifications/subscribe', requireAuth, (req, res) => {
+  const { syncId, subscription } = req.body || {};
+  if (!syncId || !subscription) {
+    return res.status(400).json({ error: 'syncId y subscription son requeridos' });
+  }
+  try {
+    storeSubscription(syncId, subscription);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[Push] Error storing subscription:', err);
+    return res.status(500).json({ error: 'Error interno al guardar suscripción' });
+  }
+});
 
 // Extractor de Metadatos OpenGraph y Favicon para Rich Link Cards
 async function fetchUrlMetadata(text) {
@@ -190,6 +282,33 @@ app.post("/api/auth/login", (req, res) => {
 
 app.get("/api/auth/me", requireAuth, (req, res) => {
   res.json({ ok: true, user: req.user });
+});
+
+// Endpoint de Registro Web Push inyectado de forma segura
+app.post("/api/save-subscription", requireAuth, async (req, res) => {
+  try {
+    const subscription = req.body?.subscription || req.body;
+
+    if (!subscription || typeof subscription !== "object" ||
+        Array.isArray(subscription) || typeof subscription.endpoint !== "string") {
+      return res.status(400).json({ ok: false, error: "Payload de suscripción inválido o ausente" });
+    }
+
+    const saved = await db.savePushSubscription(
+      req.user.syncId,
+      subscription,
+      req.get("user-agent") || ""
+    );
+
+    if (!saved) {
+      return res.status(400).json({ ok: false, error: "Payload de suscripción inválido o ausente" });
+    }
+
+    return res.status(201).json({ ok: true });
+  } catch (err) {
+    console.error("[Push] Error al guardar suscripción:", err);
+    return res.status(500).json({ ok: false, error: "Error interno al guardar la suscripción" });
+  }
 });
 
 // Rutas de Usuario y Perfil
@@ -513,20 +632,16 @@ io.on("connection", function (socket) {
     let messageObj = null;
 
     if (msgType === "text") {
-      let linkPreview = null;
-      if (text && /https?:\/\/[^\s]+/i.test(text)) {
-        linkPreview = await fetchUrlMetadata(text);
+      // If recipient is offline, send Web Push notification
+      if (!isTargetOnline) {
+        const pushPayload = {
+          title: `Nuevo mensaje de ${sender.formattedName}`,
+          body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
+          icon: '/assets/logo.png',
+          data: { syncId: targetSyncId, type: 'message' }
+        };
+        sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
       }
-
-      messageObj = db.saveTextMessage(
-        sender.syncId,
-        targetSyncId,
-        text || "",
-        clientMsgId || null,
-        replyTo || null,
-        linkPreview,
-        initialStatus
-      );
       messageObj.fromName = sender.formattedName;
       messageObj.toSyncId = targetSyncId;
     } else {
@@ -552,17 +667,16 @@ io.on("connection", function (socket) {
         }
       }
 
-      messageObj = db.saveMessage({
-        id: clientMsgId || null,
-        fromId: sender.syncId,
-        toId: targetSyncId,
-        type: msgType,
-        text: text || (msgType === "audio" ? "Nota de voz" : (fileData && fileData.name ? fileData.name : "Archivo")),
-        audioData: finalAudioData,
-        fileData: fileData || null,
-        replyTo: replyTo || null,
-        status: initialStatus
-      });
+      // If recipient is offline, send Web Push notification
+      if (!isTargetOnline) {
+        const pushPayload = {
+          title: `Nuevo mensaje de ${sender.formattedName}`,
+          body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
+          icon: '/assets/logo.png',
+          data: { syncId: targetSyncId, type: 'message' }
+        };
+        sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
+      }
       messageObj.fromName = sender.formattedName;
       messageObj.toSyncId = targetSyncId;
     }
@@ -583,6 +697,40 @@ io.on("connection", function (socket) {
     }
 
     socket.emit("message-sent", { id: messageObj.id, status: messageObj.status, timestamp: messageObj.timestamp });
+
+    // Extracción asíncrona desacoplada de metadatos Open Graph sin bloquear la entrega de mensajes
+    if (msgType === "text" && text && /https?:\/\/[^\s]+/i.test(text)) {
+      setImmediate(async () => {
+        try {
+          const preview = await fetchUrlMetadata(text);
+          if (preview) {
+            db.updateMessageLinkPreview(messageObj.id, preview);
+            const previewEvent = {
+              messageId: messageObj.id,
+              fromSyncId: sender.syncId,
+              toSyncId: targetSyncId,
+              linkPreview: preview
+            };
+
+            const currentTargetSockets = onlineUsers.get(targetSyncId);
+            if (currentTargetSockets && currentTargetSockets.size > 0) {
+              currentTargetSockets.forEach((sockId) => {
+                io.to(sockId).emit("message-preview-updated", previewEvent);
+              });
+            }
+
+            const currentSenderSockets = onlineUsers.get(sender.syncId);
+            if (currentSenderSockets && currentSenderSockets.size > 0) {
+              currentSenderSockets.forEach((sockId) => {
+                io.to(sockId).emit("message-preview-updated", previewEvent);
+              });
+            }
+          }
+        } catch (previewErr) {
+          console.warn("[PREVIEW] Error en extracción asíncrona de metadatos Open Graph:", previewErr.message);
+        }
+      });
+    }
   });
 
   // Marcado de Mensajes como Leídos (Read Receipt)
@@ -866,18 +1014,13 @@ io.on("connection", function (socket) {
     const targetSockets = onlineUsers.get(targetSyncId);
     const initialStatus = Boolean(targetSockets && targetSockets.size > 0) ? "delivered" : "sent";
 
-    let linkPreview = null;
-    if (payload.text && /https?:\/\/[^\s]+/i.test(payload.text)) {
-      linkPreview = await fetchUrlMetadata(payload.text);
-    }
-
     const savedMsg = db.saveTextMessage(
       sender.syncId,
       targetSyncId,
       payload.text,
       null,
       payload.replyTo || null,
-      linkPreview,
+      null,
       initialStatus
     );
     savedMsg.fromName = sender.formattedName;
@@ -897,6 +1040,36 @@ io.on("connection", function (socket) {
     }
 
     socket.emit("quick-reply-sent", { ok: true, id: savedMsg.id });
+
+    // Extracción asíncrona desacoplada de metadatos Open Graph
+    if (payload.text && /https?:\/\/[^\s]+/i.test(payload.text)) {
+      setImmediate(async () => {
+        try {
+          const preview = await fetchUrlMetadata(payload.text);
+          if (preview) {
+            db.updateMessageLinkPreview(savedMsg.id, preview);
+            const previewEvent = {
+              messageId: savedMsg.id,
+              fromSyncId: sender.syncId,
+              toSyncId: targetSyncId,
+              linkPreview: preview
+            };
+
+            const curTargets = onlineUsers.get(targetSyncId);
+            if (curTargets && curTargets.size > 0) {
+              curTargets.forEach((sockId) => io.to(sockId).emit("message-preview-updated", previewEvent));
+            }
+
+            const curSenders = onlineUsers.get(sender.syncId);
+            if (curSenders && curSenders.size > 0) {
+              curSenders.forEach((sockId) => io.to(sockId).emit("message-preview-updated", previewEvent));
+            }
+          }
+        } catch (previewErr) {
+          console.warn("[PREVIEW] Error en quick-reply link preview:", previewErr.message);
+        }
+      });
+    }
   });
 
   // Desconexión
@@ -938,4 +1111,16 @@ server.listen(PORT, HOST, function () {
     }
   }
   console.log("==================================================\n");
+
+  // ==== Inicialización del listener de Cloud Pub/Sub ====
+  // Se arranca después de que el servidor HTTP/Socket.IO ya está escuchando tráfico.
+  // Los payloads recibidos desde la suscripción se emiten de forma transparente
+  // a todos los clientes conectados (Electron, web, móvil).
+  startChatSubscriptionListener(function (pubsubPayload) {
+    // Emitir el evento al canal genérico de Pub/Sub para que cualquier cliente
+    // suscrito a 'pubsub-chat-event' lo reciba sin necesidad de estar autenticado
+    // en una conversación privada específica.
+    io.emit("pubsub-chat-event", pubsubPayload);
+    console.log("[Pub/Sub → Socket.IO] Evento propagado a clientes conectados:", pubsubPayload.type || "unknown");
+  });
 });

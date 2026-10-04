@@ -16,7 +16,8 @@ function ensureDbFile() {
       sessions: [],
       contacts: {},
       messages: [],
-      pinnedMessages: {}
+      pinnedMessages: {},
+      subscriptions: {}
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf8");
   }
@@ -39,6 +40,7 @@ function readDb() {
     if (!data.contacts) data.contacts = {};
     if (!data.messages) data.messages = [];
     if (!data.pinnedMessages) data.pinnedMessages = {};
+    if (!data.subscriptions) data.subscriptions = {};
     cachedDb = data;
     return cachedDb;
   } catch (err) {
@@ -399,6 +401,17 @@ function updateMessageStatus(messageId, status) {
   return null;
 }
 
+function updateMessageLinkPreview(messageId, linkPreview) {
+  const db = readDb();
+  const msg = db.messages.find((m) => m.id === messageId);
+  if (msg) {
+    msg.linkPreview = linkPreview;
+    writeDb(db);
+    return msg;
+  }
+  return null;
+}
+
 function markMessagesAsRead(senderSyncId, receiverSyncId) {
   const db = readDb();
   const updatedIds = [];
@@ -496,6 +509,54 @@ function clearMessagesBetween(user1Id, user2Id) {
   return initialCount - db.messages.length;
 }
 
+function savePushSubscription(syncId, subscription, userAgent = "") {
+  if (!syncId || !subscription || !subscription.endpoint) return false;
+  const db = readDb();
+  if (!db.subscriptions) db.subscriptions = {};
+  const sId = String(syncId).trim().toUpperCase();
+  if (!db.subscriptions[sId]) db.subscriptions[sId] = [];
+
+  const existingIdx = db.subscriptions[sId].findIndex((s) => s.endpoint === subscription.endpoint);
+  const subData = {
+    endpoint: subscription.endpoint,
+    keys: subscription.keys || {},
+    userAgent: userAgent || "",
+    updatedAt: Date.now()
+  };
+
+  if (existingIdx >= 0) {
+    db.subscriptions[sId][existingIdx] = subData;
+  } else {
+    db.subscriptions[sId].push(subData);
+  }
+
+  writeDb(db);
+  return true;
+}
+
+function getPushSubscriptions(syncId) {
+  if (!syncId) return [];
+  const db = readDb();
+  if (!db.subscriptions) return [];
+  const sId = String(syncId).trim().toUpperCase();
+  return db.subscriptions[sId] || [];
+}
+
+function removePushSubscription(syncId, endpoint) {
+  if (!syncId || !endpoint) return false;
+  const db = readDb();
+  if (!db.subscriptions) return false;
+  const sId = String(syncId).trim().toUpperCase();
+  if (!db.subscriptions[sId]) return false;
+  const initLen = db.subscriptions[sId].length;
+  db.subscriptions[sId] = db.subscriptions[sId].filter((s) => s.endpoint !== endpoint);
+  if (db.subscriptions[sId].length !== initLen) {
+    writeDb(db);
+    return true;
+  }
+  return false;
+}
+
 module.exports = {
   removeEmojis,
   formatFullName,
@@ -517,5 +578,9 @@ module.exports = {
   unpinMessage,
   getMessagesBetween,
   clearMessagesBetween,
-  writeDb
+  writeDb,
+  updateMessageLinkPreview,
+  savePushSubscription,
+  getPushSubscriptions,
+  removePushSubscription
 };
