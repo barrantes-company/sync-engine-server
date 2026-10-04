@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0A1A3A">
   <title>SYNC ENGINE | Widget</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/widget.css">
   <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" defer></script>
   <script src="/widget.js" defer></script>
@@ -12,59 +15,60 @@
 <body>
   <main class="widget-card" aria-labelledby="widget-title">
     <header class="widget-header">
-      <div>
-        <p class="eyebrow">SYNC ENGINE</p>
-        <h1 id="widget-title">Panel ejecutivo</h1>
+      <div class="brand">
+        <img class="brand-logo" src="/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png" alt="SYNC ENGINE">
+        <div>
+          <p class="eyebrow">SYNC ENGINE</p>
+          <h1 id="widget-title">Panel sincronizado</h1>
+        </div>
       </div>
-      <div class="sync-status" id="sync-status" data-state="offline">
-        <span class="sync-dot" aria-hidden="true"></span>
-        <span id="sync-label">Sin conexión</span>
+      <div class="header-meta">
+        <div class="weather-pill" aria-label="Clima local actual" aria-live="polite">
+          <span id="weather-icon" class="weather-icon" aria-hidden="true">⛅</span>
+          <span id="temperature" class="temperature">--°C</span>
+        </div>
+        <div class="sync-status" id="sync-status" data-state="offline">
+          <span class="sync-dot" aria-hidden="true"></span>
+          <span id="sync-label">Sin conexión</span>
+        </div>
       </div>
     </header>
 
-    <section class="time-weather" aria-label="Hora y clima local">
-      <div>
-        <p class="section-label">Hora local</p>
-        <time id="clock" class="clock">--:--:--</time>
-        <p id="date" class="date">Cargando fecha…</p>
-      </div>
-      <div class="weather" aria-live="polite">
-        <span id="weather-icon" class="weather-icon" aria-hidden="true">⛅</span>
-        <span id="temperature" class="temperature">--°C</span>
-        <span id="weather-description" class="weather-description">Clima local</span>
-      </div>
+    <section class="clock-hero" aria-label="Hora y fecha local">
+      <p class="hero-label">Tu tiempo, sincronizado</p>
+      <time id="clock" class="clock">--:--:--</time>
+      <p id="date" class="date">Cargando fecha…</p>
     </section>
 
     <section class="contact-select">
-      <label for="contact-select">Enviar captura a</label>
+      <label for="contact-select">Contacto para captura</label>
       <select id="contact-select" disabled>
         <option value="">Inicia sesión para cargar contactos</option>
       </select>
     </section>
 
-    <section class="controls" aria-label="Acciones del widget">
-      <div class="notification-control">
-        <div class="notification-copy">
-          <span class="section-label">Mensajes sin leer</span>
-          <span id="unread-count" class="unread-badge" aria-live="polite">0</span>
-        </div>
-        <div class="button-row">
-          <button id="mute-button" class="button button-secondary" type="button" aria-pressed="false" disabled>
-            Silenciar
-          </button>
-          <button id="open-chat-button" class="button button-secondary" type="button">
-            Abrir chat
-          </button>
-        </div>
-      </div>
+    <nav class="controls" aria-label="Acciones rápidas">
+      <button id="open-chat-button" class="button button-messages" type="button" aria-label="Abrir mensajes">
+        <span class="button-icon" aria-hidden="true">💬</span>
+        <span class="button-label">Mensajes</span>
+        <span id="unread-count" class="unread-badge" aria-live="polite" aria-label="0 mensajes sin leer">0</span>
+      </button>
       <button id="capture-button" class="button button-capture" type="button" disabled>
         <span aria-hidden="true">📸</span>
-        <span id="capture-label">Capturar pantalla</span>
+        <span id="capture-label">Capturar</span>
       </button>
-    </section>
+      <button id="copy-button" class="button button-copy" type="button" disabled>
+        <span aria-hidden="true">📋</span>
+        <span id="copy-label">Copiar ID</span>
+      </button>
+    </nav>
 
     <p id="widget-notice" class="widget-notice" role="status" aria-live="polite"></p>
     <div id="incoming-notice" class="incoming-notice" role="status" aria-live="polite" hidden></div>
+    <div id="incoming-clipboard" class="incoming-clipboard" hidden>
+      <span id="incoming-clipboard-preview"></span>
+      <button id="copy-incoming-button" class="copy-incoming-button" type="button">Copiar recibido</button>
+    </div>
     <input id="camera-input" type="file" accept="image/*" capture="environment" hidden>
   </main>
 </body>

@@ -2,22 +2,25 @@
   'use strict';
 
   const TOKEN_KEY = 'sync_engine_auth_token';
-  const MUTE_KEY = 'sync_engine_widget_muted';
   const clock = document.getElementById('clock');
   const date = document.getElementById('date');
   const temperature = document.getElementById('temperature');
   const weatherIcon = document.getElementById('weather-icon');
-  const weatherDescription = document.getElementById('weather-description');
+  const weatherPill = document.querySelector('.weather-pill');
   const contactSelect = document.getElementById('contact-select');
   const unreadCount = document.getElementById('unread-count');
   const syncStatus = document.getElementById('sync-status');
   const syncLabel = document.getElementById('sync-label');
   const notice = document.getElementById('widget-notice');
   const incomingNotice = document.getElementById('incoming-notice');
-  const muteButton = document.getElementById('mute-button');
+  const incomingClipboard = document.getElementById('incoming-clipboard');
+  const incomingClipboardPreview = document.getElementById('incoming-clipboard-preview');
   const openChatButton = document.getElementById('open-chat-button');
   const captureButton = document.getElementById('capture-button');
   const captureLabel = document.getElementById('capture-label');
+  const copyButton = document.getElementById('copy-button');
+  const copyLabel = document.getElementById('copy-label');
+  const copyIncomingButton = document.getElementById('copy-incoming-button');
   const cameraInput = document.getElementById('camera-input');
   const isMobile = window.matchMedia('(pointer: coarse)').matches ||
     /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -27,8 +30,9 @@
   let socket = null;
   let isAuthenticated = false;
   let contacts = [];
-  let muted = localStorage.getItem(MUTE_KEY) === 'true';
+  let receivedClipboardText = '';
   let noticeTimer = null;
+  copyButton.disabled = true;
 
   function updateClock() {
     const now = new Date();
@@ -57,13 +61,9 @@
     syncLabel.textContent = label;
   }
 
-  function updateMuteButton() {
-    muteButton.textContent = muted ? 'Activar avisos' : 'Silenciar';
-    muteButton.setAttribute('aria-pressed', String(muted));
-  }
-
   function updateCaptureAvailability() {
     captureButton.disabled = !contactSelect.value || !isAuthenticated;
+    copyButton.disabled = !isAuthenticated || !currentUser;
   }
 
   function updateUnreadCount(count) {
@@ -141,7 +141,8 @@
       if (!currentUser || !currentUser.syncId) {
         throw new Error('La sesión no devolvió un usuario válido');
       }
-      muteButton.disabled = false;
+      copyButton.disabled = false;
+      copyLabel.textContent = 'Copiar ID';
       await loadContacts();
       connectSocket();
     } catch (error) {
@@ -151,7 +152,6 @@
   }
 
   function showIncomingMessage(message) {
-    if (muted) return;
     incomingNotice.textContent = `${message.fromName || message.fromId}: Nuevo mensaje`;
     incomingNotice.hidden = false;
     window.clearTimeout(noticeTimer);
@@ -202,12 +202,27 @@
       if (!message || message.fromId === currentUser.syncId) return;
       updateUnreadCount(Number(unreadCount.textContent.replace('+', '')) + 1);
       showIncomingMessage(message);
+      loadUnreadCount().catch((error) => {
+        showNotice(`No se pudo actualizar el contador: ${error.message}`, 'error');
+      });
+    });
+    socket.on('messages-read-receipt', () => {
+      loadUnreadCount().catch((error) => {
+        showNotice(`No se pudo actualizar el contador: ${error.message}`, 'error');
+      });
+    });
+    socket.on('clipboard-sync', (payload) => {
+      if (!payload || typeof payload.text !== 'string') return;
+      receivedClipboardText = payload.text;
+      incomingClipboardPreview.textContent = payload.text || 'Portapapeles vacío';
+      incomingClipboard.title = `Copiado desde otra sesión (${payload.fromSyncId || 'tu cuenta'})`;
+      incomingClipboard.hidden = false;
     });
   }
 
   async function loadWeather() {
     if (!navigator.geolocation) {
-      weatherDescription.textContent = 'Ubicación no disponible';
+      weatherPill.title = 'Ubicación no disponible';
       return;
     }
 
@@ -232,13 +247,14 @@
         temperature.textContent = `${Math.round(current.temperature_2m)}°C`;
         const weather = weatherInfo(current.weather_code);
         weatherIcon.textContent = weather.icon;
-        weatherDescription.textContent = weather.label;
+        weatherPill.title = weather.label;
+        weatherPill.setAttribute('aria-label', `${temperature.textContent}, ${weather.label}`);
       } catch (error) {
-        weatherDescription.textContent = 'Clima no disponible';
+        weatherPill.title = 'Clima no disponible';
         showNotice(`No se pudo consultar el clima: ${error.message}`, 'error');
       }
     }, () => {
-      weatherDescription.textContent = 'Ubicación no autorizada';
+      weatherPill.title = 'Ubicación no autorizada';
     }, { enableHighAccuracy: false, maximumAge: 600000, timeout: 10000 });
   }
 
@@ -347,16 +363,39 @@
     }
   }
 
-  muteButton.addEventListener('click', () => {
-    muted = !muted;
-    localStorage.setItem(MUTE_KEY, String(muted));
-    updateMuteButton();
-    showNotice(muted ? 'Avisos del widget silenciados.' : 'Avisos del widget activados.');
-    if (muted) incomingNotice.hidden = true;
-  });
-
   openChatButton.addEventListener('click', () => {
     window.open('/', '_blank', 'noopener');
+  });
+
+  copyButton.addEventListener('click', async () => {
+    if (!currentUser || !isAuthenticated) {
+      showNotice('Inicia sesión para copiar tu ID.', 'error');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(currentUser.syncId);
+      if (socket && socket.connected) {
+        socket.emit('clipboard-sync', { text: currentUser.syncId });
+      }
+      copyLabel.textContent = '¡Copiado!';
+      showNotice('Tu ID SYNC se copió y sincronizó con tus otras sesiones.');
+      window.setTimeout(() => { copyLabel.textContent = 'Copiar ID'; }, 1800);
+    } catch (error) {
+      showNotice(`No se pudo acceder al portapapeles: ${error.message}`, 'error');
+    }
+  });
+
+  copyIncomingButton.addEventListener('click', async () => {
+    if (!receivedClipboardText) {
+      showNotice('No hay texto recibido para copiar.', 'error');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(receivedClipboardText);
+      showNotice('Texto recibido copiado al portapapeles.');
+    } catch (error) {
+      showNotice(`No se pudo copiar el texto recibido: ${error.message}`, 'error');
+    }
   });
 
   contactSelect.addEventListener('change', () => {
@@ -409,7 +448,6 @@
   if (isMobile) captureLabel.textContent = 'Tomar foto';
   updateClock();
   window.setInterval(updateClock, 1000);
-  updateMuteButton();
   loadWeather();
   initializeSession();
   window.setInterval(() => {

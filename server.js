@@ -608,6 +608,27 @@ io.on("connection", function (socket) {
     broadcastUserStatus(syncId, true);
   });
 
+  socket.on("clipboard-sync", function (payload) {
+    const sender = socketToUser.get(socket.id);
+    if (!sender || !payload || typeof payload.text !== "string") return;
+    if (payload.text.length > 10000) {
+      socket.emit("error-message", { message: "El contenido del portapapeles supera el límite permitido" });
+      return;
+    }
+
+    const userSockets = onlineUsers.get(sender.syncId);
+    if (!userSockets) return;
+    userSockets.forEach((socketId) => {
+      if (socketId !== socket.id) {
+        io.to(socketId).emit("clipboard-sync", {
+          text: payload.text,
+          fromSyncId: sender.syncId,
+          timestamp: Date.now()
+        });
+      }
+    });
+  });
+
   // Envío de Mensaje Privado (Texto, Audio de Voz o Archivo)
   socket.on("send-private-message", async function (payload) {
     const sender = socketToUser.get(socket.id);
