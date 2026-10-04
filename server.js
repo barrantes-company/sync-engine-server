@@ -418,10 +418,7 @@ app.get("/api/link-preview", requireAuth, async (req, res) => {
 
 // Lista Blanca de Dominios Autorizados para Navegación Embebida
 const ALLOWED_DOMAINS = [
-  'google.com.pe',
-  'www.google.com.pe',
-  'xvideos.com',
-  'www.xvideos.com'
+  'google.com.pe'
 ];
 
 // Endpoint Proxy con Lista Blanca de Navegación

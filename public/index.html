@@ -500,7 +500,6 @@
           <div id="web-quick-bar" class="px-3 py-1.5 bg-[#F8FAFC] border-b border-[rgba(197,160,89,0.15)] flex items-center gap-2 overflow-x-auto text-[11px] flex-shrink-0 select-none">
             <span class="text-[10px] text-[#C5A059] font-bold uppercase tracking-wider flex-shrink-0">Lista Blanca:</span>
             <button type="button" data-url="https://www.google.com.pe" class="web-quick-link px-2.5 py-0.5 rounded-lg bg-white hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-[#0F172A] hover:text-[#C5A059] transition-colors whitespace-nowrap cursor-pointer font-medium">🔍 Google Perú</button>
-            <button type="button" data-url="https://www.xvideos.com" class="web-quick-link px-2.5 py-0.5 rounded-lg bg-white hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-[#0F172A] hover:text-[#C5A059] transition-colors whitespace-nowrap cursor-pointer font-medium">🎬 XVideos</button>
           </div>
 
           <!-- Contenedor Iframe con indicador de carga y estado vacío -->
@@ -522,7 +521,7 @@
               </div>
               <h3 class="font-bold text-base text-[#0F172A] font-title tracking-wide">Dominio No Autorizado</h3>
               <p class="text-xs text-[#64748B] max-w-sm mt-1.5 leading-relaxed">
-                El sitio <span id="unauthorized-host-name" class="font-mono text-[#0284C7] font-bold"></span> no se encuentra en la lista blanca de dominios permitidos (<span class="text-[#C5A059] font-mono">google.com.pe, xvideos.com</span>).
+                El sitio <span id="unauthorized-host-name" class="font-mono text-[#0284C7] font-bold"></span> no se encuentra en la lista blanca de dominios permitidos (<span class="text-[#C5A059] font-mono">google.com.pe</span>).
               </p>
               <p class="text-xs text-[#64748B] max-w-sm mt-1 leading-relaxed">
                 Puedes abrir el enlace directamente en una ventana independiente sin restricciones:
@@ -544,7 +543,7 @@
               </div>
               <h3 class="font-bold text-base text-[#0F172A] font-title tracking-wide">Navegador Web Embebido</h3>
               <p class="text-xs text-[#64748B] max-w-sm mt-1 leading-relaxed">
-                Navega en sitios autorizados (<span class="text-[#C5A059] font-mono">google.com.pe, xvideos.com</span>) en tiempo real junto a tu conversación sin salir de SYNC ENGINE.
+                Navega en sitios autorizados (<span class="text-[#C5A059] font-mono">google.com.pe</span>) en tiempo real junto a tu conversación sin salir de SYNC ENGINE.
               </p>
               <div class="mt-4 flex items-center gap-2">
                 <button type="button" onclick="loadWebUrl('https://www.google.com.pe', true)" class="px-3.5 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.3)] text-xs text-[#C5A059] font-bold shadow-xs transition-all cursor-pointer">
@@ -1175,10 +1174,7 @@
 
   // Lista Blanca de Dominios Autorizados para Navegación Embebida
   const ALLOWED_DOMAINS = [
-    'google.com.pe',
-    'www.google.com.pe',
-    'xvideos.com',
-    'www.xvideos.com'
+    'google.com.pe'
   ];
 
   function isDomainAllowed(targetUrl) {
