@@ -1110,6 +1110,24 @@ server.listen(PORT, HOST, function () {
   }
   console.log("==================================================\n");
 
+  if (process.env.RENDER_EXTERNAL_URL) {
+    const keepAliveUrl = new URL("/api/status", process.env.RENDER_EXTERNAL_URL);
+    const keepAliveInterval = setInterval(async function () {
+      try {
+        const response = await fetch(keepAliveUrl, {
+          signal: AbortSignal.timeout(30000)
+        });
+        await response.text();
+        if (!response.ok) {
+          console.warn("[Render Keep-Alive] Respuesta HTTP inesperada:", response.status);
+        }
+      } catch (err) {
+        console.warn("[Render Keep-Alive] No se pudo consultar el estado:", err.message);
+      }
+    }, 10 * 60 * 1000);
+    keepAliveInterval.unref();
+  }
+
   // ==== Inicialización del listener de Cloud Pub/Sub ====
   // Se arranca después de que el servidor HTTP/Socket.IO ya está escuchando tráfico.
   // Los payloads recibidos desde la suscripción se emiten de forma transparente
