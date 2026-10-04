@@ -14,7 +14,10 @@ try {
   );
   webPushConfigured = true;
 } catch (err) {
-  console.warn('[Push] Web Push deshabilitado: configure claves VAPID válidas.', err.message);
+  const message = process.env.NODE_ENV === "production"
+    ? "[Push] Web Push deshabilitado; el servidor continuará sin notificaciones push."
+    : "[Push] Web Push deshabilitado: configure claves VAPID válidas.";
+  console.warn(message, err.message);
 }
 
 // Helper to store subscription per syncId (multiple devices allowed)
@@ -80,7 +83,6 @@ const multer = require("multer");
 const { Server } = require("socket.io");
 const selfsigned = require("selfsigned");
 const db = require("./db");
-const { startChatSubscriptionListener, publishChatMessage } = require("./pubsub-service");
 
 const PORT = (process.env.PORT && process.env.PORT !== "8080") ? process.env.PORT : 3000;
 const HOST = "0.0.0.0";
@@ -1114,13 +1116,18 @@ server.listen(PORT, HOST, function () {
   // Se arranca después de que el servidor HTTP/Socket.IO ya está escuchando tráfico.
   // Los payloads recibidos desde la suscripción se emiten de forma transparente
   // a todos los clientes conectados (Electron, web, móvil).
-  startChatSubscriptionListener(function (pubsubPayload) {
-    // Emitir el evento al canal genérico de Pub/Sub para que cualquier cliente
-    // suscrito a 'pubsub-chat-event' lo reciba sin necesidad de estar autenticado
-    // en una conversación privada específica.
-    io.emit("pubsub-chat-event", pubsubPayload);
-    console.log("[Pub/Sub → Socket.IO] Evento propagado a clientes conectados:", pubsubPayload.type || "unknown");
-  });
+  try {
+    const { startChatSubscriptionListener } = require("./pubsub-service");
+    startChatSubscriptionListener(function (pubsubPayload) {
+      // Emitir el evento al canal genérico de Pub/Sub para que cualquier cliente
+      // suscrito a 'pubsub-chat-event' lo reciba sin necesidad de estar autenticado
+      // en una conversación privada específica.
+      io.emit("pubsub-chat-event", pubsubPayload);
+      console.log("[Pub/Sub → Socket.IO] Evento propagado a clientes conectados:", pubsubPayload.type || "unknown");
+    });
+  } catch (err) {
+    console.error("[Pub/Sub] No se pudo iniciar la suscripción; HTTP seguirá disponible:", err.message);
+  }
 });
 
 if (process.env.RENDER_EXTERNAL_URL) {
