@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#FFFFFF">
 <title>SYNC ENGINE | Mensajería Privada &amp; Workspace</title>
 <meta name="description" content="Private messaging, real-time synchronization, and workspace platform.">
 <meta property="og:title" content="SYNC ENGINE | Mensajería Privada &amp; Workspace">
@@ -29,24 +30,24 @@
       extend: {
         colors: {
           bgMain: '#FFFFFF',
-          bgCard: '#FFFFFF',
+          bgCard: '#F8FAFC',
           accentGold: '#C5A059',
-          accentTech: '#0284C7',
-          textPrimary: '#0F172A',
-          borderSubtle: 'rgba(197, 160, 89, 0.22)',
-          waGreen: '#25D366',
+          accentTech: '#0072CE',
+          textPrimary: '#0A1A3A',
+          borderSubtle: 'rgba(10, 26, 58, 0.12)',
+          waGreen: '#0072CE',
           waTeal: '#C5A059',
-          waDarkTeal: '#0F172A',
-          waLightTeal: '#0284C7',
+          waDarkTeal: '#0A1A3A',
+          waLightTeal: '#0072CE',
           waBg: '#F8FAFC',
           waChatBg: '#F8FAFC',
-          waBubbleSent: '#FFFBEB',
-          waBubbleReceived: '#FFFFFF',
-          waTextPrimary: '#0F172A',
+          waBubbleSent: '#0A1A3A',
+          waBubbleReceived: '#F1F5F9',
+          waTextPrimary: '#0A1A3A',
           waTextSecondary: '#64748B',
           waBorder: 'rgba(197, 160, 89, 0.22)',
           waHover: 'rgba(197, 160, 89, 0.08)',
-          waBlueCheck: '#0284C7',
+          waBlueCheck: '#0072CE',
         },
         fontFamily: {
           sans: ['Inter', 'sans-serif'],
@@ -64,8 +65,8 @@
 
 <style>
   html, body {
-    background-color: #FFFFFF;
-    color: #0F172A;
+    background-color: var(--bg-main, #FFFFFF);
+    color: var(--text-primary, #0A1A3A);
     min-height: 100vh;
     font-family: 'Inter', sans-serif;
   }
@@ -97,16 +98,16 @@
     position: absolute;
     inset: 0 auto 0 0;
     width: 72%;
-    background: linear-gradient(90deg, transparent, #eef9ff 20%, #00f3ff 48%, #7000ff 56%, #00f3ff 74%, transparent);
+    background: linear-gradient(90deg, transparent, #FFFFFF 20%, #C5A059 48%, #0072CE 56%, #C5A059 74%, transparent);
     mix-blend-mode: screen;
     will-change: transform, filter, opacity;
     animation: electricFlow 3s ease-in-out infinite;
   }
 
   @keyframes electricFlow {
-    0% { opacity: 0.25; transform: translate3d(-115%, 0, 0); filter: drop-shadow(0 0 2px #00f3ff); }
-    50% { opacity: 1; transform: translate3d(35%, 0, 0); filter: drop-shadow(0 0 8px #00f3ff) brightness(1.3); }
-    100% { opacity: 0.25; transform: translate3d(145%, 0, 0); filter: drop-shadow(0 0 2px #00f3ff); }
+    0% { opacity: 0.25; transform: translate3d(-115%, 0, 0); filter: drop-shadow(0 0 2px #C5A059); }
+    50% { opacity: 1; transform: translate3d(35%, 0, 0); filter: drop-shadow(0 0 8px #0072CE) brightness(1.3); }
+    100% { opacity: 0.25; transform: translate3d(145%, 0, 0); filter: drop-shadow(0 0 2px #C5A059); }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -118,34 +119,34 @@
   }
 </style>
 </head>
-<body class="font-sans text-[#0F172A] antialiased selection:bg-[#C5A059]/30 selection:text-[#0F172A] bg-white">
+<body class="font-sans text-[#0A1A3A] antialiased selection:bg-[#C5A059]/30 selection:text-[#0A1A3A] bg-white">
 
   <!-- APLICACIÓN PRINCIPAL -->
   <div id="app-container" class="h-screen min-h-0 flex flex-col overflow-hidden hidden bg-white w-full max-w-[1600px] mx-auto shadow-sm">
     
     <!-- ENCABEZADO SUPERIOR -->
-    <header class="sticky top-0 z-40 bg-white border-b border-[rgba(197,160,89,0.22)] text-[#0F172A] shadow-sm">
+    <header class="sticky top-0 z-40 bg-white border-b border-[rgba(197,160,89,0.22)] text-[#0A1A3A] shadow-sm">
       <div class="w-full max-w-[1600px] mx-auto px-3 sm:px-6 py-1 flex items-center justify-between gap-2 flex-wrap">
 
         <!-- Identidad Formateada & Estado -->
         <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
           
-          <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs text-[#0F172A] shadow-sm">
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] shadow-sm">
             <img id="header-user-avatar" class="w-6 h-6 rounded-full object-cover avatar-circle hidden" alt="Avatar">
             <span id="user-identity-badge" class="font-bold tracking-wide truncate max-w-[180px] sm:max-w-[300px]">
               <span id="header-user-sync-id" class="text-[#C5A059] font-mono">SYNC-0000</span>
               <span class="text-gray-400 mx-1">-</span>
-              <span id="header-user-clean-name" class="text-[#0F172A]">Usuario</span>
+              <span id="header-user-clean-name" class="text-[#0A1A3A]">Usuario</span>
             </span>
           </div>
 
           <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[#C5A059]">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#C5A059] pulse-online flex-shrink-0"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-[#0072CE] pulse-online flex-shrink-0"></span>
             <span class="text-xs font-bold tracking-wide select-none">● En línea</span>
           </div>
 
           <button id="logout-btn" type="button" title="Cerrar sesión"
-            class="px-3 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-red-50 text-[#0F172A] hover:text-red-600 border border-[rgba(197,160,89,0.25)] hover:border-red-300 text-xs font-semibold transition-all cursor-pointer">
+            class="px-3 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-red-50 text-[#0A1A3A] hover:text-red-600 border border-[rgba(197,160,89,0.25)] hover:border-red-300 text-xs font-semibold transition-all cursor-pointer">
             Salir
           </button>
 
@@ -162,7 +163,7 @@
         
         <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-2 flex-shrink-0">
           <div class="flex items-center gap-2">
-            <h2 class="font-bold text-base text-[#0F172A] font-title">Chats</h2>
+            <h2 class="font-bold text-base text-[#0A1A3A] font-title">Chats</h2>
             <span id="contacts-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#F8FAFC] text-[#C5A059] border border-[rgba(197,160,89,0.25)]">0</span>
           </div>
           <span class="text-xs text-[#64748B] font-medium font-mono">Directorio Privado</span>
@@ -173,7 +174,7 @@
             <div class="relative flex-1">
               <span class="absolute left-3 top-2.5 text-[#C5A059] text-xs">🔍</span>
               <input type="text" id="contact-search-input" maxlength="20" placeholder="Buscar o agregar ID (ej. SYNC-8821)..."
-                class="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-xs text-[#0F172A] uppercase placeholder-gray-400 font-mono shadow-sm">
+                class="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-xs text-[#0A1A3A] uppercase placeholder-gray-400 font-mono shadow-sm">
             </div>
             <button id="add-contact-btn" type="button" title="Agregar contacto por Código ID"
               class="h-8 px-2.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-sm flex items-center justify-center transition-all flex-shrink-0 cursor-pointer">
@@ -186,18 +187,18 @@
         <div id="contacts-list" class="flex-1 min-h-0 overflow-y-auto divide-y divide-[rgba(197,160,89,0.08)] p-1.5 space-y-1 bg-white"></div>
 
         <div id="edit-profile-modal" class="profile-settings-popover hidden" role="dialog" aria-modal="false" aria-labelledby="profile-settings-title">
-          <div class="bg-white rounded-2xl p-4 flex flex-col gap-3 shadow-xl border border-[rgba(197,160,89,0.3)] text-[#0F172A]">
+          <div class="bg-white rounded-2xl p-4 flex flex-col gap-3 shadow-xl border border-[rgba(197,160,89,0.3)] text-[#0A1A3A]">
             <div class="flex items-center justify-between">
-              <h3 id="profile-settings-title" class="font-bold text-sm text-[#0F172A] font-title flex items-center gap-2">
+              <h3 id="profile-settings-title" class="font-bold text-sm text-[#0A1A3A] font-title flex items-center gap-2">
                 <span>👤</span> Configuración de perfil
               </h3>
-              <button id="close-profile-modal-btn" type="button" aria-label="Cerrar configuración" class="text-[#64748B] hover:text-[#0F172A] p-1 text-sm cursor-pointer">✕</button>
+              <button id="close-profile-modal-btn" type="button" aria-label="Cerrar configuración" class="text-[#64748B] hover:text-[#0A1A3A] p-1 text-sm cursor-pointer">✕</button>
             </div>
 
             <div id="avatar-drop-zone" class="profile-avatar-drop-zone flex flex-col items-center gap-2 rounded-xl border border-dashed border-[rgba(197,160,89,0.45)] p-3 text-center" tabindex="0" role="button" aria-label="Arrastra una imagen aquí o selecciona un avatar">
               <div class="avatar-preview-box flex items-center justify-center relative group">
                 <img id="profile-avatar-preview" src="" alt="Vista previa del avatar" class="w-full h-full object-cover hidden">
-                <div id="profile-avatar-fallback" class="w-full h-full bg-gradient-to-tr from-[#C5A059] to-[#0284C7] text-white font-bold text-2xl flex items-center justify-center font-mono">0000</div>
+                <div id="profile-avatar-fallback" class="w-full h-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-2xl flex items-center justify-center font-mono">0000</div>
                 <button id="trigger-avatar-btn" type="button" title="Seleccionar foto" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity cursor-pointer">📷 Cambiar</button>
               </div>
               <p class="text-[10px] text-[#64748B]">Arrastra una imagen aquí o selecciona una foto. Se recortará a 1080 × 1080 px.</p>
@@ -206,13 +207,13 @@
             </div>
 
             <div>
-              <label for="profile-name-input" class="block text-xs font-semibold text-[#0F172A] mb-1">Nombre personalizado</label>
-              <input type="text" id="profile-name-input" maxlength="35" title="Nombre personalizado, sin emojis" placeholder="ej. Laptop de Jose" class="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0F172A]">
+              <label for="profile-name-input" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre personalizado</label>
+              <input type="text" id="profile-name-input" maxlength="35" title="Nombre personalizado, sin emojis" placeholder="ej. Laptop de Jose" class="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A]">
               <p class="text-[10px] text-[#64748B] mt-1 font-mono">Formato: [ID] - [Nombre] · Los emojis se eliminan automáticamente.</p>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-[rgba(197,160,89,0.18)]">
-              <button id="cancel-profile-modal-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0F172A] cursor-pointer">Cancelar</button>
+              <button id="cancel-profile-modal-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1A3A] cursor-pointer">Cancelar</button>
               <button id="save-profile-btn" type="button" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs transition-all cursor-pointer">Guardar</button>
             </div>
           </div>
@@ -251,12 +252,12 @@
                 </button>
 
                 <div id="active-chat-info-trigger" class="flex items-center gap-3 min-w-0 cursor-pointer group" title="Ver detalles y medios del contacto">
-                  <div id="active-chat-avatar" class="w-10 h-10 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0284C7] text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm font-mono avatar-circle overflow-hidden">
+                  <div id="active-chat-avatar" class="w-10 h-10 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm font-mono avatar-circle overflow-hidden">
                     💬
                   </div>
 
                   <div class="min-w-0">
-                    <h2 id="active-chat-name" class="font-bold text-sm sm:text-base text-[#0F172A] group-hover:text-[#C5A059] transition-colors truncate font-title">Selecciona un contacto</h2>
+                    <h2 id="active-chat-name" class="font-bold text-sm sm:text-base text-[#0A1A3A] group-hover:text-[#C5A059] transition-colors truncate font-title">Selecciona un contacto</h2>
                     <div class="flex items-center gap-2 mt-0.5">
                       <span id="active-chat-id" class="text-[11px] text-[#64748B] font-mono truncate">ID: —</span>
                       <span id="active-chat-status" class="text-[11px] font-semibold text-[#64748B]">· Desconectado</span>
@@ -306,7 +307,7 @@
               <span class="text-[#C5A059] font-bold text-sm flex-shrink-0">📌</span>
               <div class="min-w-0 flex-1">
                 <span class="text-[10px] uppercase font-bold text-[#99793D] tracking-wider block">Mensaje Fijado</span>
-                <p id="pinned-message-text" class="text-xs text-[#0F172A] truncate font-medium">Contenido del mensaje...</p>
+                <p id="pinned-message-text" class="text-xs text-[#0A1A3A] truncate font-medium">Contenido del mensaje...</p>
               </div>
             </div>
             <button id="unpin-message-btn" type="button" title="Desfijar mensaje" class="p-1 text-[#64748B] hover:text-red-500 rounded-lg text-xs font-bold transition-colors cursor-pointer flex-shrink-0">
@@ -318,15 +319,15 @@
           <div id="chat-search-bar" class="hidden px-3 sm:px-4 py-2 bg-white border-b border-[rgba(197,160,89,0.22)] flex items-center gap-2 shadow-xs z-20">
             <span class="text-[#C5A059] text-sm flex-shrink-0">🔍</span>
             <input id="chat-search-input" type="text" placeholder="Buscar en la conversación actual..."
-              class="flex-1 bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] rounded-xl px-3 py-1.5 text-xs text-[#0F172A] focus:outline-none focus:border-[#C5A059] transition-all" />
+              class="flex-1 bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] rounded-xl px-3 py-1.5 text-xs text-[#0A1A3A] focus:outline-none focus:border-[#C5A059] transition-all" />
             <span id="chat-search-count" class="text-[11px] text-[#64748B] font-medium select-none whitespace-nowrap">0 de 0</span>
             <div class="flex items-center gap-1 flex-shrink-0">
               <button id="chat-search-prev-btn" type="button" title="Coincidencia anterior (Shift+Enter)"
-                class="h-7 w-7 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-colors cursor-pointer">
+                class="h-7 w-7 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-colors cursor-pointer">
                 ▲
               </button>
               <button id="chat-search-next-btn" type="button" title="Coincidencia siguiente (Enter)"
-                class="h-7 w-7 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-colors cursor-pointer">
+                class="h-7 w-7 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-colors cursor-pointer">
                 ▼
               </button>
               <button id="chat-search-close-btn" type="button" title="Cerrar búsqueda (Esc)"
@@ -344,7 +345,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                 </svg>
               </div>
-              <p class="text-base font-bold text-[#0F172A] font-title">SYNC ENGINE para Web &amp; Móvil</p>
+              <p class="text-base font-bold text-[#0A1A3A] font-title">SYNC ENGINE para Web &amp; Móvil</p>
               <p class="text-xs text-[#64748B] max-w-sm mt-1">Selecciona una conversación existente o agrega un compañero mediante su Código ID único arriba.</p>
             </div>
           </div>
@@ -357,12 +358,12 @@
               <div class="flex flex-col min-w-0 flex-1 pr-2">
                 <div class="flex items-center gap-1.5">
                   <span class="text-[10px] uppercase font-bold text-[#99793D]">Respondiendo a:</span>
-                  <span id="reply-preview-name" class="text-xs font-bold text-[#0F172A] truncate">Usuario</span>
+                  <span id="reply-preview-name" class="text-xs font-bold text-[#0A1A3A] truncate">Usuario</span>
                 </div>
                 <p id="reply-preview-text" class="text-xs text-[#64748B] truncate mt-0.5">Mensaje...</p>
               </div>
               <button id="cancel-reply-btn" type="button" title="Cancelar respuesta"
-                class="h-7 w-7 rounded-lg hover:bg-gray-200 text-[#64748B] hover:text-[#0F172A] flex items-center justify-center text-sm font-bold flex-shrink-0 cursor-pointer">
+                class="h-7 w-7 rounded-lg hover:bg-gray-200 text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center text-sm font-bold flex-shrink-0 cursor-pointer">
                 ✕
               </button>
             </div>
@@ -371,7 +372,7 @@
             <div id="emoji-picker" class="hidden absolute bottom-20 left-3 sm:left-6 z-50 p-3 rounded-2xl bg-white border border-[rgba(197,160,89,0.25)] shadow-xl w-72 max-w-[90vw]">
               <div class="flex items-center justify-between pb-2 mb-2 border-b border-[rgba(197,160,89,0.18)] text-xs font-bold text-[#C5A059]">
                 <span>Emoticones</span>
-                <button id="close-emoji-btn" type="button" class="text-gray-400 hover:text-[#0F172A]">✕</button>
+                <button id="close-emoji-btn" type="button" class="text-gray-400 hover:text-[#0A1A3A]">✕</button>
               </div>
               <div class="grid grid-cols-6 gap-2 text-xl select-none">
                 <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">😀</button>
@@ -430,7 +431,7 @@
               <div class="flex-1 relative min-w-0">
                 <label for="chat-textarea" class="sr-only">Escribe un mensaje privado</label>
                 <textarea id="chat-textarea" rows="1" placeholder="Escribe un mensaje privado..."
-                  class="w-full resize-none rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none px-4 py-2.5 text-xs sm:text-sm text-[#0F172A] placeholder-gray-400 max-h-36 overflow-y-auto leading-relaxed shadow-xs transition-all"></textarea>
+                  class="w-full resize-none rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none px-4 py-2.5 text-xs sm:text-sm text-[#0A1A3A] placeholder-gray-400 max-h-36 overflow-y-auto leading-relaxed shadow-xs transition-all"></textarea>
               </div>
 
               <button id="send-btn" type="button" title="Enviar mensaje (Enter)" aria-label="Enviar mensaje"
@@ -449,7 +450,7 @@
           
           <!-- Barra de Pestañas Móvil (< 1024px) -->
           <div class="lg:hidden flex border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] p-1.5 gap-1.5 flex-shrink-0">
-            <button id="mobile-tab-to-chat-btn" type="button" class="flex-1 py-2 rounded-lg text-xs font-bold text-[#64748B] hover:text-[#0F172A] bg-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+            <button id="mobile-tab-to-chat-btn" type="button" class="flex-1 py-2 rounded-lg text-xs font-bold text-[#64748B] hover:text-[#0A1A3A] bg-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
               <span>💬</span> Chat
             </button>
             <button id="mobile-tab-active-web-btn" type="button" class="flex-1 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-[#C5A059] to-[#99793D] text-white flex items-center justify-center gap-1.5 shadow-xs">
@@ -461,11 +462,11 @@
           <div id="web-toolbar" class="p-2 sm:p-2.5 bg-white border-b border-[rgba(197,160,89,0.22)] flex items-center gap-1.5 sm:gap-2 flex-shrink-0 shadow-xs">
             
             <button id="web-back-btn" type="button" title="Atrás" aria-label="Atrás"
-              class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] border border-[rgba(197,160,89,0.2)] hover:border-[#C5A059] flex items-center justify-center text-xs font-bold transition-all cursor-pointer flex-shrink-0">
+              class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] hover:border-[#C5A059] flex items-center justify-center text-xs font-bold transition-all cursor-pointer flex-shrink-0">
               ◀
             </button>
             <button id="web-reload-btn" type="button" title="Recargar" aria-label="Recargar"
-              class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] border border-[rgba(197,160,89,0.2)] hover:border-[#C5A059] flex items-center justify-center text-xs font-bold transition-all cursor-pointer flex-shrink-0">
+              class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] hover:border-[#C5A059] flex items-center justify-center text-xs font-bold transition-all cursor-pointer flex-shrink-0">
               🔄
             </button>
 
@@ -474,7 +475,7 @@
               <div class="relative flex-1 flex items-center min-w-0">
                 <span class="absolute left-2.5 text-xs text-[#C5A059]">🔒</span>
                 <input type="text" id="web-url-input" required placeholder="https://ejemplo.com o búsqueda..."
-                  class="w-full pl-8 pr-2.5 py-1.5 rounded-lg bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:outline-none text-xs text-[#0F172A] placeholder-gray-400 font-mono truncate">
+                  class="w-full pl-8 pr-2.5 py-1.5 rounded-lg bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:outline-none text-xs text-[#0A1A3A] placeholder-gray-400 font-mono truncate">
               </div>
               <button type="submit" id="web-go-btn"
                 class="h-8 px-3 rounded-lg bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer transition-all flex-shrink-0">
@@ -485,7 +486,7 @@
             <!-- Botones: [🔗 Abrir en pestaña nueva] & Auxiliares -->
             <div class="flex items-center gap-1 flex-shrink-0">
               <button id="web-external-btn" type="button" title="Abrir en pestaña nueva" aria-label="Abrir en pestaña nueva"
-                class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0284C7] border border-[rgba(197,160,89,0.2)] hover:border-[#0284C7] flex items-center justify-center text-xs font-bold transition-all cursor-pointer">
+                class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0072CE] border border-[rgba(197,160,89,0.2)] hover:border-[#0072CE] flex items-center justify-center text-xs font-bold transition-all cursor-pointer">
                 🔗
               </button>
               <button id="web-split-ratio-btn" type="button" title="Alternar proporción dividida (50/50 o 60/40)"
@@ -493,7 +494,7 @@
                 ◫ 50/50
               </button>
               <button id="web-proxy-toggle-btn" type="button" title="Modo Proxy (Supera bloqueos X-Frame-Options)"
-                class="h-8 px-2 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0284C7] border border-[rgba(2,132,199,0.3)] flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer">
+                class="h-8 px-2 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0072CE] border border-[rgba(2,132,199,0.3)] flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer">
                 <span>🛡️</span> <span class="hidden xl:inline text-[10px]">Proxy</span>
               </button>
               <button id="web-close-btn" type="button" title="Cerrar panel web" aria-label="Cerrar"
@@ -507,13 +508,13 @@
           <!-- Barra de Accesos Rápidos (Dominios Autorizados) -->
           <div id="web-quick-bar" class="px-3 py-1.5 bg-[#F8FAFC] border-b border-[rgba(197,160,89,0.15)] flex items-center gap-2 overflow-x-auto text-[11px] flex-shrink-0 select-none">
             <span class="text-[10px] text-[#C5A059] font-bold uppercase tracking-wider flex-shrink-0">Lista Blanca:</span>
-            <button type="button" data-url="https://www.google.com.pe" class="web-quick-link px-2.5 py-0.5 rounded-lg bg-white hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-[#0F172A] hover:text-[#C5A059] transition-colors whitespace-nowrap cursor-pointer font-medium">🔍 Google Perú</button>
+            <button type="button" data-url="https://www.google.com.pe" class="web-quick-link px-2.5 py-0.5 rounded-lg bg-white hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-[#0A1A3A] hover:text-[#C5A059] transition-colors whitespace-nowrap cursor-pointer font-medium">🔍 Google Perú</button>
           </div>
 
           <!-- Contenedor Iframe con indicador de carga y estado vacío -->
           <div class="flex-1 relative bg-[#F8FAFC] overflow-hidden flex flex-col">
             <div id="web-loading-bar" class="h-1 w-full bg-[#E2E8F0] overflow-hidden hidden z-20">
-              <div class="h-full bg-gradient-to-r from-[#C5A059] via-[#0284C7] to-[#C5A059] animate-pulse w-full"></div>
+              <div class="h-full bg-gradient-to-r from-[#C5A059] via-[#0072CE] to-[#C5A059] animate-pulse w-full"></div>
             </div>
 
             <iframe id="embedded-browser" src="about:blank"
@@ -527,9 +528,9 @@
               <div class="w-16 h-16 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] flex items-center justify-center text-3xl text-[#C5A059] mb-3 shadow-xs">
                 🛡️
               </div>
-              <h3 class="font-bold text-base text-[#0F172A] font-title tracking-wide">Dominio No Autorizado</h3>
+              <h3 class="font-bold text-base text-[#0A1A3A] font-title tracking-wide">Dominio No Autorizado</h3>
               <p class="text-xs text-[#64748B] max-w-sm mt-1.5 leading-relaxed">
-                El sitio <span id="unauthorized-host-name" class="font-mono text-[#0284C7] font-bold"></span> no se encuentra en la lista blanca de dominios permitidos (<span class="text-[#C5A059] font-mono">google.com.pe</span>).
+                El sitio <span id="unauthorized-host-name" class="font-mono text-[#0072CE] font-bold"></span> no se encuentra en la lista blanca de dominios permitidos (<span class="text-[#C5A059] font-mono">google.com.pe</span>).
               </p>
               <p class="text-xs text-[#64748B] max-w-sm mt-1 leading-relaxed">
                 Puedes abrir el enlace directamente en una ventana independiente sin restricciones:
@@ -539,7 +540,7 @@
                   <span>🔗</span>
                   <span>Abrir en pestaña nueva</span>
                 </button>
-                <button type="button" id="unauthorized-back-btn" class="px-3.5 py-2 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-xs text-[#0F172A] font-semibold transition-all cursor-pointer">
+                <button type="button" id="unauthorized-back-btn" class="px-3.5 py-2 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] font-semibold transition-all cursor-pointer">
                   Volver al inicio
                 </button>
               </div>
@@ -549,7 +550,7 @@
               <div class="w-16 h-16 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] flex items-center justify-center text-3xl text-[#C5A059] mb-3 shadow-xs">
                 🌐
               </div>
-              <h3 class="font-bold text-base text-[#0F172A] font-title tracking-wide">Navegador Web Embebido</h3>
+              <h3 class="font-bold text-base text-[#0A1A3A] font-title tracking-wide">Navegador Web Embebido</h3>
               <p class="text-xs text-[#64748B] max-w-sm mt-1 leading-relaxed">
                 Navega en sitios autorizados (<span class="text-[#C5A059] font-mono">google.com.pe</span>) en tiempo real junto a tu conversación sin salir de SYNC ENGINE.
               </p>
@@ -573,9 +574,9 @@
       <div class="p-3.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-2 flex-shrink-0">
         <div class="flex items-center gap-2">
           <span class="text-[#C5A059] text-base">ℹ️</span>
-          <h3 class="font-bold text-sm text-[#0F172A] font-title">Información &amp; Medios</h3>
+          <h3 class="font-bold text-sm text-[#0A1A3A] font-title">Información &amp; Medios</h3>
         </div>
-        <button id="close-drawer-btn" type="button" title="Cerrar panel de información" class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-all cursor-pointer">
+        <button id="close-drawer-btn" type="button" title="Cerrar panel de información" class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-all cursor-pointer">
           ✕
         </button>
       </div>
@@ -586,13 +587,13 @@
         <!-- Ficha de Contacto con Recorte Circular 1080x1080 px -->
         <div class="flex flex-col items-center text-center p-4 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.2)] shadow-xs">
           <div class="relative mb-3">
-            <div id="drawer-contact-avatar-box" class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0284C7] text-white font-bold text-lg flex items-center justify-center font-mono avatar-circle shadow-md overflow-hidden">
+            <div id="drawer-contact-avatar-box" class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-lg flex items-center justify-center font-mono avatar-circle shadow-md overflow-hidden">
               <span id="drawer-contact-avatar-fallback">💬</span>
               <img id="drawer-contact-avatar-img" src="" alt="Avatar" class="w-full h-full object-cover hidden">
             </div>
-            <span id="drawer-contact-online-dot" class="w-4 h-4 rounded-full bg-[#25D366] absolute bottom-0 right-0 border-2 border-white"></span>
+            <span id="drawer-contact-online-dot" class="w-4 h-4 rounded-full bg-[#0072CE] absolute bottom-0 right-0 border-2 border-white"></span>
           </div>
-          <h4 id="drawer-contact-name" class="font-bold text-base text-[#0F172A] font-title truncate max-w-full">Selecciona un contacto</h4>
+          <h4 id="drawer-contact-name" class="font-bold text-base text-[#0A1A3A] font-title truncate max-w-full">Selecciona un contacto</h4>
           <p id="drawer-contact-id" class="text-xs text-[#C5A059] font-mono mt-0.5">SYNC-0000</p>
           <span id="drawer-contact-status" class="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[rgba(197,160,89,0.12)] text-[#C5A059] border border-[rgba(197,160,89,0.25)]">● Desconectado</span>
         </div>
@@ -600,7 +601,7 @@
         <!-- Centro de Medios Compartidos Integrado en Columna 3 -->
         <div class="rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.2)] overflow-hidden shadow-xs">
           <div class="p-3 border-b border-[rgba(197,160,89,0.18)] bg-white flex items-center justify-between">
-            <span class="font-bold text-xs text-[#0F172A] font-title flex items-center gap-1.5">
+            <span class="font-bold text-xs text-[#0A1A3A] font-title flex items-center gap-1.5">
               <span>📁</span> Centro de Medios
             </span>
             <span id="drawer-media-count" class="text-[10px] font-mono text-[#C5A059]">0 archivos</span>
@@ -626,19 +627,19 @@
           </h5>
           <div class="flex items-center justify-between border-b border-[rgba(197,160,89,0.12)] pb-1.5">
             <span>Archivos / Documentos:</span>
-            <span class="text-[#0F172A] font-mono font-bold">Hasta 2 GB</span>
+            <span class="text-[#0A1A3A] font-mono font-bold">Hasta 2 GB</span>
           </div>
           <div class="flex items-center justify-between border-b border-[rgba(197,160,89,0.12)] pb-1.5">
             <span>Códec de Video:</span>
-            <span class="text-[#0F172A] font-mono font-bold">H.264 / AAC HTML5</span>
+            <span class="text-[#0A1A3A] font-mono font-bold">H.264 / AAC HTML5</span>
           </div>
           <div class="flex items-center justify-between border-b border-[rgba(197,160,89,0.12)] pb-1.5">
             <span>Resolución de Fotos:</span>
-            <span class="text-[#0F172A] font-mono font-bold">1600px / HD 4096px</span>
+            <span class="text-[#0A1A3A] font-mono font-bold">1600px / HD 4096px</span>
           </div>
           <div class="flex items-center justify-between">
             <span>Foto de Perfil:</span>
-            <span class="text-[#0F172A] font-mono font-bold">1080 × 1080 px circular</span>
+            <span class="text-[#0A1A3A] font-mono font-bold">1080 × 1080 px circular</span>
           </div>
         </div>
 
@@ -665,7 +666,7 @@
       
       <div class="flex items-center flex-col text-center gap-2">
         <img src="/assets/logo.png" alt="SYNC ENGINE" class="h-12 w-auto object-contain drop-shadow-md">
-        <h2 class="font-bold text-xl text-[#0F172A] font-title tracking-wide">SYNC ENGINE</h2>
+        <h2 class="font-bold text-xl text-[#0A1A3A] font-title tracking-wide">SYNC ENGINE</h2>
         <p class="text-xs text-[#64748B]">Plataforma Privada de Mensajería &amp; Workspace</p>
       </div>
 
@@ -676,21 +677,21 @@
 
       <form id="auth-form" class="flex flex-col gap-4">
         <div>
-          <label for="auth-username" class="block text-xs font-semibold text-[#0F172A] mb-1">Nombre de Usuario</label>
+          <label for="auth-username" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre de Usuario</label>
           <input type="text" id="auth-username" required title="Nombre de usuario" placeholder="ej. jbarrantes"
-            class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0F172A] placeholder-gray-400">
+            class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
         </div>
 
         <div>
-          <label for="auth-password" class="block text-xs font-semibold text-[#0F172A] mb-1">Contraseña</label>
+          <label for="auth-password" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Contraseña</label>
           <input type="password" id="auth-password" required title="Contraseña" placeholder="••••••••"
-            class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0F172A] placeholder-gray-400">
+            class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
         </div>
 
         <div id="display-name-group" class="hidden">
-          <label for="auth-display-name" class="block text-xs font-semibold text-[#0F172A] mb-1">Nombre Personalizado (sin emojis)</label>
+          <label for="auth-display-name" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre Personalizado (sin emojis)</label>
           <input type="text" id="auth-display-name" title="Nombre personalizado" placeholder="ej. Laptop de Jose"
-            class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0F172A] placeholder-gray-400">
+            class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
           <p class="text-[10px] text-[#64748B] mt-1 font-mono">Se generará automáticamente tu ID único (ej. SYNC-9482).</p>
         </div>
 
@@ -750,14 +751,14 @@
 
   <!-- MODAL: ENVÍO DE MEDIOS CON CONTROL DE ESPECIFICACIONES (ESTÁNDAR 1600px / HD 4096px / 2 GB) -->
   <div id="send-media-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-lg flex flex-col gap-4 shadow-2xl border border-[rgba(197,160,89,0.3)] text-[#0F172A]">
+    <div class="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-lg flex flex-col gap-4 shadow-2xl border border-[rgba(197,160,89,0.3)] text-[#0A1A3A]">
       
       <div class="flex items-center justify-between border-b border-[rgba(197,160,89,0.18)] pb-3">
         <div class="flex items-center gap-2">
           <span class="text-[#C5A059] text-base" id="media-modal-icon">📤</span>
-          <h3 class="font-bold text-base text-[#0F172A] font-title" id="media-modal-title">Confirmar Envío de Archivo</h3>
+          <h3 class="font-bold text-base text-[#0A1A3A] font-title" id="media-modal-title">Confirmar Envío de Archivo</h3>
         </div>
-        <button id="close-send-media-btn" type="button" class="text-[#64748B] hover:text-[#0F172A] p-1 text-sm font-bold cursor-pointer">✕</button>
+        <button id="close-send-media-btn" type="button" class="text-[#64748B] hover:text-[#0A1A3A] p-1 text-sm font-bold cursor-pointer">✕</button>
       </div>
 
       <!-- Previsualización Multimedia -->
@@ -766,7 +767,7 @@
         <video id="media-modal-video-preview" controls class="max-h-[260px] max-w-full rounded-xl hidden bg-black"></video>
         <div id="media-modal-file-preview" class="flex flex-col items-center gap-2 p-4 text-center hidden">
           <span class="text-4xl text-[#C5A059]">📄</span>
-          <span id="media-modal-filename" class="font-bold text-sm text-[#0F172A] break-all max-w-xs font-title">archivo.ext</span>
+          <span id="media-modal-filename" class="font-bold text-sm text-[#0A1A3A] break-all max-w-xs font-title">archivo.ext</span>
           <span id="media-modal-filesize" class="text-xs text-[#64748B] font-mono">0 B</span>
         </div>
       </div>
@@ -777,7 +778,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <label class="quality-card p-2.5 rounded-xl border border-[rgba(197,160,89,0.25)] bg-[#F8FAFC] flex flex-col gap-1 cursor-pointer hover:border-[#C5A059] transition-all">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-xs text-[#0F172A]">Estándar</span>
+              <span class="font-bold text-xs text-[#0A1A3A]">Estándar</span>
               <input type="radio" name="image-quality-radio" value="standard" checked title="Calidad estándar (~1600 px)" class="accent-[#C5A059]">
             </div>
             <span class="text-[10px] text-[#64748B] font-mono">~1600 px (rápido)</span>
@@ -791,8 +792,8 @@
           </label>
           <label class="quality-card p-2.5 rounded-xl border border-[rgba(197,160,89,0.25)] bg-[#F8FAFC] flex flex-col gap-1 cursor-pointer hover:border-[#C5A059] transition-all">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-xs text-[#0284C7]">📦 Original</span>
-              <input type="radio" name="image-quality-radio" value="raw" title="Calidad original sin compresión" class="accent-[#0284C7]">
+              <span class="font-bold text-xs text-[#0072CE]">📦 Original</span>
+              <input type="radio" name="image-quality-radio" value="raw" title="Calidad original sin compresión" class="accent-[#0072CE]">
             </div>
             <span class="text-[10px] text-[#64748B] font-mono">Sin compresión</span>
           </label>
@@ -808,7 +809,7 @@
       <div id="upload-progress-box" class="hidden flex-col gap-1.5 pt-1">
         <div class="flex items-center justify-between text-xs font-mono">
           <span class="text-[#C5A059] font-bold">Subiendo archivo al servidor...</span>
-          <span id="upload-progress-percent" class="text-[#0284C7] font-bold">0%</span>
+          <span id="upload-progress-percent" class="text-[#0072CE] font-bold">0%</span>
         </div>
         <div class="upload-progress-container">
           <div id="upload-progress-bar-fill" class="upload-progress-bar"></div>
@@ -816,7 +817,7 @@
       </div>
 
       <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-[rgba(197,160,89,0.18)]">
-        <button id="cancel-send-media-btn" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0F172A] cursor-pointer">Cancelar</button>
+        <button id="cancel-send-media-btn" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1A3A] cursor-pointer">Cancelar</button>
         <button id="confirm-send-media-btn" type="button" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5">
           <span>➤</span> <span>Enviar</span>
         </button>
@@ -836,15 +837,15 @@
 
   <!-- MODAL: CENTRO DE ARCHIVOS Y MEDIOS COMPARTIDOS -->
   <div id="media-hub-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[rgba(197,160,89,0.25)] overflow-hidden text-[#0F172A]">
+    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[rgba(197,160,89,0.25)] overflow-hidden text-[#0A1A3A]">
       <div class="p-4 sm:p-5 border-b border-[rgba(197,160,89,0.18)] flex items-center justify-between bg-white">
         <div>
-          <h3 class="font-bold text-base sm:text-lg text-[#0F172A] flex items-center gap-2 font-title">
+          <h3 class="font-bold text-base sm:text-lg text-[#0A1A3A] flex items-center gap-2 font-title">
             <span>📁 Medios y Archivos Compartidos</span>
           </h3>
           <p id="media-hub-subtitle" class="text-xs text-[#C5A059] font-mono mt-0.5">SYNC-XXXX</p>
         </div>
-        <button id="close-media-hub-btn" type="button" class="h-8 w-8 rounded-full hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center font-bold text-sm cursor-pointer transition-colors">✕</button>
+        <button id="close-media-hub-btn" type="button" class="h-8 w-8 rounded-full hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center font-bold text-sm cursor-pointer transition-colors">✕</button>
       </div>
 
       <div class="flex border-b border-[rgba(197,160,89,0.18)] bg-[#F8FAFC] px-4 pt-2 gap-1 overflow-x-auto select-none">
@@ -868,16 +869,16 @@
 
   <!-- MODAL: LLAMADA ENTRANTE WEBRTC -->
   <div id="incoming-call-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-sm flex flex-col items-center text-center gap-4 shadow-2xl border border-[rgba(197,160,89,0.25)] text-[#0F172A]">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-sm flex flex-col items-center text-center gap-4 shadow-2xl border border-[rgba(197,160,89,0.25)] text-[#0A1A3A]">
       <div class="relative">
-        <div id="incoming-call-avatar" class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0284C7] text-white font-bold text-xl flex items-center justify-center shadow-md font-mono">
+        <div id="incoming-call-avatar" class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-xl flex items-center justify-center shadow-md font-mono">
           0000
         </div>
-        <span class="w-6 h-6 rounded-full bg-[#25D366] absolute -bottom-1 -right-1 border-2 border-white flex items-center justify-center text-white text-xs pulse-record">📞</span>
+        <span class="w-6 h-6 rounded-full bg-[#0072CE] absolute -bottom-1 -right-1 border-2 border-white flex items-center justify-center text-white text-xs pulse-record">📞</span>
       </div>
       <div>
-        <h3 id="incoming-call-name" class="font-bold text-base sm:text-lg text-[#0F172A] font-title">SYNC-XXXX - Usuario</h3>
-        <p class="text-xs text-[#0284C7] font-semibold mt-0.5 animate-pulse">Llamada de voz entrante...</p>
+        <h3 id="incoming-call-name" class="font-bold text-base sm:text-lg text-[#0A1A3A] font-title">SYNC-XXXX - Usuario</h3>
+        <p class="text-xs text-[#0072CE] font-semibold mt-0.5 animate-pulse">Llamada de voz entrante...</p>
       </div>
       <div class="flex items-center justify-center gap-6 w-full pt-3 border-t border-[rgba(197,160,89,0.18)]">
         <button id="reject-call-btn" type="button" title="Rechazar llamada"
@@ -900,23 +901,23 @@
 
   <!-- MODAL: LLAMADA ACTIVA / SALIENTE WEBRTC -->
   <div id="active-call-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-sm flex flex-col items-center text-center gap-4 shadow-2xl border border-[rgba(197,160,89,0.25)] text-[#0F172A]">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-sm flex flex-col items-center text-center gap-4 shadow-2xl border border-[rgba(197,160,89,0.25)] text-[#0A1A3A]">
       <div class="relative">
-        <div id="active-call-peer-avatar" class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0284C7] text-white font-bold text-xl flex items-center justify-center shadow-md font-mono">
+        <div id="active-call-peer-avatar" class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-xl flex items-center justify-center shadow-md font-mono">
           0000
         </div>
         <span id="active-call-pulse-dot" class="w-5 h-5 rounded-full bg-[#C5A059] absolute -bottom-1 -right-1 border-2 border-white pulse-online"></span>
       </div>
       <div>
-        <h3 id="active-call-peer-name" class="font-bold text-base sm:text-lg text-[#0F172A] font-title">SYNC-XXXX - Contacto</h3>
-        <p id="active-call-status-label" class="text-xs text-[#0284C7] font-bold mt-0.5">Llamando...</p>
+        <h3 id="active-call-peer-name" class="font-bold text-base sm:text-lg text-[#0A1A3A] font-title">SYNC-XXXX - Contacto</h3>
+        <p id="active-call-status-label" class="text-xs text-[#0072CE] font-bold mt-0.5">Llamando...</p>
         <span id="active-call-timer" class="text-sm font-mono font-bold text-[#C5A059] hidden mt-1 inline-block">00:00</span>
       </div>
 
       <div class="flex items-center justify-center gap-6 w-full pt-4 border-t border-[rgba(197,160,89,0.18)]">
         <button id="toggle-call-mute-btn" type="button" title="Silenciar / Activar micrófono"
-          class="flex flex-col items-center gap-1.5 text-xs font-semibold text-[#64748B] hover:text-[#0F172A] transition-all cursor-pointer">
-          <div id="mute-btn-icon-wrapper" class="w-12 h-12 rounded-full bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0F172A] flex items-center justify-center text-lg border border-[rgba(197,160,89,0.25)] shadow-xs">
+          class="flex flex-col items-center gap-1.5 text-xs font-semibold text-[#64748B] hover:text-[#0A1A3A] transition-all cursor-pointer">
+          <div id="mute-btn-icon-wrapper" class="w-12 h-12 rounded-full bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] flex items-center justify-center text-lg border border-[rgba(197,160,89,0.25)] shadow-xs">
             🎤
           </div>
           <span id="mute-btn-label">Silenciar</span>
@@ -1226,14 +1227,14 @@
         workspaceSplitContainer.classList.add('split-active');
         applySplitRatioUI();
         if (toggleWebPanelBtn) {
-          toggleWebPanelBtn.classList.add('bg-gradient-to-r', 'from-[#C5A059]', 'to-[#99793D]', 'text-[#070F1E]');
-          toggleWebPanelBtn.classList.remove('bg-[#070F1E]', 'text-[#C5A059]');
+          toggleWebPanelBtn.classList.add('bg-gradient-to-r', 'from-[#C5A059]', 'to-[#99793D]', 'text-[#0A1A3A]');
+          toggleWebPanelBtn.classList.remove('bg-[#0A1A3A]', 'text-[#C5A059]');
         }
       } else {
         workspaceSplitContainer.classList.remove('split-active');
         if (toggleWebPanelBtn) {
-          toggleWebPanelBtn.classList.remove('bg-gradient-to-r', 'from-[#C5A059]', 'to-[#99793D]', 'text-[#070F1E]');
-          toggleWebPanelBtn.classList.add('bg-[#070F1E]', 'text-[#C5A059]');
+          toggleWebPanelBtn.classList.remove('bg-gradient-to-r', 'from-[#C5A059]', 'to-[#99793D]', 'text-[#0A1A3A]');
+          toggleWebPanelBtn.classList.add('bg-[#0A1A3A]', 'text-[#C5A059]');
         }
       }
     }
@@ -1275,11 +1276,11 @@
   function toggleProxyMode() {
     isProxyModeActive = !isProxyModeActive;
     if (isProxyModeActive) {
-      webProxyToggleBtn.classList.add('text-[#38B6FF]', 'border-[#38B6FF]');
+      webProxyToggleBtn.classList.add('text-[#0072CE]', 'border-[#0072CE]');
       webProxyToggleBtn.title = 'Modo Proxy Activo (Supera bloqueos X-Frame-Options)';
       triggerPopupNotification('Navegador Web', 'Modo Proxy Activo: Permite cargar cualquier sitio web sin bloqueo de iframe', '🛡️');
     } else {
-      webProxyToggleBtn.classList.remove('text-[#38B6FF]', 'border-[#38B6FF]');
+      webProxyToggleBtn.classList.remove('text-[#0072CE]', 'border-[#0072CE]');
       webProxyToggleBtn.title = 'Modo Directo Activo (Sitios con X-Frame-Options podrían bloquearse)';
       triggerPopupNotification('Navegador Web', 'Modo Directo Activo', '🌐');
     }
@@ -1533,14 +1534,14 @@
     }
 
     const popup = document.createElement('div');
-    popup.className = 'msg-enter pointer-events-auto flex items-start gap-3 p-3.5 rounded-2xl bg-white border border-[rgba(197,160,89,0.3)] shadow-2xl text-xs backdrop-blur-xl transition-all duration-300';
+    popup.className = 'b2b-toast msg-enter pointer-events-auto flex items-start gap-3 p-2.5 rounded-full text-xs transition-all duration-300';
     popup.innerHTML = `
-      <div class="w-9 h-9 rounded-full bg-[#FFFBEB] text-[#C5A059] border border-[rgba(197,160,89,0.3)] flex items-center justify-center text-sm flex-shrink-0 font-bold">
+      <div class="b2b-toast-icon flex items-center justify-center text-sm flex-shrink-0 font-bold">
         ${icon}
       </div>
       <div class="flex-1 min-w-0">
-        <p class="font-bold text-[#0F172A] truncate font-title">${escapeHtml(title)}</p>
-        <p class="text-[11px] text-[#64748B] truncate mt-0.5">${escapeHtml(message)}</p>
+        <p class="b2b-toast-title font-bold truncate font-title">${escapeHtml(title)}</p>
+        <p class="b2b-toast-message text-[11px] truncate mt-0.5">${escapeHtml(message)}</p>
       </div>
     `;
     popupNotifications.appendChild(popup);
@@ -1902,7 +1903,7 @@
       contactsList.innerHTML = `
         <div class="p-6 text-center text-[#64748B]">
           <div class="w-12 h-12 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[#C5A059] flex items-center justify-center mx-auto mb-2 text-xl font-bold shadow-xs">💬</div>
-          <p class="text-xs font-bold text-[#0F172A]">Sin contactos agregados</p>
+          <p class="text-xs font-bold text-[#0A1A3A]">Sin contactos agregados</p>
           <p class="text-[11px] mt-1 text-[#64748B]">Ingresa el Código ID de un compañero en el buscador superior para iniciar una conversación.</p>
         </div>
       `;
@@ -1920,7 +1921,7 @@
 
       const avatarGradient = getAvatarColor(c.syncId);
       const onlineDot = c.isOnline 
-        ? '<span class="w-3 h-3 rounded-full bg-[#25D366] absolute -bottom-0.5 -right-0.5 border-2 border-white pulse-online"></span>' 
+        ? '<span class="w-3 h-3 rounded-full bg-[#0072CE] absolute -bottom-0.5 -right-0.5 border-2 border-white pulse-online"></span>'
         : '<span class="w-3 h-3 rounded-full bg-gray-400 absolute -bottom-0.5 -right-0.5 border-2 border-white"></span>';
       
       const lastSnippet = c.lastMessage ? c.lastMessage.text : 'Toca para chatear';
@@ -1939,7 +1940,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between gap-1">
-            <p class="font-bold text-xs text-[#0F172A] font-title truncate">${escapeHtml(c.formattedName)}</p>
+            <p class="font-bold text-xs text-[#0A1A3A] font-title truncate">${escapeHtml(c.formattedName)}</p>
             <span class="text-[10px] text-[#94A3B8] font-mono flex-shrink-0">${lastTime}</span>
           </div>
           <p class="text-[11px] text-[#64748B] truncate mt-0.5">${escapeHtml(lastSnippet)}</p>
@@ -2052,10 +2053,10 @@
 
     if (drawerContactOnlineDot) {
       if (contact.isOnline) {
-        drawerContactOnlineDot.className = 'w-4 h-4 rounded-full bg-[#25D366] absolute -bottom-0.5 -right-0.5 border-2 border-[#070F1E] pulse-online';
+        drawerContactOnlineDot.className = 'w-4 h-4 rounded-full bg-[#0072CE] absolute -bottom-0.5 -right-0.5 border-2 border-white pulse-online';
         if (drawerContactStatus) drawerContactStatus.textContent = '● En línea';
       } else {
-        drawerContactOnlineDot.className = 'w-4 h-4 rounded-full bg-gray-500 absolute -bottom-0.5 -right-0.5 border-2 border-[#070F1E]';
+        drawerContactOnlineDot.className = 'w-4 h-4 rounded-full bg-gray-500 absolute -bottom-0.5 -right-0.5 border-2 border-white';
         if (drawerContactStatus) drawerContactStatus.textContent = '○ Desconectado';
       }
     }
@@ -2118,7 +2119,7 @@
           item.innerHTML = `
             <div class="w-full h-full flex flex-col items-center justify-center text-xs text-[#C5A059] group-hover:scale-105 transition-transform">
               <span class="text-lg">▶</span>
-              <span class="text-[9px] font-mono text-[#0F172A] mt-0.5 truncate px-1 max-w-full">${escapeHtml(f.name)}</span>
+              <span class="text-[9px] font-mono text-[#0A1A3A] mt-0.5 truncate px-1 max-w-full">${escapeHtml(f.name)}</span>
             </div>
             <span class="absolute top-1 left-1 px-1 py-0.5 rounded bg-black/70 text-[8px] font-mono text-[#C5A059]">H.264</span>
           `;
@@ -2163,11 +2164,11 @@
           <div class="flex items-center gap-2 min-w-0">
             <span class="text-sm text-[#C5A059]">📎</span>
             <div class="min-w-0">
-              <p class="text-xs font-bold text-[#0F172A] truncate">${escapeHtml(f.name)}</p>
+              <p class="text-xs font-bold text-[#0A1A3A] truncate">${escapeHtml(f.name)}</p>
               <p class="text-[10px] text-[#64748B] font-mono">${formatSize(f.size || 0)}</p>
             </div>
           </div>
-          <a href="${f.url || f.data || '#'}" download="${escapeHtml(f.name)}" class="px-2 py-1 rounded bg-[#C5A059]/20 hover:bg-[#C5A059] text-[#C5A059] hover:text-[#070F1E] font-bold text-[10px] transition-colors flex-shrink-0">⬇</a>
+          <a href="${f.url || f.data || '#'}" download="${escapeHtml(f.name)}" class="px-2 py-1 rounded bg-[#C5A059]/20 hover:bg-[#C5A059] text-[#C5A059] hover:text-[#0A1A3A] font-bold text-[10px] transition-colors flex-shrink-0">⬇</a>
         `;
         list.appendChild(item);
       });
@@ -2198,7 +2199,7 @@
         item.href = l.url;
         item.target = '_blank';
         item.rel = 'noopener noreferrer';
-        item.className = 'p-2 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.2)] text-xs text-[#0284C7] truncate block transition-colors';
+        item.className = 'p-2 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.2)] text-xs text-[#0072CE] truncate block transition-colors';
         item.innerHTML = `<span class="text-[#C5A059] mr-1">🔗</span> ${escapeHtml(l.url)}`;
         list.appendChild(item);
       });
@@ -2324,7 +2325,7 @@
     pill.className = `rounded-full border px-2 py-0.5 text-xs flex items-center gap-1 shadow-xs transition-transform active:scale-95 cursor-pointer ${
       userReactedEmoji 
         ? 'bg-[#C5A059]/20 border-[#C5A059] text-[#C5A059] font-bold ring-1 ring-[#C5A059]/40' 
-        : 'bg-white border-[rgba(197,160,89,0.3)] text-[#0F172A] hover:bg-[#F8FAFC]'
+        : 'bg-white border-[rgba(197,160,89,0.3)] text-[#0A1A3A] hover:bg-[#F8FAFC]'
     }`;
     pill.title = entries.map(([u, e]) => `${u}: ${e}`).join(', ');
 
@@ -2387,15 +2388,15 @@
             <span class="text-[10px] uppercase font-bold text-[#C5A059] tracking-wider truncate">${escapeHtml(link.domain)}</span>
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
-            <button type="button" class="preview-open-web-btn px-2 py-0.5 rounded-lg bg-[#C5A059]/15 hover:bg-[#C5A059] text-[#C5A059] hover:text-[#070F1E] text-[10px] font-bold transition-all border border-[#C5A059]/30 cursor-pointer" title="Abrir en Panel Web">
+            <button type="button" class="preview-open-web-btn px-2 py-0.5 rounded-lg bg-[#C5A059]/15 hover:bg-[#C5A059] text-[#C5A059] hover:text-[#0A1A3A] text-[10px] font-bold transition-all border border-[#C5A059]/30 cursor-pointer" title="Abrir en Panel Web">
               🌐 Panel
             </button>
-            <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded-lg bg-black/5 hover:bg-black/10 text-[#0F172A] text-[10px] font-bold transition-all cursor-pointer" title="Abrir en pestaña nueva">
+            <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded-lg bg-black/5 hover:bg-black/10 text-[#0A1A3A] text-[10px] font-bold transition-all cursor-pointer" title="Abrir en pestaña nueva">
               ↗
             </a>
           </div>
         </div>
-        <p class="font-bold text-xs text-[#0F172A] line-clamp-1 group-hover:text-[#0284C7] transition-colors cursor-pointer">${escapeHtml(link.title || link.domain)}</p>
+        <p class="font-bold text-xs text-[#0A1A3A] line-clamp-1 group-hover:text-[#0072CE] transition-colors cursor-pointer">${escapeHtml(link.title || link.domain)}</p>
         ${descHtml}
       </div>
     `;
@@ -3311,18 +3312,18 @@
       const audio = new Audio(msg.audioData);
       const playBtn = document.createElement('button');
       playBtn.type = 'button';
-      playBtn.className = 'w-10 h-10 rounded-full bg-[#C5A059] hover:bg-[#d4b068] text-[#070F1E] font-extrabold flex items-center justify-center flex-shrink-0 cursor-pointer shadow-sm transition-colors';
+      playBtn.className = 'w-10 h-10 rounded-full bg-[#C5A059] hover:bg-[#d4b068] text-[#0A1A3A] font-extrabold flex items-center justify-center flex-shrink-0 cursor-pointer shadow-sm transition-colors';
       playBtn.innerHTML = '▶';
 
       const trackInfo = document.createElement('div');
       trackInfo.className = 'flex-1 min-w-0';
       trackInfo.innerHTML = `
-        <div class="flex items-center justify-between text-xs font-bold mb-1 text-[#0F172A]">
+        <div class="flex items-center justify-between text-xs font-bold mb-1 text-[#0A1A3A]">
           <span>🎤 Nota de voz</span>
           <span class="time-lbl font-mono text-[#64748B]">0:00</span>
         </div>
         <div class="w-full bg-black/10 rounded-full h-1.5 overflow-hidden">
-          <div class="progress-bar bg-[#38B6FF] h-full rounded-full w-0 transition-all"></div>
+          <div class="progress-bar bg-[#0072CE] h-full rounded-full w-0 transition-all"></div>
         </div>
       `;
 
@@ -3408,7 +3409,7 @@
           <span class="p-2 rounded-lg bg-[#C5A059]/15 text-[#C5A059] text-base flex-shrink-0">📄</span>
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
-              <p class="font-bold text-xs text-[#0F172A] truncate">${escapeHtml(f.name)}</p>
+              <p class="font-bold text-xs text-[#0A1A3A] truncate">${escapeHtml(f.name)}</p>
               ${heavyBadge}
             </div>
             <p class="text-[10px] text-[#64748B] font-mono">${formatSize(f.size || 0)}</p>
@@ -3424,7 +3425,7 @@
     // TEXTO REGULAR (CON SOPORTE PARA ENLACES AL PANEL WEB Y RICH LINK CARDS)
     else {
       const textEl = document.createElement('div');
-      textEl.className = 'msg-text-content whitespace-pre-wrap leading-relaxed select-text font-sans text-xs sm:text-sm break-words text-[#0F172A]';
+      textEl.className = 'msg-text-content whitespace-pre-wrap leading-relaxed select-text font-sans text-xs sm:text-sm break-words text-[#0A1A3A]';
       textEl.dataset.rawText = msg.text || '';
 
       const rawText = msg.text || '';
@@ -4327,7 +4328,7 @@
     tabs.forEach(({ name, btn }) => {
       if (!btn) return;
       if (name === tabName) {
-        btn.className = 'media-hub-tab px-3.5 py-2 font-bold text-xs rounded-t-xl transition-all border-b-2 border-[#C5A059] text-[#C5A059] bg-[#070F1E] shadow-xs';
+        btn.className = 'media-hub-tab px-3.5 py-2 font-bold text-xs rounded-t-xl transition-all border-b-2 border-[#C5A059] text-[#0A1A3A] bg-[#F8FAFC] shadow-xs';
       } else {
         btn.className = 'media-hub-tab px-3.5 py-2 font-semibold text-xs rounded-t-xl transition-all border-b-2 border-transparent text-[#94A3B8] hover:text-[#C5A059]';
       }
@@ -4355,7 +4356,7 @@
         mediaHubContent.innerHTML = `
           <div class="h-64 flex flex-col items-center justify-center text-center p-6 text-[#64748B]">
             <span class="text-4xl mb-2">🖼️</span>
-            <p class="font-bold text-sm text-[#0F172A]">Sin fotos o videos</p>
+            <p class="font-bold text-sm text-[#0A1A3A]">Sin fotos o videos</p>
             <p class="text-xs text-[#64748B] mt-1">Los archivos multimedia compartidos en esta conversación aparecerán aquí.</p>
           </div>
         `;
@@ -4398,7 +4399,7 @@
         mediaHubContent.innerHTML = `
           <div class="h-64 flex flex-col items-center justify-center text-center p-6 text-[#64748B]">
             <span class="text-4xl mb-2">📄</span>
-            <p class="font-bold text-sm text-[#0F172A]">Sin documentos</p>
+            <p class="font-bold text-sm text-[#0A1A3A]">Sin documentos</p>
             <p class="text-xs text-[#64748B] mt-1">Los PDFs, hojas de cálculo y documentos compartidos se listarán aquí.</p>
           </div>
         `;
@@ -4420,7 +4421,7 @@
               📄
             </div>
             <div class="min-w-0">
-              <p class="font-bold text-xs text-[#0F172A] truncate">${escapeHtml(fileData.name || 'Documento')}</p>
+              <p class="font-bold text-xs text-[#0A1A3A] truncate">${escapeHtml(fileData.name || 'Documento')}</p>
               <div class="flex items-center gap-2 mt-0.5 text-[11px] text-[#64748B]">
                 <span>${formatSize(fileData.size || 0)}</span>
                 <span>·</span>
@@ -4443,7 +4444,7 @@
         mediaHubContent.innerHTML = `
           <div class="h-64 flex flex-col items-center justify-center text-center p-6 text-[#64748B]">
             <span class="text-4xl mb-2">🎙️</span>
-            <p class="font-bold text-sm text-[#0F172A]">Sin notas de voz</p>
+            <p class="font-bold text-sm text-[#0A1A3A]">Sin notas de voz</p>
             <p class="text-xs text-[#64748B] mt-1">Los audios y notas de voz compartidos se almacenarán aquí.</p>
           </div>
         `;
@@ -4496,7 +4497,7 @@
         mediaHubContent.innerHTML = `
           <div class="h-64 flex flex-col items-center justify-center text-center p-6 text-[#64748B]">
             <span class="text-4xl mb-2">🔗</span>
-            <p class="font-bold text-sm text-[#0F172A]">Sin enlaces</p>
+            <p class="font-bold text-sm text-[#0A1A3A]">Sin enlaces</p>
             <p class="text-xs text-[#64748B] mt-1">Los enlaces web compartidos en esta conversación aparecerán aquí.</p>
           </div>
         `;
@@ -4520,7 +4521,7 @@
             </div>
             <div class="min-w-0">
               <span class="text-[10px] font-bold uppercase tracking-wider text-[#C5A059] bg-[#C5A059]/15 px-1.5 py-0.5 rounded border border-[#C5A059]/30">${escapeHtml(domain)}</span>
-              <p class="text-xs text-[#0F172A] truncate font-medium mt-0.5">${escapeHtml(linkItem.url)}</p>
+              <p class="text-xs text-[#0A1A3A] truncate font-medium mt-0.5">${escapeHtml(linkItem.url)}</p>
               <span class="text-[10px] text-[#64748B]">${dateStr}</span>
             </div>
           </div>
@@ -4532,7 +4533,7 @@
               🌐 Panel
             </button>
             <a href="${escapeHtml(linkItem.url)}" target="_blank" rel="noopener noreferrer"
-              class="px-2.5 py-1.5 rounded-xl bg-black/5 hover:bg-black/10 text-[#0F172A] font-bold text-xs shadow-xs transition-all flex items-center gap-1 cursor-pointer" title="Abrir en pestaña nueva">
+              class="px-2.5 py-1.5 rounded-xl bg-black/5 hover:bg-black/10 text-[#0A1A3A] font-bold text-xs shadow-xs transition-all flex items-center gap-1 cursor-pointer" title="Abrir en pestaña nueva">
               ↗
             </a>
           </div>
