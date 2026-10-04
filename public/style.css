@@ -59,7 +59,7 @@ h1, h2, h3, h4, h5, h6, .font-title, .brand-title {
    1. LAYOUT FLUIDO RESPONSIVO Y DISTRIBUCIÓN EN COLUMNAS (#app-container)
    - Contenedor principal: 100% de ancho con max-width: 1600px centrado
    - Breakpoint Desktop (>= 1024px): 
-       * Columna 1 (Chats): Ancho fijo 320px - 360px
+      * Columna 1 (Chats): Ancho fijo 260px
        * Columna 2 (Chat Activo): flex-grow: 1 (fondo adaptado 768 × 1024px o superior)
        * Columna 3 (Panel de Información / Centro de Medios): Drawer deslizable de 340px
    - Breakpoint Móvil (< 1024px):
@@ -71,6 +71,9 @@ h1, h2, h3, h4, h5, h6, .font-title, .brand-title {
   max-width: 1600px;
   margin-left: auto;
   margin-right: auto;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
@@ -82,7 +85,8 @@ h1, h2, h3, h4, h5, h6, .font-title, .brand-title {
 
 /* Safe Area Inset en Cabecera Superior */
 header.sticky {
-  padding-top: max(0.625rem, env(safe-area-inset-top, 0px)) !important;
+  padding-top: max(0.25rem, env(safe-area-inset-top, 0px)) !important;
+  padding-bottom: 0.25rem !important;
   padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
   padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
 }
@@ -101,24 +105,24 @@ header.sticky {
 
 #main-layout {
   flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
   display: flex;
   flex-direction: row;
   position: relative;
   overflow: hidden;
-  height: calc(100vh - 62px);
-  height: calc(100dvh - 62px);
+  height: auto;
 }
 
 /* ==========================================================================
    BREAKPOINT DESKTOP (>= 1024px)
    ========================================================================== */
 @media (min-width: 1024px) {
-  /* Columna 1: Barra Lateral / Chats (320px - 360px) */
+  /* Columna 1: Barra Lateral / Chats (260px) */
   #sidebar-panel {
-    width: 360px !important;
-    min-width: 320px !important;
-    max-width: 360px !important;
+    width: 260px !important;
+    min-width: 240px !important;
+    max-width: 260px !important;
     flex-shrink: 0 !important;
     display: flex !important;
     flex-direction: column !important;
@@ -138,6 +142,7 @@ header.sticky {
     flex-shrink: 1 !important;
     flex-basis: 0% !important;
     min-width: 0 !important;
+    min-height: 0 !important;
     display: flex !important;
     flex-direction: column !important;
     height: 100% !important;
@@ -157,7 +162,7 @@ header.sticky {
       radial-gradient(rgba(197, 160, 89, 0.12) 1.2px, transparent 1.2px),
       linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
     background-size: 24px 24px, 100% 100%;
-    min-height: 768px; /* Fondo adaptado a 768 × 1024px o resoluciones superiores */
+    min-height: 0 !important;
     position: relative !important;
     transform: none !important;
     opacity: 1 !important;
@@ -209,6 +214,7 @@ header.sticky {
   #main-layout {
     position: relative;
     overflow-x: hidden;
+    min-height: 0;
   }
 
   #sidebar-panel {
@@ -229,6 +235,7 @@ header.sticky {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 100% !important;
+    min-height: 0 !important;
     position: absolute !important;
     top: 0;
     left: 0;
@@ -241,6 +248,7 @@ header.sticky {
   #chat-panel {
     width: 100% !important;
     height: 100% !important;
+    min-height: 0 !important;
     background-color: var(--bg-main);
     background-image: 
       radial-gradient(rgba(197, 160, 89, 0.12) 1.2px, transparent 1.2px),
@@ -327,10 +335,19 @@ header.sticky {
    nunca queden solapados bajo el dock de gestos de iOS ni la barra de navegación de Android.
    ========================================================================== */
 #input-container {
-  padding-bottom: max(0.875rem, calc(0.625rem + env(safe-area-inset-bottom, 0px))) !important;
-  padding-left: max(0.625rem, calc(0.5rem + env(safe-area-inset-left, 0px))) !important;
-  padding-right: max(0.625rem, calc(0.5rem + env(safe-area-inset-right, 0px))) !important;
+  flex-shrink: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 12px !important;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
   background-color: var(--bg-main);
+}
+
+#contacts-list {
+  min-height: 0;
+}
+
+#workspace-split-container {
+  min-height: 0;
 }
 
 #emoji-picker {
