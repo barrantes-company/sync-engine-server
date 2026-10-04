@@ -78,12 +78,9 @@
     flex: 0 0 70px;
   }
 
-  .logo-electric-stream::after {
-    content: '';
+  .logo-electric-mask {
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, #eef9ff, #00f3ff, #7000ff, #00f3ff, #eef9ff);
-    background-size: 300% 300%;
     -webkit-mask-image: url('/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png');
     mask-image: url('/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png');
     -webkit-mask-repeat: no-repeat;
@@ -92,21 +89,31 @@
     mask-position: center;
     -webkit-mask-size: 100% 100%;
     mask-size: 100% 100%;
-    mix-blend-mode: screen;
+    overflow: hidden;
     pointer-events: none;
+  }
+
+  .logo-electric-light {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 72%;
+    background: linear-gradient(90deg, transparent, #eef9ff 20%, #00f3ff 48%, #7000ff 56%, #00f3ff 74%, transparent);
+    mix-blend-mode: screen;
+    will-change: transform, filter, opacity;
     animation: electricFlow 3s ease-in-out infinite;
   }
 
   @keyframes electricFlow {
-    0% { background-position: 0% 50%; filter: drop-shadow(0 0 2px #00f3ff); }
-    50% { background-position: 100% 50%; filter: drop-shadow(0 0 8px #00f3ff) brightness(1.3); }
-    100% { background-position: 0% 50%; filter: drop-shadow(0 0 2px #00f3ff); }
+    0% { opacity: 0.25; transform: translate3d(-115%, 0, 0); filter: drop-shadow(0 0 2px #00f3ff); }
+    50% { opacity: 1; transform: translate3d(35%, 0, 0); filter: drop-shadow(0 0 8px #00f3ff) brightness(1.3); }
+    100% { opacity: 0.25; transform: translate3d(145%, 0, 0); filter: drop-shadow(0 0 2px #00f3ff); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .logo-electric-stream::after {
+    .logo-electric-light {
       animation: none;
-      background-position: 50% 50%;
+      opacity: 0.35;
+      transform: translate3d(20%, 0, 0);
     }
   }
 </style>
@@ -219,6 +226,7 @@
         <div class="flex flex-shrink-0 items-center justify-center border-t border-[rgba(197,160,89,0.18)] p-2">
           <div class="logo-electric-stream" aria-label="SYNC ENGINE BY BARRANTES CO.">
             <img src="/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png" alt="SYNC ENGINE BY BARRANTES CO." class="h-[70px] max-h-[70px] w-auto object-contain mix-blend-multiply">
+            <span class="logo-electric-mask" aria-hidden="true"><span class="logo-electric-light"></span></span>
           </div>
         </div>
 
