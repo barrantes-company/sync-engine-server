@@ -642,8 +642,15 @@ io.on("connection", function (socket) {
         };
         sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
       }
-      messageObj.fromName = sender.formattedName;
-      messageObj.toSyncId = targetSyncId;
+      messageObj = db.saveTextMessage(
+        sender.syncId,
+        targetSyncId,
+        text,
+        clientMsgId || null,
+        replyTo || null,
+        null,
+        initialStatus
+      );
     } else {
       let finalAudioData = audioData || null;
 
@@ -677,9 +684,26 @@ io.on("connection", function (socket) {
         };
         sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
       }
-      messageObj.fromName = sender.formattedName;
-      messageObj.toSyncId = targetSyncId;
+      messageObj = db.saveMessage({
+        id: clientMsgId || null,
+        fromId: sender.syncId,
+        toId: targetSyncId,
+        type: msgType,
+        text: text,
+        audioData: finalAudioData,
+        fileData: fileData,
+        replyTo: replyTo || null,
+        status: initialStatus
+      });
     }
+
+    if (sender) {
+      messageObj.fromName = sender.formattedName || sender.displayName || "Usuario";
+    } else {
+      messageObj.fromName = "Usuario Desconocido";
+      console.warn("[Chat Warning] Se intentó procesar un mensaje de un remitente inexistente en db.");
+    }
+    messageObj.toSyncId = targetSyncId;
 
     // Entregar a todos los sockets activos del destinatario
     if (targetSockets && targetSockets.size > 0) {
