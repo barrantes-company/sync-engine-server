@@ -151,13 +151,17 @@
     }
   }
 
-  function showIncomingMessage(message) {
-    incomingNotice.textContent = `${message.fromName || message.fromId}: Nuevo mensaje`;
+  function showIncomingNotice(message) {
+    incomingNotice.textContent = message;
     incomingNotice.hidden = false;
     window.clearTimeout(noticeTimer);
     noticeTimer = window.setTimeout(() => {
       incomingNotice.hidden = true;
     }, 5000);
+  }
+
+  function showIncomingMessage(message) {
+    showIncomingNotice(`${message.fromName || message.fromId}: Nuevo mensaje`);
   }
 
   function connectSocket() {
@@ -205,6 +209,14 @@
       loadUnreadCount().catch((error) => {
         showNotice(`No se pudo actualizar el contador: ${error.message}`, 'error');
       });
+    });
+    socket.on('notification-mirrored', (payload) => {
+      if (!payload) return;
+      const title = typeof payload.title === 'string' ? payload.title.trim() : '';
+      const body = typeof payload.body === 'string' ? payload.body.trim() : '';
+      const appName = typeof payload.appName === 'string' ? payload.appName.trim() : '';
+      const content = [title, body].filter(Boolean).join(': ');
+      showIncomingNotice(`${appName || 'Notificación'}: ${content || 'Nueva notificación'}`);
     });
     socket.on('messages-read-receipt', () => {
       loadUnreadCount().catch((error) => {
