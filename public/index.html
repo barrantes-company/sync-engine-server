@@ -128,23 +128,54 @@
     
     <!-- ENCABEZADO SUPERIOR -->
     <header class="sticky top-0 z-40 bg-white border-b border-[rgba(197,160,89,0.22)] text-[#0A1A3A] shadow-sm">
-      <div class="w-full max-w-[1600px] mx-auto px-3 sm:px-6 py-1 flex items-center justify-between gap-2 flex-wrap">
+      <div class="w-full max-w-[1600px] mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-3 flex-wrap">
 
-        <!-- Identidad Formateada & Estado -->
-        <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+        <!-- Zona 1: Marca y Wordmark Único -->
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="SYNC ENGINE" class="w-6 h-6 object-contain">
+            <span class="font-title font-extrabold text-[15px] tracking-tight text-[#0A1A3A]">SYNC ENGINE</span>
+          </div>
+          <span class="hidden md:inline text-xs text-[#94A3B8]">·</span>
+          <span class="hidden md:inline text-xs text-[#64748B] font-medium">Workspace Privado</span>
+        </div>
+
+        <!-- Zona 2: Centro de Seguridad & Protocolo Cifrado -->
+        <div class="hidden lg:flex items-center gap-3 text-xs font-medium text-[#64748B]">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
+            <span>Red Cifrada E2E</span>
+          </span>
+          <span class="text-gray-300">·</span>
+          <span class="font-mono text-[11px] text-[#C5A059]">TLS / AES-256</span>
+        </div>
+
+        <!-- Zona 3: Plan SaaS, Bóveda, Identidad & Salir -->
+        <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
           
+          <!-- Botón de Plan y Monetización -->
+          <button id="header-plan-badge-btn" type="button" title="Gestionar Plan y Suscripción"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[rgba(197,160,89,0.35)] bg-gradient-to-r from-[#FFFDF7] to-[#FEF3C7] hover:from-[#FEF3C7] hover:to-[#FDE68A] text-[#99793D] font-bold text-xs transition-all shadow-xs cursor-pointer">
+            <span id="header-plan-icon">⭐</span>
+            <span id="header-plan-name" class="tracking-wide uppercase font-mono">STARTER</span>
+            <span class="text-[9px] bg-[#C5A059] text-white px-1.5 py-0.5 rounded font-bold uppercase">SaaS</span>
+          </button>
+
+          <!-- Botón Bóveda Cifrada Privada -->
+          <button id="open-vault-btn" type="button" title="Bóveda Cifrada Privada & Notas Secretas"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-xs font-semibold text-[#0A1A3A] hover:text-[#C5A059] transition-colors cursor-pointer shadow-xs">
+            <span>🔒</span>
+            <span class="hidden sm:inline">Bóveda</span>
+          </button>
+
+          <!-- Identidad Formateada & Estado -->
           <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] shadow-sm">
             <img id="header-user-avatar" class="w-6 h-6 rounded-full object-cover avatar-circle hidden" alt="Avatar">
-            <span id="user-identity-badge" class="font-bold tracking-wide truncate max-w-[180px] sm:max-w-[300px]">
+            <span id="user-identity-badge" class="font-bold tracking-wide truncate max-w-[140px] sm:max-w-[200px]">
               <span id="header-user-sync-id" class="text-[#C5A059] font-mono">SYNC-0000</span>
               <span class="text-gray-400 mx-1">-</span>
               <span id="header-user-clean-name" class="text-[#0A1A3A]">Usuario</span>
             </span>
-          </div>
-
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[#C5A059]">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#0072CE] pulse-online flex-shrink-0"></span>
-            <span class="text-xs font-bold tracking-wide select-none">● En línea</span>
           </div>
 
           <button id="logout-btn" type="button" title="Cerrar sesión"
@@ -160,33 +191,67 @@
     <!-- CUERPO PRINCIPAL (DISTRIBUCIÓN EN 3 COLUMNAS) -->
     <main id="main-layout" class="flex-1 min-h-0 w-full max-w-[1600px] mx-auto p-0 lg:p-3 flex flex-row overflow-hidden relative bg-white">
       
-      <!-- COLUMNA 1: LISTA DE CONTACTOS (SIDEBAR - ANCHO FIJO 320px - 360px EN DESKTOP) -->
-      <aside id="sidebar-panel" class="w-full lg:w-[260px] flex-shrink-0 bg-white border-r lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full min-h-0 overflow-hidden shadow-sm transition-all z-10">
+      <!-- COLUMNA 1: LISTA DE CONTACTOS Y CANALES (SIDEBAR) -->
+      <aside id="sidebar-panel" class="w-full lg:w-[280px] flex-shrink-0 bg-white border-r lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full min-h-0 overflow-hidden shadow-sm transition-all z-10">
         
-        <div class="panel-head p-3 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-2 flex-shrink-0">
-          <div class="flex items-center gap-2">
-            <h2 class="font-bold text-[15px] text-[#0A1A3A] font-title tracking-tight">Chats</h2>
-            <span id="contacts-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#F8FAFC] text-[#C5A059] border border-[rgba(197,160,89,0.25)]">0</span>
-          </div>
-          <span class="text-[10px] text-[#94A3B8] font-semibold font-mono uppercase tracking-[0.12em]">Directorio Privado</span>
+        <!-- Switcher Segmentado de Espacio de Trabajo: DMs vs Canales -->
+        <div class="p-2 border-b border-[rgba(197,160,89,0.18)] bg-[#F8FAFC] flex items-center gap-1 flex-shrink-0">
+          <button id="tab-sidebar-dms" type="button" class="workspace-segmented-tab is-active flex items-center justify-center gap-1.5">
+            <span>💬</span> <span>Directos</span>
+            <span id="contacts-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-[#F1F5F9] text-[#C5A059] font-mono">0</span>
+          </button>
+          <button id="tab-sidebar-channels" type="button" class="workspace-segmented-tab flex items-center justify-center gap-1.5">
+            <span>#</span> <span>Canales</span>
+            <span id="channels-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-[#F1F5F9] text-[#0A1A3A] font-mono">2</span>
+          </button>
         </div>
 
-        <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex flex-col gap-1.5 flex-shrink-0">
-          <div class="flex items-center gap-2">
-            <div class="relative flex-1">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#C5A059] text-xs pointer-events-none">🔍</span>
-              <input type="text" id="contact-search-input" maxlength="20" placeholder="Buscar o agregar ID (ej. SYNC-8821)..."
-                class="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/25 outline-none text-xs text-[#0A1A3A] uppercase placeholder-gray-400 font-mono shadow-xs">
+        <!-- VISTA DE CHATS DIRECTOS (DMs) -->
+        <div id="sidebar-dms-view" class="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex flex-col gap-1.5 flex-shrink-0">
+            <div class="flex items-center gap-2">
+              <div class="relative flex-1">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#C5A059] text-xs pointer-events-none">🔍</span>
+                <input type="text" id="contact-search-input" maxlength="20" placeholder="Buscar o ID (ej. SYNC-8821)..."
+                  class="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/25 outline-none text-xs text-[#0A1A3A] uppercase placeholder-gray-400 font-mono shadow-xs">
+              </div>
+              <button id="add-contact-btn" type="button" title="Agregar contacto por Código ID"
+                class="h-9 px-3 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-sm flex items-center justify-center transition-all flex-shrink-0 cursor-pointer whitespace-nowrap">
+                + ID
+              </button>
             </div>
-            <button id="add-contact-btn" type="button" title="Agregar contacto por Código ID"
-              class="h-9 px-3 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-sm flex items-center justify-center transition-all flex-shrink-0 cursor-pointer whitespace-nowrap">
-              + ID
+            <p id="contact-action-msg" class="field-error hidden"></p>
+          </div>
+
+          <div id="contacts-list" class="flex-1 min-h-0 overflow-y-auto p-1.5 px-2 bg-white"></div>
+        </div>
+
+        <!-- VISTA DE CANALES DE EQUIPO (# Canales) -->
+        <div id="sidebar-channels-view" class="flex-1 min-h-0 flex flex-col overflow-hidden hidden">
+          <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex items-center justify-between gap-2 flex-shrink-0">
+            <span class="text-xs font-bold text-[#0A1A3A] uppercase tracking-wider font-mono">Espacios de Equipo</span>
+            <button id="open-create-channel-btn" type="button" title="Crear nuevo canal de equipo"
+              class="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1">
+              <span>+</span> <span>Canal</span>
             </button>
           </div>
-          <p id="contact-action-msg" class="field-error hidden"></p>
+          <div id="channels-list" class="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-1 bg-white"></div>
         </div>
 
-        <div id="contacts-list" class="flex-1 min-h-0 overflow-y-auto p-1.5 px-2 bg-white"></div>
+        <!-- Tarjeta Promocional SYNC PRO (Monetización) -->
+        <div id="sidebar-pro-card" class="m-2.5 p-3 rounded-2xl bg-gradient-to-br from-[#FFFDF7] to-[#FBF6E9] border border-[rgba(197,160,89,0.35)] shadow-xs flex flex-col gap-2 flex-shrink-0">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-[#99793D] flex items-center gap-1.5 font-title">
+              <img src="/src/assets/images/pro_tier_badge_1791287637745.jpg" alt="Pro" class="w-4 h-4 rounded-full object-cover">
+              <span>SYNC Pro Suite</span>
+            </span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#C5A059] text-white">2GB &amp; Bóveda</span>
+          </div>
+          <p class="text-[11px] text-[#64748B] leading-tight">Transferencias de 2 GB, Bóveda Cifrada y Transcripciones de chat.</p>
+          <button id="sidebar-upgrade-btn" type="button" class="w-full py-1.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs transition-all cursor-pointer">
+            Mejorar Plan desde $9/mes
+          </button>
+        </div>
 
         <div id="edit-profile-modal" class="profile-settings-popover hidden" role="dialog" aria-modal="false" aria-labelledby="profile-settings-title">
           <div class="bg-white rounded-2xl p-4 flex flex-col gap-3 shadow-xl border border-[rgba(197,160,89,0.3)] text-[#0A1A3A]">
@@ -280,6 +345,13 @@
                 <button id="open-media-hub-btn" type="button" title="Archivos y medios compartidos" aria-label="Archivos y medios compartidos"
                   class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
                   📁
+                </button>
+
+                <!-- Botón Exportar Transcripción / Auditoría -->
+                <button id="export-chat-btn" type="button" title="Exportar Transcripción y Certificado de Seguridad" aria-label="Exportar conversación"
+                  class="icon-btn h-9 px-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] hover:text-[#C5A059] border border-[rgba(197,160,89,0.25)] flex items-center gap-1.5 text-xs font-semibold shadow-xs transition-all cursor-pointer">
+                  <span>📜</span>
+                  <span class="hidden xl:inline">Exportar</span>
                 </button>
 
                 <!-- Botón Búsqueda Interna -->
@@ -742,6 +814,310 @@
       </div>
 
       <div id="media-hub-content" class="flex-1 overflow-y-auto p-4 sm:p-6 bg-white min-h-[300px]"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: CENTRO DE MONETIZACIÓN, PLANES Y FACTURACIÓN -->
+  <div id="pricing-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-[rgba(197,160,89,0.3)] overflow-hidden text-[#0A1A3A] my-auto">
+      
+      <!-- Cabecera de Precios -->
+      <div class="p-5 sm:p-6 border-b border-[rgba(197,160,89,0.2)] bg-gradient-to-r from-white via-[#FFFDF8] to-[#FAF7F0] flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#C5A059] to-[#99793D] text-white flex items-center justify-center font-bold text-lg shadow-sm">
+            💎
+          </div>
+          <div>
+            <h3 class="font-bold text-base sm:text-xl text-[#0A1A3A] font-title flex items-center gap-2">
+              <span>SYNC Workspace Suite · Planes &amp; Suscripciones</span>
+            </h3>
+            <p class="text-xs text-[#64748B] mt-0.5">Potencia tu privacidad, capacidad de transferencia y colaboración empresarial.</p>
+          </div>
+        </div>
+        <button id="close-pricing-modal-btn" type="button" aria-label="Cerrar modal de precios" class="h-8 w-8 rounded-full hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center font-bold text-sm cursor-pointer transition-colors">✕</button>
+      </div>
+
+      <!-- Selector de Ciclo de Facturación (Mensual / Anual) -->
+      <div class="px-6 pt-5 pb-2 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-[#0A1A3A]">Plan actual:</span>
+          <span id="modal-current-plan-badge" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#F8FAFC] text-[#C5A059] border border-[rgba(197,160,89,0.3)]">STARTER</span>
+        </div>
+
+        <div class="flex items-center p-1 bg-[#F8FAFC] rounded-xl border border-[rgba(197,160,89,0.25)]">
+          <button id="billing-cycle-monthly" type="button" class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-[#0A1A3A] shadow-xs cursor-pointer">
+            Mensual
+          </button>
+          <button id="billing-cycle-yearly" type="button" class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all text-[#64748B] hover:text-[#0A1A3A] flex items-center gap-1.5 cursor-pointer">
+            <span>Anual</span>
+            <span class="text-[10px] font-extrabold px-1.5 py-0.2 rounded-md bg-[#10B981] text-white">-20% dto.</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cuadrícula de 3 Planes -->
+      <div class="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 bg-white">
+        
+        <!-- PLAN 1: STARTER (GRATIS) -->
+        <div class="pricing-tier-card flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-sm text-[#0A1A3A] font-title">Starter</h4>
+              <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Para Personas</span>
+            </div>
+            <div class="mt-3 flex items-baseline gap-1">
+              <span class="text-2xl font-extrabold font-mono text-[#0A1A3A]">$0</span>
+              <span class="text-xs text-[#64748B]">USD / siempre gratis</span>
+            </div>
+            <p class="text-[11px] text-[#64748B] mt-2 pb-3 border-b border-gray-100">Mensajería privada punto a punto y transferencias básicas.</p>
+            <ul class="mt-3 flex flex-col gap-2 text-xs text-[#0A1A3A]">
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Envíos de hasta 50 MB</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Mensajería E2E directa (1-a-1)</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Notas de voz hasta 1 minuto</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Doble check de lectura</li>
+              <li class="flex items-center gap-2 text-gray-400"><span>✕</span> Bóveda privada de notas</li>
+              <li class="flex items-center gap-2 text-gray-400"><span>✕</span> Canales de equipo</li>
+            </ul>
+          </div>
+          <button type="button" disabled class="mt-5 w-full py-2 rounded-xl bg-gray-100 text-gray-400 font-semibold text-xs cursor-default">
+            Plan Básico
+          </button>
+        </div>
+
+        <!-- PLAN 2: SYNC PRO (RECOMENDADO / DESTACADO) -->
+        <div class="pricing-tier-card is-featured flex flex-col justify-between">
+          <span class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-[#C5A059] to-[#99793D] text-white text-[10px] font-extrabold tracking-wider uppercase shadow-xs">
+            ⭐ Más Popular
+          </span>
+          <div>
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-sm text-[#C5A059] font-title flex items-center gap-1.5">
+                <span>SYNC Pro</span>
+              </h4>
+              <span class="text-[10px] font-bold text-[#99793D] uppercase tracking-wider">Profesional</span>
+            </div>
+            <div class="mt-3 flex items-baseline gap-1">
+              <span id="price-pro-display" class="text-3xl font-extrabold font-mono text-[#0A1A3A]">$9</span>
+              <span id="price-pro-period" class="text-xs text-[#64748B]">USD / mes</span>
+            </div>
+            <p class="text-[11px] text-[#64748B] mt-2 pb-3 border-b border-[rgba(197,160,89,0.2)]">Máxima velocidad, 2GB sin compresión y bóveda confidencial.</p>
+            <ul class="mt-3 flex flex-col gap-2 text-xs text-[#0A1A3A]">
+              <li class="flex items-center gap-2 font-semibold text-[#0A1A3A]"><span class="text-[#C5A059]">★</span> Archivos pesados hasta 2 GB</li>
+              <li class="flex items-center gap-2 font-semibold text-[#0A1A3A]"><span class="text-[#C5A059]">★</span> Bóveda Cifrada Ilimitada</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Reproductor Waveform + Acelerador 2x</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Notas de voz HD ilimitadas (10 min)</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Transcripción y exportación certificada</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Llamadas WebRTC de alta fidelidad</li>
+            </ul>
+          </div>
+          <button id="select-plan-pro-btn" type="button" class="mt-5 w-full py-2.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-md transition-all cursor-pointer">
+            Elegir SYNC Pro
+          </button>
+        </div>
+
+        <!-- PLAN 3: ENTERPRISE & EQUIPOS -->
+        <div class="pricing-tier-card flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-sm text-[#0A1A3A] font-title">Enterprise</h4>
+              <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Para Equipos</span>
+            </div>
+            <div class="mt-3 flex items-baseline gap-1">
+              <span id="price-ent-display" class="text-3xl font-extrabold font-mono text-[#0A1A3A]">$24</span>
+              <span id="price-ent-period" class="text-xs text-[#64748B]">USD / mes</span>
+            </div>
+            <p class="text-[11px] text-[#64748B] mt-2 pb-3 border-b border-gray-100">Colaboración departamental privada y auditoría legal completa.</p>
+            <ul class="mt-3 flex flex-col gap-2 text-xs text-[#0A1A3A]">
+              <li class="flex items-center gap-2 font-semibold"><span class="text-[#0A1A3A]">✓</span> Todo lo incluido en Pro</li>
+              <li class="flex items-center gap-2 font-semibold text-[#0072CE]"><span class="text-[#0072CE]">✓</span> Canales de Equipo ilimitados (#)</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Bóveda de Empresa compartida</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Roles de administrador y miembros</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Registros de auditoría de cumplimiento</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> SLA 99.9% y soporte dedicado 24/7</li>
+            </ul>
+          </div>
+          <button id="select-plan-ent-btn" type="button" class="mt-5 w-full py-2 rounded-xl bg-[#0A1A3A] hover:bg-[#132A5A] text-white font-bold text-xs shadow-sm transition-all cursor-pointer">
+            Elegir Enterprise
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Sección de Checkout / Pasarela Simulada & Cupones -->
+      <div id="checkout-section" class="p-6 border-t border-[rgba(197,160,89,0.2)] bg-[#F8FAFC] hidden">
+        <div class="max-w-2xl mx-auto flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-sm text-[#0A1A3A] font-title flex items-center gap-2">
+              <span>💳 Confirmar Suscripción a</span>
+              <span id="checkout-selected-plan-name" class="text-[#C5A059] font-mono">SYNC PRO</span>
+            </h4>
+            <span id="checkout-amount-tag" class="text-base font-extrabold font-mono text-[#0A1A3A]">$9.00 USD</span>
+          </div>
+
+          <!-- Cupón de Descuento -->
+          <div class="flex items-center gap-2">
+            <input type="text" id="coupon-code-input" placeholder="Cupón (ej. SYNC2026, LAUNCH50)..." maxlength="15"
+              class="w-full sm:w-64 px-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] uppercase font-mono outline-none">
+            <button id="apply-coupon-btn" type="button" class="px-3 py-1.5 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0A1A3A] text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap">
+              Aplicar
+            </button>
+            <span id="coupon-msg" class="text-xs text-emerald-600 font-semibold hidden"></span>
+          </div>
+
+          <!-- Selector de Método de Pago -->
+          <div class="grid grid-cols-3 gap-2">
+            <label class="p-2.5 rounded-xl bg-white border border-[rgba(197,160,89,0.3)] flex items-center justify-center gap-2 cursor-pointer hover:border-[#C5A059] text-xs font-bold text-[#0A1A3A]">
+              <input type="radio" name="payment-method" value="card" checked class="accent-[#C5A059]">
+              <span>💳 Tarjeta</span>
+            </label>
+            <label class="p-2.5 rounded-xl bg-white border border-[rgba(197,160,89,0.3)] flex items-center justify-center gap-2 cursor-pointer hover:border-[#C5A059] text-xs font-bold text-[#0A1A3A]">
+              <input type="radio" name="payment-method" value="crypto" class="accent-[#C5A059]">
+              <span>⚡ USDC / Crypto</span>
+            </label>
+            <label class="p-2.5 rounded-xl bg-white border border-[rgba(197,160,89,0.3)] flex items-center justify-center gap-2 cursor-pointer hover:border-[#C5A059] text-xs font-bold text-[#0A1A3A]">
+              <input type="radio" name="payment-method" value="paypal" class="accent-[#C5A059]">
+              <span>🅿️ PayPal</span>
+            </label>
+          </div>
+
+          <!-- Formulario Simulado de Tarjeta -->
+          <div id="card-fields" class="p-3 bg-white rounded-xl border border-[rgba(197,160,89,0.2)] flex flex-col gap-2">
+            <input type="text" placeholder="Número de tarjeta (4242 •••• •••• 4242)" value="•••• •••• •••• 4242" readonly
+              class="w-full px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-[#0A1A3A] font-mono">
+            <div class="flex gap-2">
+              <input type="text" placeholder="MM/AA" value="12/28" readonly class="w-1/2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-[#0A1A3A] font-mono">
+              <input type="text" placeholder="CVC" value="888" readonly class="w-1/2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-[#0A1A3A] font-mono">
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-2">
+            <button id="cancel-checkout-btn" type="button" class="text-xs text-[#64748B] hover:text-[#0A1A3A] font-semibold cursor-pointer">
+              Cancelar
+            </button>
+            <button id="confirm-payment-btn" type="button" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-2">
+              <span>🔒 Pagar y Activar Inmediatamente</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historial de Facturas -->
+      <div class="p-4 border-t border-[rgba(197,160,89,0.18)] bg-white">
+        <h5 class="text-xs font-bold text-[#0A1A3A] font-title mb-2">Historial de Recibos y Facturas</h5>
+        <div id="invoices-list" class="max-h-28 overflow-y-auto flex flex-col gap-1.5 text-xs">
+          <p class="text-gray-400 italic text-[11px]">No hay transacciones registradas todavía.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: BÓVEDA CIFRADA PRIVADA & NOTAS CONFIDENCIALES -->
+  <div id="vault-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[rgba(197,160,89,0.3)] overflow-hidden text-[#0A1A3A]">
+      
+      <div class="p-4 sm:p-5 border-b border-[rgba(197,160,89,0.2)] bg-gradient-to-r from-white to-[#F8FAFC] flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <img src="/src/assets/images/workspace_vault_shield_1791287622307.jpg" alt="Vault" class="w-10 h-10 rounded-2xl object-cover shadow-sm">
+          <div>
+            <h3 class="font-bold text-base sm:text-lg text-[#0A1A3A] font-title flex items-center gap-2">
+              <span>Bóveda Cifrada Privada</span>
+            </h3>
+            <p class="text-xs text-[#64748B]">Almacenamiento seguro de notas, credenciales y claves con cifrado de grado militar.</p>
+          </div>
+        </div>
+        <button id="close-vault-modal-btn" type="button" aria-label="Cerrar bóveda" class="h-8 w-8 rounded-full hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center font-bold text-sm cursor-pointer transition-colors">✕</button>
+      </div>
+
+      <!-- Formulario para Agregar Elemento -->
+      <div class="p-4 border-b border-[rgba(197,160,89,0.18)] bg-[#F8FAFC] flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-[#0A1A3A] font-title">+ Nuevo Registro Confidencial</span>
+          <span class="text-[10px] text-[#C5A059] font-mono">Bóveda Zero-Knowledge</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input type="text" id="vault-title-input" placeholder="Título (ej. Servidor AWS, Llave Privada)..." maxlength="60"
+            class="px-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] outline-none">
+          <select id="vault-category-select" class="px-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] outline-none cursor-pointer">
+            <option value="password">🔑 Contraseña / Credencial</option>
+            <option value="note">📝 Nota Cifrada</option>
+            <option value="api-key">⚡ Token / Clave API</option>
+            <option value="financial">💳 Dato Financiero / Billetera</option>
+          </select>
+        </div>
+        <textarea id="vault-secret-input" rows="2" placeholder="Contenido secreto a proteger (se almacena cifrado)..."
+          class="w-full px-3 py-2 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] outline-none font-mono resize-none"></textarea>
+        <div class="flex items-center justify-between">
+          <input type="text" id="vault-hint-input" placeholder="Pista recordatoria pública (opcional)..." maxlength="50"
+            class="w-2/3 px-3 py-1 rounded-xl bg-white border border-[rgba(197,160,89,0.2)] text-[11px] text-[#64748B] outline-none">
+          <button id="save-vault-item-btn" type="button" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] text-white font-bold text-xs shadow-xs cursor-pointer">
+            Guardar en Bóveda
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de Registros en Bóveda -->
+      <div id="vault-items-container" class="p-4 sm:p-5 overflow-y-auto flex-1 flex flex-col gap-2.5 bg-white">
+        <p class="text-xs text-[#64748B] text-center py-6">Cargando registros cifrados...</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR CANAL DE EQUIPO -->
+  <div id="create-channel-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl border border-[rgba(197,160,89,0.3)] text-[#0A1A3A]">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-base text-[#0A1A3A] font-title flex items-center gap-2">
+          <span># Crear Canal de Espacio de Trabajo</span>
+        </h3>
+        <button id="close-create-channel-btn" type="button" class="text-gray-400 hover:text-[#0A1A3A] text-sm cursor-pointer">✕</button>
+      </div>
+      <div>
+        <label for="channel-name-input" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre del Canal</label>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">#</span>
+          <input type="text" id="channel-name-input" placeholder="ej. desarrollo, finanzas, ventas" maxlength="30"
+            class="w-full pl-7 pr-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] lowercase outline-none">
+        </div>
+      </div>
+      <div>
+        <label for="channel-desc-input" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Descripción</label>
+        <input type="text" id="channel-desc-input" placeholder="Propósito del canal para el equipo" maxlength="100"
+          class="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] outline-none">
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-[rgba(197,160,89,0.18)]">
+        <button id="cancel-create-channel-btn" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1A3A] cursor-pointer">Cancelar</button>
+        <button id="confirm-create-channel-btn" type="button" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] text-white font-bold text-xs shadow-xs cursor-pointer">Crear Canal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EXPORTAR TRANSCRIPCIÓN & AUDITORÍA -->
+  <div id="export-report-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[rgba(197,160,89,0.3)] overflow-hidden text-[#0A1A3A]">
+      <div class="p-5 border-b border-[rgba(197,160,89,0.2)] flex items-center justify-between bg-white">
+        <div>
+          <h3 class="font-bold text-base sm:text-lg text-[#0A1A3A] font-title flex items-center gap-2">
+            <span>📜 Certificado de Transcripción &amp; Auditoría</span>
+          </h3>
+          <p id="export-modal-subtitle" class="text-xs text-[#C5A059] font-mono mt-0.5">Sello Criptográfico E2E</p>
+        </div>
+        <button id="close-export-modal-btn" type="button" aria-label="Cerrar modal de exportación" class="h-8 w-8 rounded-full hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center font-bold text-sm cursor-pointer transition-colors">✕</button>
+      </div>
+
+      <div id="export-report-content" class="p-6 overflow-y-auto flex-1 font-mono text-xs bg-[#F8FAFC] border-y border-gray-100 flex flex-col gap-3">
+        <!-- Contenido renderizado dinámicamente -->
+      </div>
+
+      <div class="p-4 bg-white flex items-center justify-between gap-2">
+        <button id="download-export-json-btn" type="button" class="px-4 py-2 rounded-xl bg-white border border-[rgba(197,160,89,0.3)] hover:bg-[#F8FAFC] text-[#0A1A3A] font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-xs">
+          <span>💾</span> <span>Descargar JSON</span>
+        </button>
+        <button id="print-export-btn" type="button" class="px-5 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] text-white font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-sm">
+          <span>🖨️</span> <span>Imprimir / PDF</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -2188,9 +2564,12 @@
   async function selectContact(syncId) {
     if (syncId === currentUser.syncId) return;
     activeContactSyncId = syncId;
+    activeChannelId = null;
     renderedMessageIds.clear();
     cancelReply();
     closeChatSearch();
+
+    if (exportChatBtn) exportChatBtn.classList.remove('hidden');
 
     const contact = contactsMap.get(syncId);
     if (!contact) return;
@@ -2979,29 +3358,55 @@
       bubble.appendChild(replyBlock);
     }
 
-    // NOTA DE VOZ (AUDIO)
+    // NOTA DE VOZ (AUDIO CON REPRODUCTOR WAVEFORM INTERACTIVO Y ACELERADOR)
     if (msg.type === 'audio' && msg.audioData) {
       const audioCard = document.createElement('div');
-      audioCard.className = 'flex items-center gap-3 min-w-[220px] sm:min-w-[270px]';
+      audioCard.className = 'audio-waveform-card';
 
       const audio = new Audio();
       setSafeUrl(audio, 'src', msg.audioData, 'audio');
+
       const playBtn = document.createElement('button');
       playBtn.type = 'button';
-      playBtn.className = 'w-10 h-10 rounded-full bg-[#C5A059] hover:bg-[#d4b068] text-[#0A1A3A] font-extrabold flex items-center justify-center flex-shrink-0 cursor-pointer shadow-sm transition-colors';
+      playBtn.className = 'waveform-play-btn';
       playBtn.innerHTML = '▶';
 
-      const trackInfo = document.createElement('div');
-      trackInfo.className = 'flex-1 min-w-0';
-      trackInfo.innerHTML = `
-        <div class="flex items-center justify-between text-xs font-bold mb-1 text-[#0A1A3A]">
-          <span>🎤 Nota de voz</span>
-          <span class="time-lbl font-mono text-[#64748B]">0:00</span>
-        </div>
-        <div class="w-full bg-black/10 rounded-full h-1.5 overflow-hidden">
-          <div class="progress-bar bg-[#0072CE] h-full rounded-full w-0 transition-all"></div>
-        </div>
-      `;
+      const waveformContainer = document.createElement('div');
+      waveformContainer.className = 'waveform-bars-container';
+      
+      const barHeights = [10, 18, 24, 14, 28, 22, 16, 26, 20, 12, 18, 25, 22, 15, 27, 24, 18, 12, 16, 10];
+      const bars = [];
+      barHeights.forEach((h) => {
+        const bar = document.createElement('div');
+        bar.className = 'waveform-bar';
+        bar.style.height = h + 'px';
+        waveformContainer.appendChild(bar);
+        bars.push(bar);
+      });
+
+      const metaContainer = document.createElement('div');
+      metaContainer.className = 'flex flex-col items-end gap-1 flex-shrink-0';
+
+      const timeLbl = document.createElement('span');
+      timeLbl.className = 'font-mono text-[10px] text-[#64748B] font-bold';
+      timeLbl.textContent = '0:00';
+
+      const speedBtn = document.createElement('button');
+      speedBtn.type = 'button';
+      speedBtn.className = 'waveform-speed-badge';
+      speedBtn.textContent = '1.0x';
+
+      const speeds = [1.0, 1.5, 2.0];
+      let speedIdx = 0;
+      speedBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        speedIdx = (speedIdx + 1) % speeds.length;
+        audio.playbackRate = speeds[speedIdx];
+        speedBtn.textContent = speeds[speedIdx] + 'x';
+      });
+
+      metaContainer.appendChild(timeLbl);
+      metaContainer.appendChild(speedBtn);
 
       playBtn.addEventListener('click', () => {
         if (audio.paused) {
@@ -3013,21 +3418,36 @@
         }
       });
 
+      waveformContainer.addEventListener('click', (e) => {
+        const rect = waveformContainer.getBoundingClientRect();
+        const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        if (audio.duration) {
+          audio.currentTime = clickRatio * audio.duration;
+        }
+      });
+
       audio.ontimeupdate = () => {
-        const pct = (audio.currentTime / (audio.duration || 1)) * 100;
-        trackInfo.querySelector('.progress-bar').style.width = pct + '%';
+        const dur = audio.duration || 1;
+        const progress = audio.currentTime / dur;
+        const activeBarCount = Math.floor(progress * bars.length);
+        bars.forEach((b, idx) => {
+          if (idx <= activeBarCount) b.classList.add('is-played');
+          else b.classList.remove('is-played');
+        });
+
         const mins = Math.floor(audio.currentTime / 60);
         const secs = String(Math.floor(audio.currentTime % 60)).padStart(2, '0');
-        trackInfo.querySelector('.time-lbl').textContent = mins + ':' + secs;
+        timeLbl.textContent = mins + ':' + secs;
       };
 
       audio.onended = () => {
         playBtn.innerHTML = '▶';
-        trackInfo.querySelector('.progress-bar').style.width = '0%';
+        bars.forEach(b => b.classList.remove('is-played'));
       };
 
       audioCard.appendChild(playBtn);
-      audioCard.appendChild(trackInfo);
+      audioCard.appendChild(waveformContainer);
+      audioCard.appendChild(metaContainer);
       bubble.appendChild(audioCard);
     }
     // ARCHIVO, IMAGEN O VIDEO (ESPECIFICACIONES MULTIMEDIA CANÓNICAS BARRANTES CO.)
@@ -3324,19 +3744,27 @@
   // ENVÍO DE MENSAJES
   function handleSendMessage() {
     const text = chatTextarea.value.trim();
-    if (!text || !activeContactSyncId || !socket) return;
+    if (!text || (!activeContactSyncId && !activeChannelId) || !socket) return;
 
-    const clientMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-    const replyData = currentReplyTo;
-    cancelReply();
+    if (activeChannelId) {
+      socket.emit('send-channel-message', {
+        channelId: activeChannelId,
+        text: text,
+        type: 'text'
+      });
+    } else {
+      const clientMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+      const replyData = currentReplyTo;
+      cancelReply();
 
-    socket.emit('send-private-message', {
-      clientMsgId: clientMsgId,
-      toSyncId: activeContactSyncId,
-      text: text,
-      type: 'text',
-      replyTo: replyData
-    });
+      socket.emit('send-private-message', {
+        clientMsgId: clientMsgId,
+        toSyncId: activeContactSyncId,
+        text: text,
+        type: 'text',
+        replyTo: replyData
+      });
+    }
 
     chatTextarea.value = '';
     chatTextarea.style.height = 'auto';
@@ -4256,6 +4684,676 @@
       }
     });
   }
+
+  // =========================================================================
+  // SUITE SAAS: MONETIZACIÓN, BÓVEDA CIFRADA, CANALES Y EXPORTACIÓN
+  // =========================================================================
+
+  // Variables de Estado de la Suite
+  let activeChannelId = null;
+  let workspaceChannels = [];
+  let userPlanData = null;
+  let activeSelectedTier = 'pro';
+  let currentBillingCycle = 'monthly';
+  let activeDiscountPercent = 0;
+  let currentExportData = null;
+
+  // Referencias DOM Suite
+  const headerPlanBadgeBtn = document.getElementById('header-plan-badge-btn');
+  const headerPlanIcon = document.getElementById('header-plan-icon');
+  const headerPlanName = document.getElementById('header-plan-name');
+  const openVaultBtn = document.getElementById('open-vault-btn');
+  const exportChatBtn = document.getElementById('export-chat-btn');
+
+  const tabSidebarDms = document.getElementById('tab-sidebar-dms');
+  const tabSidebarChannels = document.getElementById('tab-sidebar-channels');
+  const sidebarDmsView = document.getElementById('sidebar-dms-view');
+  const sidebarChannelsView = document.getElementById('sidebar-channels-view');
+  const channelsCountBadge = document.getElementById('channels-count-badge');
+  const channelsList = document.getElementById('channels-list');
+  const openCreateChannelBtn = document.getElementById('open-create-channel-btn');
+  const sidebarProCard = document.getElementById('sidebar-pro-card');
+  const sidebarUpgradeBtn = document.getElementById('sidebar-upgrade-btn');
+
+  const pricingModal = document.getElementById('pricing-modal');
+  const closePricingModalBtn = document.getElementById('close-pricing-modal-btn');
+  const modalCurrentPlanBadge = document.getElementById('modal-current-plan-badge');
+  const billingCycleMonthly = document.getElementById('billing-cycle-monthly');
+  const billingCycleYearly = document.getElementById('billing-cycle-yearly');
+  const priceProDisplay = document.getElementById('price-pro-display');
+  const priceProPeriod = document.getElementById('price-pro-period');
+  const priceEntDisplay = document.getElementById('price-ent-display');
+  const priceEntPeriod = document.getElementById('price-ent-period');
+  const selectPlanProBtn = document.getElementById('select-plan-pro-btn');
+  const selectPlanEntBtn = document.getElementById('select-plan-ent-btn');
+  const checkoutSection = document.getElementById('checkout-section');
+  const checkoutSelectedPlanName = document.getElementById('checkout-selected-plan-name');
+  const checkoutAmountTag = document.getElementById('checkout-amount-tag');
+  const couponCodeInput = document.getElementById('coupon-code-input');
+  const applyCouponBtn = document.getElementById('apply-coupon-btn');
+  const couponMsg = document.getElementById('coupon-msg');
+  const cancelCheckoutBtn = document.getElementById('cancel-checkout-btn');
+  const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
+  const invoicesList = document.getElementById('invoices-list');
+
+  const vaultModal = document.getElementById('vault-modal');
+  const closeVaultModalBtn = document.getElementById('close-vault-modal-btn');
+  const vaultTitleInput = document.getElementById('vault-title-input');
+  const vaultCategorySelect = document.getElementById('vault-category-select');
+  const vaultSecretInput = document.getElementById('vault-secret-input');
+  const vaultHintInput = document.getElementById('vault-hint-input');
+  const saveVaultItemBtn = document.getElementById('save-vault-item-btn');
+  const vaultItemsContainer = document.getElementById('vault-items-container');
+
+  const createChannelModal = document.getElementById('create-channel-modal');
+  const closeCreateChannelBtn = document.getElementById('close-create-channel-btn');
+  const cancelCreateChannelBtn = document.getElementById('cancel-create-channel-btn');
+  const channelNameInput = document.getElementById('channel-name-input');
+  const channelDescInput = document.getElementById('channel-desc-input');
+  const confirmCreateChannelBtn = document.getElementById('confirm-create-channel-btn');
+
+  const exportReportModal = document.getElementById('export-report-modal');
+  const closeExportModalBtn = document.getElementById('close-export-modal-btn');
+  const exportReportContent = document.getElementById('export-report-content');
+  const downloadExportJsonBtn = document.getElementById('download-export-json-btn');
+  const printExportBtn = document.getElementById('print-export-btn');
+
+  // 1. GESTIÓN DE PLANES Y MONETIZACIÓN (SAAS BILLING)
+  async function loadUserPlan() {
+    if (!currentToken) return;
+    try {
+      const res = await fetch('/api/billing/plan', {
+        headers: { 'Authorization': 'Bearer ' + currentToken }
+      });
+      const data = await res.json();
+      if (data.ok) {
+        userPlanData = data;
+        updateUserPlanUI(data);
+      }
+    } catch (e) {
+      console.warn('Error al consultar plan:', e);
+    }
+  }
+
+  function updateUserPlanUI(data) {
+    if (!data) return;
+    const plan = (data.plan || 'free').toUpperCase();
+    if (headerPlanName) headerPlanName.textContent = plan;
+    if (modalCurrentPlanBadge) modalCurrentPlanBadge.textContent = plan;
+
+    if (headerPlanIcon) {
+      headerPlanIcon.textContent = plan === 'ENTERPRISE' ? '🏢' : (plan === 'PRO' ? '⭐' : '🌱');
+    }
+
+    if (sidebarProCard) {
+      if (plan === 'PRO' || plan === 'ENTERPRISE') {
+        sidebarProCard.classList.add('hidden');
+      } else {
+        sidebarProCard.classList.remove('hidden');
+      }
+    }
+  }
+
+  function openPricingModal() {
+    if (!pricingModal) return;
+    loadUserPlan();
+    loadInvoices();
+    updatePricingDisplay();
+    if (checkoutSection) checkoutSection.classList.add('hidden');
+    pricingModal.classList.remove('hidden');
+  }
+
+  function updatePricingDisplay() {
+    if (currentBillingCycle === 'yearly') {
+      billingCycleYearly.className = 'px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-[#0A1A3A] shadow-xs cursor-pointer flex items-center gap-1.5';
+      billingCycleMonthly.className = 'px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all text-[#64748B] hover:text-[#0A1A3A] cursor-pointer';
+      if (priceProDisplay) priceProDisplay.textContent = '$89';
+      if (priceProPeriod) priceProPeriod.textContent = 'USD / año (ahorras 18%)';
+      if (priceEntDisplay) priceEntDisplay.textContent = '$228';
+      if (priceEntPeriod) priceEntPeriod.textContent = 'USD / año / usuario';
+    } else {
+      billingCycleMonthly.className = 'px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-[#0A1A3A] shadow-xs cursor-pointer';
+      billingCycleYearly.className = 'px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all text-[#64748B] hover:text-[#0A1A3A] flex items-center gap-1.5 cursor-pointer';
+      if (priceProDisplay) priceProDisplay.textContent = '$9';
+      if (priceProPeriod) priceProPeriod.textContent = 'USD / mes';
+      if (priceEntDisplay) priceEntDisplay.textContent = '$24';
+      if (priceEntPeriod) priceEntPeriod.textContent = 'USD / mes / usuario';
+    }
+  }
+
+  function initiateCheckout(tier) {
+    activeSelectedTier = tier;
+    if (!checkoutSection) return;
+    checkoutSection.classList.remove('hidden');
+    checkoutSelectedPlanName.textContent = tier === 'pro' ? 'SYNC PRO WORKSPACE' : 'SYNC ENTERPRISE SUITE';
+
+    const basePrice = tier === 'pro' ? (currentBillingCycle === 'yearly' ? 89 : 9) : (currentBillingCycle === 'yearly' ? 228 : 24);
+    const finalPrice = Math.max(0, basePrice * (1 - (activeDiscountPercent / 100)));
+    checkoutAmountTag.textContent = `$${finalPrice.toFixed(2)} USD`;
+    checkoutSection.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  async function applyCoupon() {
+    const code = couponCodeInput.value.trim();
+    if (!code) return;
+    try {
+      const res = await fetch('/api/billing/apply-coupon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+      if (data.ok && data.valid) {
+        activeDiscountPercent = data.discountPercent;
+        couponMsg.textContent = `✓ Descuento del ${data.discountPercent}% aplicado`;
+        couponMsg.className = 'text-xs text-emerald-600 font-semibold';
+        couponMsg.classList.remove('hidden');
+        initiateCheckout(activeSelectedTier);
+      } else {
+        couponMsg.textContent = data.error || 'Cupón inválido';
+        couponMsg.className = 'text-xs text-red-500 font-semibold';
+        couponMsg.classList.remove('hidden');
+      }
+    } catch (err) {
+      couponMsg.textContent = 'Error al validar cupón';
+      couponMsg.className = 'text-xs text-red-500 font-semibold';
+      couponMsg.classList.remove('hidden');
+    }
+  }
+
+  async function processPayment() {
+    confirmPaymentBtn.disabled = true;
+    confirmPaymentBtn.innerHTML = '<span>⏳ Procesando pago seguro...</span>';
+
+    try {
+      const selectedMethod = document.querySelector('input[name="payment-method"]:checked')?.value || 'card';
+      const res = await fetch('/api/billing/upgrade', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify({
+          plan: activeSelectedTier,
+          billingCycle: currentBillingCycle,
+          paymentDetails: {
+            method: selectedMethod,
+            discountApplied: activeDiscountPercent,
+            last4: '4242'
+          }
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'No se pudo completar el pago');
+      }
+
+      userPlanData = { ok: true, plan: data.user.plan };
+      updateUserPlanUI(userPlanData);
+      triggerPopupNotification('¡Suscripción Activada!', `Ahora cuentas con el plan ${data.user.plan.toUpperCase()}`, '💎');
+      loadInvoices();
+      checkoutSection.classList.add('hidden');
+      setTimeout(() => {
+        pricingModal.classList.add('hidden');
+      }, 1200);
+    } catch (err) {
+      triggerPopupNotification('Error en pago', err.message, '⚠️');
+    } finally {
+      confirmPaymentBtn.disabled = false;
+      confirmPaymentBtn.innerHTML = '<span>🔒 Pagar y Activar Inmediatamente</span>';
+    }
+  }
+
+  async function loadInvoices() {
+    if (!invoicesList) return;
+    try {
+      const res = await fetch('/api/billing/invoices', {
+        headers: { 'Authorization': 'Bearer ' + currentToken }
+      });
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.invoices) && data.invoices.length > 0) {
+        invoicesList.innerHTML = data.invoices.map(inv => `
+          <div class="p-2 rounded-lg bg-[#F8FAFC] border border-gray-100 flex items-center justify-between">
+            <div>
+              <span class="font-bold text-[#0A1A3A] uppercase font-mono">${inv.plan}</span>
+              <span class="text-gray-400 text-[10px] ml-1">(${new Date(inv.issuedAt).toLocaleDateString()})</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-mono font-bold text-[#C5A059]">$${inv.amountUsd} USD</span>
+              <span class="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">PAGADO</span>
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch (e) {
+      console.warn('Error al cargar facturas:', e);
+    }
+  }
+
+  // 2. GESTIÓN DE BÓVEDA CIFRADA PRIVADA
+  async function loadVaultItems() {
+    if (!vaultItemsContainer) return;
+    vaultItemsContainer.innerHTML = '<p class="text-xs text-[#64748B] text-center py-4">Cargando registros cifrados...</p>';
+    try {
+      const res = await fetch('/api/vault', {
+        headers: { 'Authorization': 'Bearer ' + currentToken }
+      });
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.items)) {
+        renderVaultItems(data.items);
+      }
+    } catch (e) {
+      vaultItemsContainer.innerHTML = '<p class="text-xs text-red-500 text-center py-4">Error al cargar registros</p>';
+    }
+  }
+
+  function renderVaultItems(items) {
+    if (!vaultItemsContainer) return;
+    vaultItemsContainer.innerHTML = '';
+    if (items.length === 0) {
+      vaultItemsContainer.innerHTML = `
+        <div class="p-8 text-center text-[#64748B]">
+          <span class="text-3xl mb-1 block">🔐</span>
+          <p class="text-xs font-bold text-[#0A1A3A]">Bóveda Vacía</p>
+          <p class="text-[11px] text-[#64748B] mt-1">Guarda notas, credenciales y claves confidenciales con cifrado zero-knowledge.</p>
+        </div>
+      `;
+      return;
+    }
+
+    items.forEach((item) => {
+      const card = document.createElement('div');
+      card.className = 'vault-item-card flex flex-col gap-2';
+      
+      const catIcons = { password: '🔑', note: '📝', 'api-key': '⚡', financial: '💳' };
+      const icon = catIcons[item.category] || '🔒';
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-base">${icon}</span>
+            <div class="min-w-0">
+              <h5 class="text-xs font-bold text-[#0A1A3A] truncate font-title">${escapeHtml(item.title)}</h5>
+              <span class="text-[10px] text-[#C5A059] uppercase font-mono">${item.category}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button type="button" class="btn-copy-secret px-2 py-1 rounded-lg bg-white hover:bg-gray-100 text-[#0A1A3A] text-[11px] font-semibold border border-gray-200 cursor-pointer shadow-xs">
+              📋 Copiar
+            </button>
+            <button type="button" class="btn-delete-secret px-2 py-1 rounded-lg hover:bg-red-50 text-red-500 text-[11px] cursor-pointer">
+              🗑
+            </button>
+          </div>
+        </div>
+        <div class="p-2 rounded-xl bg-white border border-gray-100 font-mono text-xs flex items-center justify-between">
+          <span class="secret-text tracking-widest text-[#0A1A3A]">••••••••••••</span>
+          <button type="button" class="btn-toggle-secret text-[10px] text-[#C5A059] font-bold cursor-pointer">Mostrar</button>
+        </div>
+        ${item.hint ? `<p class="text-[10px] text-gray-400 italic">Pista: ${escapeHtml(item.hint)}</p>` : ''}
+      `;
+
+      let isRevealed = false;
+      const secretSpan = card.querySelector('.secret-text');
+      const toggleBtn = card.querySelector('.btn-toggle-secret');
+      toggleBtn.addEventListener('click', () => {
+        isRevealed = !isRevealed;
+        secretSpan.textContent = isRevealed ? item.secretContent : '••••••••••••';
+        toggleBtn.textContent = isRevealed ? 'Ocultar' : 'Mostrar';
+      });
+
+      const copyBtn = card.querySelector('.btn-copy-secret');
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(item.secretContent).then(() => {
+          triggerPopupNotification('Bóveda', 'Contenido confidencial copiado', '📋');
+          copyBtn.textContent = '✓ Copiado';
+          setTimeout(() => { copyBtn.textContent = '📋 Copiar'; }, 1500);
+        });
+      });
+
+      const delBtn = card.querySelector('.btn-delete-secret');
+      delBtn.addEventListener('click', async () => {
+        if (confirm(`¿Eliminar "${item.title}" de tu bóveda?`)) {
+          await fetch(`/api/vault/${item.id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + currentToken }
+          });
+          loadVaultItems();
+        }
+      });
+
+      vaultItemsContainer.appendChild(card);
+    });
+  }
+
+  async function handleSaveVaultItem() {
+    const title = vaultTitleInput.value.trim();
+    const secret = vaultSecretInput.value.trim();
+    const category = vaultCategorySelect.value;
+    const hint = vaultHintInput.value.trim();
+
+    if (!title || !secret) {
+      alert('Por favor especifica un título y contenido para el registro.');
+      return;
+    }
+
+    saveVaultItemBtn.disabled = true;
+    try {
+      const res = await fetch('/api/vault', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify({ title, secretContent: secret, category, hint })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Error al guardar');
+      }
+
+      vaultTitleInput.value = '';
+      vaultSecretInput.value = '';
+      vaultHintInput.value = '';
+      triggerPopupNotification('Bóveda', 'Registro confidencial guardado', '🔒');
+      loadVaultItems();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      saveVaultItemBtn.disabled = false;
+    }
+  }
+
+  // 3. GESTIÓN DE CANALES DE EQUIPO
+  async function loadChannels() {
+    if (!currentToken) return;
+    try {
+      const res = await fetch('/api/channels', {
+        headers: { 'Authorization': 'Bearer ' + currentToken }
+      });
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.channels)) {
+        workspaceChannels = data.channels;
+        renderChannelsList();
+      }
+    } catch (e) {
+      console.warn('Error al cargar canales:', e);
+    }
+  }
+
+  function renderChannelsList() {
+    if (!channelsList) return;
+    channelsList.innerHTML = '';
+    if (channelsCountBadge) channelsCountBadge.textContent = workspaceChannels.length;
+
+    workspaceChannels.forEach((chan) => {
+      const item = document.createElement('div');
+      const isActive = (activeChannelId === chan.id);
+      item.className = `channel-item ${isActive ? 'is-active' : ''}`;
+      item.innerHTML = `
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="text-[#C5A059] font-bold">#</span>
+          <div class="min-w-0">
+            <p class="text-xs font-bold text-[#0A1A3A] truncate">${escapeHtml(chan.name)}</p>
+            <p class="text-[10px] text-[#64748B] truncate">${escapeHtml(chan.description || '')}</p>
+          </div>
+        </div>
+        ${chan.isDefault ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono">Equipo</span>' : ''}
+      `;
+      item.addEventListener('click', () => selectChannel(chan));
+      channelsList.appendChild(item);
+    });
+  }
+
+  async function selectChannel(chan) {
+    activeChannelId = chan.id;
+    activeContactSyncId = null;
+    renderedMessageIds.clear();
+    cancelReply();
+    closeChatSearch();
+
+    renderChannelsList();
+
+    if (window.innerWidth < 1024) {
+      document.body.classList.add('mobile-view-chat');
+      document.body.classList.remove('mobile-view-contacts');
+    }
+
+    activeChatAvatar.className = 'w-10 h-10 rounded-full bg-gradient-to-tr from-[#0A1A3A] to-[#0072CE] text-white font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-md font-mono';
+    activeChatAvatar.textContent = '#';
+    activeChatName.textContent = '#' + chan.name;
+    activeChatId.textContent = 'Canal de equipo';
+    activeChatStatus.innerHTML = '<span class="status-dot"></span><span>Todos los miembros</span>';
+
+    chatWelcome.classList.add('hidden');
+    chatMessages.replaceChildren(chatWelcome);
+
+    if (startCallBtn) startCallBtn.classList.add('opacity-40', 'pointer-events-none');
+    if (openMediaHubBtn) openMediaHubBtn.classList.add('opacity-40', 'pointer-events-none');
+    if (exportChatBtn) exportChatBtn.classList.add('hidden');
+
+    if (socket) {
+      socket.emit('join-channel', { channelId: chan.id });
+    }
+
+    try {
+      const res = await fetch(`/api/channels/${chan.id}/messages`, {
+        headers: { 'Authorization': 'Bearer ' + currentToken }
+      });
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.messages)) {
+        activeConversationMessages = data.messages;
+        data.messages.forEach(msg => renderMessageBubble(msg));
+        anchorChatToBottom();
+      }
+    } catch (e) {
+      console.warn('Error al cargar mensajes de canal:', e);
+    }
+
+    chatTextarea.placeholder = `Enviar mensaje a #${chan.name}...`;
+    chatTextarea.focus();
+  }
+
+  async function handleCreateChannel() {
+    const name = channelNameInput.value.trim();
+    const description = channelDescInput.value.trim();
+    if (!name) {
+      alert('Por favor especifica un nombre para el canal.');
+      return;
+    }
+
+    confirmCreateChannelBtn.disabled = true;
+    try {
+      const res = await fetch('/api/channels', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify({ name, description })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Error al crear canal');
+      }
+
+      channelNameInput.value = '';
+      channelDescInput.value = '';
+      createChannelModal.classList.add('hidden');
+      triggerPopupNotification('Canal Creado', `#${data.channel.name} está listo para usarse`, '📢');
+      await loadChannels();
+      selectChannel(data.channel);
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      confirmCreateChannelBtn.disabled = false;
+    }
+  }
+
+  // 4. GESTIÓN DE EXPORTACIÓN Y AUDITORÍA
+  async function handleExportChat() {
+    if (!activeContactSyncId) return;
+    try {
+      const res = await fetch(`/api/messages/${activeContactSyncId}/export`, {
+        headers: { 'Authorization': 'Bearer ' + currentToken }
+      });
+      const data = await res.json();
+      if (data.ok && data.export) {
+        currentExportData = data.export;
+        renderExportModal(data.export);
+      }
+    } catch (e) {
+      triggerPopupNotification('Error', 'No se pudo generar la exportación: ' + e.message, '⚠️');
+    }
+  }
+
+  function renderExportModal(exp) {
+    if (!exportReportContent) return;
+    exportReportContent.innerHTML = `
+      <div class="p-4 bg-white rounded-2xl border border-gray-200 flex flex-col gap-2">
+        <div class="flex items-center justify-between border-b pb-2">
+          <span class="font-bold text-xs text-[#0A1A3A] font-title">CERTIFICADO DE CONVERSACIÓN CIFRADA</span>
+          <span class="text-[10px] text-[#C5A059] font-mono">${exp.securitySeal}</span>
+        </div>
+        <p class="text-[11px] text-gray-600">Fecha de emisión: ${new Date(exp.exportTimestamp).toLocaleString()}</p>
+        <p class="text-[11px] text-gray-600">Participantes: ${exp.participants.requester.formattedName || exp.participants.requester.syncId} ↔ ${exp.participants.contact.formattedName || exp.participants.contact.syncId}</p>
+        <p class="text-[11px] text-gray-600">Total de mensajes verificados: <strong class="text-[#0A1A3A] font-bold">${exp.totalMessages}</strong></p>
+      </div>
+      <div class="flex flex-col gap-1.5 max-h-64 overflow-y-auto mt-2">
+        ${exp.messages.map(m => `
+          <div class="p-2.5 bg-white rounded-xl border border-gray-100 text-[11px] flex flex-col gap-0.5">
+            <div class="flex items-center justify-between text-[10px] text-gray-400 font-mono">
+              <span>[${m.dateFormatted}]</span>
+              <span class="uppercase">${m.status || 'verified'}</span>
+            </div>
+            <div>
+              <strong class="text-[#C5A059]">${m.fromSyncId}:</strong>
+              <span class="text-[#0A1A3A] ml-1">${escapeHtml(m.text || (m.hasFile ? '📎 Archivo: ' + m.fileName : '🎤 Nota de voz'))}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    exportReportModal.classList.remove('hidden');
+  }
+
+  function downloadExportJSON() {
+    if (!currentExportData) return;
+    const jsonStr = JSON.stringify(currentExportData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sync_audit_${activeContactSyncId}_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // VINCULACIÓN DE LISTENERS SUITE SAAS
+  if (headerPlanBadgeBtn) headerPlanBadgeBtn.addEventListener('click', openPricingModal);
+  if (sidebarUpgradeBtn) sidebarUpgradeBtn.addEventListener('click', openPricingModal);
+  if (closePricingModalBtn) closePricingModalBtn.addEventListener('click', () => pricingModal.classList.add('hidden'));
+
+  if (billingCycleMonthly) {
+    billingCycleMonthly.addEventListener('click', () => {
+      currentBillingCycle = 'monthly';
+      updatePricingDisplay();
+    });
+  }
+  if (billingCycleYearly) {
+    billingCycleYearly.addEventListener('click', () => {
+      currentBillingCycle = 'yearly';
+      updatePricingDisplay();
+    });
+  }
+
+  if (selectPlanProBtn) selectPlanProBtn.addEventListener('click', () => initiateCheckout('pro'));
+  if (selectPlanEntBtn) selectPlanEntBtn.addEventListener('click', () => initiateCheckout('enterprise'));
+  if (applyCouponBtn) applyCouponBtn.addEventListener('click', applyCoupon);
+  if (cancelCheckoutBtn) cancelCheckoutBtn.addEventListener('click', () => checkoutSection.classList.add('hidden'));
+  if (confirmPaymentBtn) confirmPaymentBtn.addEventListener('click', processPayment);
+
+  // Bóveda
+  if (openVaultBtn) {
+    openVaultBtn.addEventListener('click', () => {
+      loadVaultItems();
+      vaultModal.classList.remove('hidden');
+    });
+  }
+  if (closeVaultModalBtn) closeVaultModalBtn.addEventListener('click', () => vaultModal.classList.add('hidden'));
+  if (saveVaultItemBtn) saveVaultItemBtn.addEventListener('click', handleSaveVaultItem);
+
+  // Switcher DMs vs Canales
+  if (tabSidebarDms) {
+    tabSidebarDms.addEventListener('click', () => {
+      tabSidebarDms.classList.add('is-active');
+      tabSidebarChannels.classList.remove('is-active');
+      sidebarDmsView.classList.remove('hidden');
+      sidebarChannelsView.classList.add('hidden');
+    });
+  }
+  if (tabSidebarChannels) {
+    tabSidebarChannels.addEventListener('click', () => {
+      tabSidebarChannels.classList.add('is-active');
+      tabSidebarDms.classList.remove('is-active');
+      sidebarChannelsView.classList.remove('hidden');
+      sidebarDmsView.classList.add('hidden');
+      loadChannels();
+    });
+  }
+
+  // Modal Crear Canal
+  if (openCreateChannelBtn) openCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.remove('hidden'));
+  if (closeCreateChannelBtn) closeCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.add('hidden'));
+  if (cancelCreateChannelBtn) cancelCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.add('hidden'));
+  if (confirmCreateChannelBtn) confirmCreateChannelBtn.addEventListener('click', handleCreateChannel);
+
+  // Exportación
+  if (exportChatBtn) exportChatBtn.addEventListener('click', handleExportChat);
+  if (closeExportModalBtn) closeExportModalBtn.addEventListener('click', () => exportReportModal.classList.add('hidden'));
+  if (downloadExportJsonBtn) downloadExportJsonBtn.addEventListener('click', downloadExportJSON);
+  if (printExportBtn) printExportBtn.addEventListener('click', () => window.print());
+
+  // Socket.io handlers para canales
+  function setupSuiteSocketListeners() {
+    if (!socket) return;
+    socket.on('channel-created', (channel) => {
+      loadChannels();
+      triggerPopupNotification('Nuevo Canal', `#${channel.name} ha sido creado`, '📢');
+    });
+
+    socket.on('channel-message-received', (msg) => {
+      if (!msg) return;
+      if (activeChannelId === msg.channelId) {
+        if (!activeConversationMessages.some(m => m.id === msg.id)) {
+          activeConversationMessages.push(msg);
+        }
+        renderMessageBubble(msg);
+      } else {
+        triggerPopupNotification(`Canal #${msg.channelId.replace('chan-', '')}`, `${msg.senderName}: ${msg.text || 'Archivo'}`, '💬');
+      }
+    });
+  }
+
+  // Hook en initSocket existente
+  const originalInitSocket = initSocket;
+  initSocket = function() {
+    originalInitSocket();
+    setupSuiteSocketListeners();
+  };
+
+  // Hook en showApp para inicializar planes y canales
+  const originalShowApp = showApp;
+  showApp = async function() {
+    await originalShowApp();
+    loadChannels();
+    loadUserPlan();
+  };
 
   // INICIO
   checkExistingAuth();

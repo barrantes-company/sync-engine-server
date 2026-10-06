@@ -138,6 +138,7 @@ app.use((req, res, next) => {
   });
 });
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/src/assets/images", express.static(path.join(__dirname, "src/assets/images")));
 app.use((err, req, res, next) => {
   if (req.path === "/api/save-subscription" && err instanceof SyntaxError && err.status === 400) {
     return res.status(500).json({ ok: false, error: "Error al procesar el payload de suscripción" });
@@ -546,11 +547,118 @@ app.get('/api/status', function (_req, res) {
       'multimedia-2gb',
       'h264-video',
       'fluid-layout',
-      'lightbox'
+      'lightbox',
+      'monetization-tiers',
+      'encrypted-vault',
+      'team-channels',
+      'compliance-export'
     ],
     uploadLimitBytes: 2147483648,
     onlineUsersCount: onlineUsers.size
   });
+});
+
+// ==== Endpoints de Monetización, Facturación y Planes ====
+app.get("/api/billing/plan", requireAuth, (req, res) => {
+  const user = db.getUserBySyncId(req.user.syncId);
+  if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+  res.json({
+    ok: true,
+    plan: user.plan || "free",
+    role: user.role || "member",
+    planExpiresAt: user.planExpiresAt || null,
+    features: {
+      maxUploadBytes: user.plan === "enterprise" ? 2147483648 : (user.plan === "pro" ? 2147483648 : 52428800),
+      maxVoiceSeconds: user.plan === "free" ? 60 : 600,
+      encryptedVault: user.plan !== "free",
+      teamChannels: user.plan === "enterprise" || user.plan === "pro",
+      exportAudit: true,
+      hdCalling: user.plan !== "free"
+    }
+  });
+});
+
+app.post("/api/billing/upgrade", requireAuth, (req, res) => {
+  const { plan, billingCycle, paymentDetails } = req.body || {};
+  try {
+    const result = db.upgradeUserPlan(req.user.syncId, plan, billingCycle, paymentDetails);
+    res.json({ ok: true, user: result.user, invoice: result.invoice });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get("/api/billing/invoices", requireAuth, (req, res) => {
+  const invoices = db.getUserInvoices(req.user.syncId);
+  res.json({ ok: true, invoices: invoices });
+});
+
+app.post("/api/billing/apply-coupon", requireAuth, (req, res) => {
+  const { code } = req.body || {};
+  const cleanCode = String(code || "").trim().toUpperCase();
+  const coupons = {
+    "SYNC2026": 25,
+    "LAUNCH50": 50,
+    "BARRANTES": 30,
+    "VIP": 20
+  };
+  if (coupons[cleanCode]) {
+    res.json({ ok: true, valid: true, discountPercent: coupons[cleanCode], code: cleanCode });
+  } else {
+    res.status(400).json({ ok: false, valid: false, error: "Código promocional no válido o caducado" });
+  }
+});
+
+// ==== Endpoints de Bóveda Cifrada Privada ====
+app.get("/api/vault", requireAuth, (req, res) => {
+  const items = db.getVaultItems(req.user.syncId);
+  res.json({ ok: true, items: items });
+});
+
+app.post("/api/vault", requireAuth, (req, res) => {
+  try {
+    const item = db.saveVaultItem(req.user.syncId, req.body);
+    res.json({ ok: true, item: item });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete("/api/vault/:itemId", requireAuth, (req, res) => {
+  const success = db.deleteVaultItem(req.user.syncId, req.params.itemId);
+  res.json({ ok: true, deleted: success });
+});
+
+// ==== Endpoints de Canales de Espacio de Trabajo ====
+app.get("/api/channels", requireAuth, (req, res) => {
+  const channels = db.getWorkspaceChannels();
+  res.json({ ok: true, channels: channels });
+});
+
+app.post("/api/channels", requireAuth, (req, res) => {
+  const { name, description } = req.body || {};
+  try {
+    const channel = db.createWorkspaceChannel(name, description, req.user.syncId);
+    io.emit("channel-created", channel);
+    res.json({ ok: true, channel: channel });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get("/api/channels/:channelId/messages", requireAuth, (req, res) => {
+  const messages = db.getChannelMessages(req.params.channelId);
+  res.json({ ok: true, messages: messages });
+});
+
+// ==== Endpoint de Exportación de Auditoría y Transcripción ====
+app.get("/api/messages/:contactSyncId/export", requireAuth, (req, res) => {
+  try {
+    const data = db.exportConversation(req.user.syncId, req.params.contactSyncId);
+    res.json({ ok: true, export: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Configuración de Certificados SSL Autofirmados para soporte HTTPS (Requerido para iOS WebRTC y Micrófono)
@@ -659,6 +767,31 @@ io.on("connection", function (socket) {
         });
       }
     });
+  });
+
+  // ==== Gestión y Mensajería de Canales de Equipo ====
+  socket.on("join-channel", function (payload) {
+    const channelId = payload && payload.channelId;
+    if (channelId) {
+      socket.join("channel:" + channelId);
+    }
+  });
+
+  socket.on("send-channel-message", async function (payload) {
+    const sender = socketToUser.get(socket.id);
+    if (!sender) {
+      socket.emit("error-message", { message: "No autenticado" });
+      return;
+    }
+    const { channelId, text, type, fileData, audioData } = payload || {};
+    if (!channelId) return;
+
+    try {
+      const msg = db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });
+      io.to("channel:" + channelId).emit("channel-message-received", msg);
+    } catch (err) {
+      socket.emit("error-message", { message: err.message });
+    }
   });
 
   // Envío de Mensaje Privado (Texto, Audio de Voz o Archivo)

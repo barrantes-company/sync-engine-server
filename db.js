@@ -18,7 +18,14 @@ function ensureDbFile() {
       messages: [],
       files: [],
       pinnedMessages: {},
-      subscriptions: {}
+      subscriptions: {},
+      channels: [
+        { id: "chan-general", name: "general", description: "Espacio general de sincronización y equipo", createdAt: Date.now(), isDefault: true },
+        { id: "chan-anuncios", name: "anuncios", description: "Comunicados oficiales de Workspace y Empresa", createdAt: Date.now(), isDefault: true }
+      ],
+      channelMessages: [],
+      vaultItems: {},
+      invoices: {}
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf8");
   }
@@ -43,6 +50,15 @@ function readDb() {
     if (!Array.isArray(data.files)) data.files = [];
     if (!data.pinnedMessages) data.pinnedMessages = {};
     if (!data.subscriptions) data.subscriptions = {};
+    if (!data.channels || data.channels.length === 0) {
+      data.channels = [
+        { id: "chan-general", name: "general", description: "Espacio general de sincronización y equipo", createdAt: Date.now(), isDefault: true },
+        { id: "chan-anuncios", name: "anuncios", description: "Comunicados oficiales de Workspace y Empresa", createdAt: Date.now(), isDefault: true }
+      ];
+    }
+    if (!data.channelMessages) data.channelMessages = [];
+    if (!data.vaultItems) data.vaultItems = {};
+    if (!data.invoices) data.invoices = {};
     cachedDb = data;
     if (seedDevelopmentAdmin(cachedDb)) {
       writeDb(cachedDb);
@@ -145,7 +161,9 @@ function seedDevelopmentAdmin(data) {
     formattedName: formatFullName("SYNC-0000", cleanDisplayName),
     salt: salt,
     passwordHash: hashPassword("password123", salt),
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    plan: "pro",
+    role: "admin"
   });
   if (!data.contacts["SYNC-0000"]) {
     data.contacts["SYNC-0000"] = [];
@@ -171,7 +189,10 @@ function toPublicUser(user) {
     username: user.username,
     cleanDisplayName: user.cleanDisplayName,
     formattedName: user.formattedName || formatFullName(user.syncId, user.cleanDisplayName),
-    avatarUrl: user.avatarUrl || null
+    avatarUrl: user.avatarUrl || null,
+    plan: user.plan || "free",
+    role: user.role || "member",
+    planExpiresAt: user.planExpiresAt || null
   };
 }
 
@@ -642,6 +663,235 @@ function removePushSubscription(syncId, endpoint) {
   return false;
 }
 
+// ==== Planes, Suscripciones y Facturación ====
+function upgradeUserPlan(syncId, plan, billingCycle = "monthly", paymentDetails = {}) {
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  const user = db.users.find((u) => u.syncId === sId);
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+
+  const validPlans = ["free", "pro", "enterprise"];
+  if (!validPlans.includes(plan)) {
+    throw new Error("Plan no válido");
+  }
+
+  const days = billingCycle === "yearly" ? 365 : 30;
+  const planExpiresAt = Date.now() + days * 24 * 60 * 60 * 1000;
+
+  user.plan = plan;
+  user.planExpiresAt = planExpiresAt;
+  user.billingCycle = billingCycle;
+  user.updatedAt = Date.now();
+
+  // Registrar Factura
+  if (!db.invoices) db.invoices = {};
+  if (!db.invoices[sId]) db.invoices[sId] = [];
+
+  const invoiceAmount = plan === "pro" 
+    ? (billingCycle === "yearly" ? 89 : 9) 
+    : (plan === "enterprise" ? (billingCycle === "yearly" ? 228 : 24) : 0);
+
+  const invoice = {
+    id: "inv_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
+    syncId: sId,
+    plan: plan,
+    billingCycle: billingCycle,
+    amountUsd: invoiceAmount,
+    discountApplied: paymentDetails.discountApplied || 0,
+    paymentMethod: paymentDetails.method || "card",
+    cardLast4: paymentDetails.last4 || "4242",
+    status: "paid",
+    issuedAt: Date.now(),
+    expiresAt: planExpiresAt
+  };
+
+  db.invoices[sId].unshift(invoice);
+  writeDb(db);
+
+  return {
+    user: toPublicUser(user),
+    invoice: invoice
+  };
+}
+
+function getUserInvoices(syncId) {
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  return (db.invoices && db.invoices[sId]) || [];
+}
+
+// ==== Bóveda Cifrada Privada (Encrypted Vault) ====
+function getVaultItems(syncId) {
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  return (db.vaultItems && db.vaultItems[sId]) || [];
+}
+
+function saveVaultItem(syncId, itemData) {
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  if (!db.vaultItems) db.vaultItems = {};
+  if (!db.vaultItems[sId]) db.vaultItems[sId] = [];
+
+  const { id, title, category, secretContent, secret, hint } = itemData || {};
+  const content = secretContent || secret;
+  if (!title || !content) {
+    throw new Error("El título y el contenido confidencial son obligatorios");
+  }
+
+  const existingIdx = id ? db.vaultItems[sId].findIndex((i) => i.id === id) : -1;
+  const now = Date.now();
+
+  if (existingIdx >= 0) {
+    db.vaultItems[sId][existingIdx] = {
+      ...db.vaultItems[sId][existingIdx],
+      title: String(title).slice(0, 100),
+      category: category || "general",
+      secretContent: String(content),
+      hint: hint ? String(hint).slice(0, 80) : null,
+      updatedAt: now
+    };
+    writeDb(db);
+    return db.vaultItems[sId][existingIdx];
+  } else {
+    const newItem = {
+      id: "vlt_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
+      title: String(title).slice(0, 100),
+      category: category || "general",
+      secretContent: String(content),
+      hint: hint ? String(hint).slice(0, 80) : null,
+      createdAt: now,
+      updatedAt: now
+    };
+    db.vaultItems[sId].unshift(newItem);
+    writeDb(db);
+    return newItem;
+  }
+}
+
+function deleteVaultItem(syncId, itemId) {
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  if (!db.vaultItems || !db.vaultItems[sId]) return false;
+  const prevLen = db.vaultItems[sId].length;
+  db.vaultItems[sId] = db.vaultItems[sId].filter((i) => i.id !== itemId);
+  if (db.vaultItems[sId].length !== prevLen) {
+    writeDb(db);
+    return true;
+  }
+  return false;
+}
+
+// ==== Canales de Espacio de Trabajo (Workspace Channels) ====
+function getWorkspaceChannels() {
+  const db = readDb();
+  return db.channels || [];
+}
+
+function createWorkspaceChannel(name, description, creatorSyncId) {
+  const db = readDb();
+  if (!db.channels) db.channels = [];
+
+  const cleanName = String(name || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 30);
+  if (cleanName.length < 2) {
+    throw new Error("El nombre del canal debe tener al menos 2 caracteres alfanuméricos");
+  }
+
+  const exists = db.channels.find((c) => c.name === cleanName);
+  if (exists) {
+    throw new Error("Ya existe un canal con este nombre");
+  }
+
+  const newChannel = {
+    id: "chan-" + cleanName + "-" + Date.now().toString(36),
+    name: cleanName,
+    description: String(description || "Canal de equipo").slice(0, 120),
+    creatorSyncId: creatorSyncId,
+    createdAt: Date.now(),
+    isDefault: false
+  };
+
+  db.channels.push(newChannel);
+  writeDb(db);
+  return newChannel;
+}
+
+function getChannelMessages(channelId, limit = 100) {
+  const db = readDb();
+  if (!db.channelMessages) return [];
+  return db.channelMessages
+    .filter((m) => m.channelId === channelId)
+    .slice(-limit);
+}
+
+function saveChannelMessage(channelId, senderSyncId, payload) {
+  const db = readDb();
+  if (!db.channelMessages) db.channelMessages = [];
+
+  const sender = db.users.find((u) => u.syncId === senderSyncId);
+  if (!sender) throw new Error("Emisor no encontrado");
+
+  const { text, type, fileData, audioData } = payload;
+  const message = {
+    id: "cmsg_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
+    channelId: channelId,
+    senderSyncId: senderSyncId,
+    senderName: sender.cleanDisplayName,
+    senderFormattedName: sender.formattedName,
+    senderAvatar: sender.avatarUrl || null,
+    text: text || "",
+    type: type || "text",
+    fileData: fileData || null,
+    audioData: audioData || null,
+    createdAt: Date.now()
+  };
+
+  db.channelMessages.push(message);
+  // Mantener histórico limitado a 1500 mensajes por performance
+  if (db.channelMessages.length > 1500) {
+    db.channelMessages = db.channelMessages.slice(-1500);
+  }
+  writeDb(db);
+  return message;
+}
+
+// ==== Exportación de Conversación / Auditoría ====
+function exportConversation(syncId, contactSyncId) {
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  const cId = String(contactSyncId).trim().toUpperCase();
+
+  const user = db.users.find((u) => u.syncId === sId);
+  const contact = db.users.find((u) => u.syncId === cId);
+  const messages = getMessagesBetween(sId, cId);
+
+  return {
+    exportedAt: new Date().toISOString(),
+    exportTimestamp: Date.now(),
+    securitySeal: "SYNC-E2E-" + crypto.randomBytes(8).toString("hex").toUpperCase(),
+    participants: {
+      requester: user ? toPublicUser(user) : { syncId: sId },
+      contact: contact ? toPublicUser(contact) : { syncId: cId }
+    },
+    totalMessages: messages.length,
+    messages: messages.map((m) => ({
+      id: m.id,
+      timestamp: m.timestamp,
+      dateFormatted: new Date(m.timestamp).toLocaleString(),
+      fromSyncId: m.fromSyncId,
+      toSyncId: m.toSyncId,
+      type: m.type,
+      text: m.text,
+      status: m.status,
+      hasFile: Boolean(m.fileData),
+      fileName: m.fileData ? m.fileData.name : null,
+      hasAudio: Boolean(m.audioData)
+    }))
+  };
+}
+
 module.exports = {
   registerFile,
   getFileById,
@@ -671,5 +921,16 @@ module.exports = {
   updateMessageLinkPreview,
   savePushSubscription,
   getPushSubscriptions,
-  removePushSubscription
+  removePushSubscription,
+  // Nuevas capacidades de monetización y workspace
+  upgradeUserPlan,
+  getUserInvoices,
+  getVaultItems,
+  saveVaultItem,
+  deleteVaultItem,
+  getWorkspaceChannels,
+  createWorkspaceChannel,
+  getChannelMessages,
+  saveChannelMessage,
+  exportConversation
 };

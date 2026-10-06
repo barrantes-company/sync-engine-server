@@ -7,7 +7,8 @@
     "dev": "node server.js",
     "start": "node server.js",
     "build": "webpack --config webpack.config.js",
-    "lint": "node --check server.js db.js"
+    "lint": "node --check server.js db.js",
+    "test": "node tests/p0-01.test.js && node tests/p0-02.test.js"
   },
   "dependencies": {
     "@google-cloud/pubsub": "4.9.0",
