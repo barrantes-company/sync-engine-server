@@ -237,7 +237,7 @@
 
       <!-- COLUMNA 2: VENTANA DE CONVERSACIÓN ACTIVA (FLEX-GROW: 1, FONDO ADAPTADO 768 × 1024px O SUPERIOR) -->
       <div id="chat-panel-container" class="flex-1 min-h-0 flex flex-col h-full min-w-0 relative">
-        <div id="workspace-split-container" class="flex flex-1 min-h-0 flex-col md:flex-row gap-0 lg:gap-3 overflow-hidden h-full min-w-0 transition-all duration-300 ratio-50-50">
+        <div id="workspace-split-container" class="flex flex-1 min-h-0 flex-col md:flex-row gap-0 lg:gap-3 overflow-hidden h-full min-w-0 transition-all duration-300">
 
           <!-- ÁREA CENTRAL DE CONVERSACIÓN (CHAT PANEL) -->
           <section id="chat-panel" class="flex flex-1 min-h-0 bg-white lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full overflow-hidden shadow-sm relative min-w-0 transition-all">
@@ -269,13 +269,6 @@
               </div>
 
               <div class="flex items-center gap-1.5 sm:gap-2">
-                <!-- Botón Conmutador Navegador Web Embebido -->
-                <button id="toggle-web-panel-btn" type="button" title="Conmutar Navegador Web Embebido" aria-label="Navegador Web"
-                  class="h-9 px-3 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center gap-1.5 text-xs font-bold shadow-xs transition-all cursor-pointer">
-                  <span>🌐</span>
-                  <span class="hidden sm:inline">Navegador</span>
-                </button>
-
                 <!-- Botón Drawer / Información y Medios (Columna 3) -->
                 <button id="toggle-drawer-btn" type="button" title="Información del Contacto y Medios (Columna 3)" aria-label="Información y Centro de Medios"
                   class="h-9 px-3 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center gap-1.5 text-xs font-bold shadow-xs transition-all cursor-pointer">
@@ -443,125 +436,6 @@
 
             </div>
 
-          </div>
-
-        </section>
-
-        <!-- COLUMNA 3: MÓDULO DE NAVEGADOR WEB EMBEBIDO (#web-panel) -->
-        <section id="web-panel" class="hidden flex-col h-full bg-white lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl overflow-hidden shadow-sm relative min-w-0 transition-all">
-          
-          <!-- Barra de Pestañas Móvil (< 1024px) -->
-          <div class="lg:hidden flex border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] p-1.5 gap-1.5 flex-shrink-0">
-            <button id="mobile-tab-to-chat-btn" type="button" class="flex-1 py-2 rounded-lg text-xs font-bold text-[#64748B] hover:text-[#0A1A3A] bg-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
-              <span>💬</span> Chat
-            </button>
-            <button id="mobile-tab-active-web-btn" type="button" class="flex-1 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-[#C5A059] to-[#99793D] text-white flex items-center justify-center gap-1.5 shadow-xs">
-              <span>🌐</span> Web
-            </button>
-          </div>
-
-          <!-- Barra de Herramientas del Navegador (#web-toolbar) -->
-          <div id="web-toolbar" class="p-2 sm:p-2.5 bg-white border-b border-[rgba(197,160,89,0.22)] flex items-center gap-1.5 sm:gap-2 flex-shrink-0 shadow-xs">
-            
-            <button id="web-back-btn" type="button" title="Atrás" aria-label="Atrás"
-              class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] hover:border-[#C5A059] flex items-center justify-center text-xs font-bold transition-all cursor-pointer flex-shrink-0">
-              ◀
-            </button>
-            <button id="web-reload-btn" type="button" title="Recargar" aria-label="Recargar"
-              class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] hover:border-[#C5A059] flex items-center justify-center text-xs font-bold transition-all cursor-pointer flex-shrink-0">
-              🔄
-            </button>
-
-            <!-- Campo de entrada de URL con botón [Ir ➔] -->
-            <form id="web-url-form" class="flex-1 flex items-center gap-1.5 min-w-0">
-              <div class="relative flex-1 flex items-center min-w-0">
-                <span class="absolute left-2.5 text-xs text-[#C5A059]">🔒</span>
-                <input type="text" id="web-url-input" required placeholder="https://ejemplo.com o búsqueda..."
-                  class="w-full pl-8 pr-2.5 py-1.5 rounded-lg bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:outline-none text-xs text-[#0A1A3A] placeholder-gray-400 font-mono truncate">
-              </div>
-              <button type="submit" id="web-go-btn"
-                class="h-8 px-3 rounded-lg bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer transition-all flex-shrink-0">
-                <span>Ir</span> <span class="text-sm">➔</span>
-              </button>
-            </form>
-
-            <!-- Botones: [🔗 Abrir en pestaña nueva] & Auxiliares -->
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <button id="web-external-btn" type="button" title="Abrir en pestaña nueva" aria-label="Abrir en pestaña nueva"
-                class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0072CE] border border-[rgba(197,160,89,0.2)] hover:border-[#0072CE] flex items-center justify-center text-xs font-bold transition-all cursor-pointer">
-                🔗
-              </button>
-              <button id="web-split-ratio-btn" type="button" title="Alternar proporción dividida (50/50 o 60/40)"
-                class="hidden lg:flex h-8 px-2 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.2)] hover:border-[#C5A059] items-center justify-center text-[10px] font-mono font-bold transition-all cursor-pointer">
-                ◫ 50/50
-              </button>
-              <button id="web-proxy-toggle-btn" type="button" title="Modo Proxy (Supera bloqueos X-Frame-Options)"
-                class="h-8 px-2 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0072CE] border border-[rgba(2,132,199,0.3)] flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer">
-                <span>🛡️</span> <span class="hidden xl:inline text-[10px]">Proxy</span>
-              </button>
-              <button id="web-close-btn" type="button" title="Cerrar panel web" aria-label="Cerrar"
-                class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-red-50 text-gray-400 hover:text-red-500 border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-all cursor-pointer">
-                ✕
-              </button>
-            </div>
-
-          </div>
-
-          <!-- Barra de Accesos Rápidos (Dominios Autorizados) -->
-          <div id="web-quick-bar" class="px-3 py-1.5 bg-[#F8FAFC] border-b border-[rgba(197,160,89,0.15)] flex items-center gap-2 overflow-x-auto text-[11px] flex-shrink-0 select-none">
-            <span class="text-[10px] text-[#C5A059] font-bold uppercase tracking-wider flex-shrink-0">Lista Blanca:</span>
-            <button type="button" data-url="https://www.google.com.pe" class="web-quick-link px-2.5 py-0.5 rounded-lg bg-white hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-[#0A1A3A] hover:text-[#C5A059] transition-colors whitespace-nowrap cursor-pointer font-medium">🔍 Google Perú</button>
-          </div>
-
-          <!-- Contenedor Iframe con indicador de carga y estado vacío -->
-          <div class="flex-1 relative bg-[#F8FAFC] overflow-hidden flex flex-col">
-            <div id="web-loading-bar" class="h-1 w-full bg-[#E2E8F0] overflow-hidden hidden z-20">
-              <div class="h-full bg-gradient-to-r from-[#C5A059] via-[#0072CE] to-[#C5A059] animate-pulse w-full"></div>
-            </div>
-
-            <iframe id="embedded-browser" src="about:blank"
-              title="Navegador Web Embebido SYNC ENGINE"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
-              allow="clipboard-read; clipboard-write"
-              class="w-full h-full border-none bg-white"></iframe>
-
-            <!-- Estado: Dominio no autorizado en visor interno -->
-            <div id="web-unauthorized-state" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white text-[#64748B] z-10 hidden">
-              <div class="w-16 h-16 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] flex items-center justify-center text-3xl text-[#C5A059] mb-3 shadow-xs">
-                🛡️
-              </div>
-              <h3 class="font-bold text-base text-[#0A1A3A] font-title tracking-wide">Dominio No Autorizado</h3>
-              <p class="text-xs text-[#64748B] max-w-sm mt-1.5 leading-relaxed">
-                El sitio <span id="unauthorized-host-name" class="font-mono text-[#0072CE] font-bold"></span> no se encuentra en la lista blanca de dominios permitidos (<span class="text-[#C5A059] font-mono">google.com.pe</span>).
-              </p>
-              <p class="text-xs text-[#64748B] max-w-sm mt-1 leading-relaxed">
-                Puedes abrir el enlace directamente en una ventana independiente sin restricciones:
-              </p>
-              <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-                <button type="button" id="unauthorized-external-btn" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5">
-                  <span>🔗</span>
-                  <span>Abrir en pestaña nueva</span>
-                </button>
-                <button type="button" id="unauthorized-back-btn" class="px-3.5 py-2 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] font-semibold transition-all cursor-pointer">
-                  Volver al inicio
-                </button>
-              </div>
-            </div>
-
-            <div id="web-empty-state" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white text-[#64748B] z-10">
-              <div class="w-16 h-16 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] flex items-center justify-center text-3xl text-[#C5A059] mb-3 shadow-xs">
-                🌐
-              </div>
-              <h3 class="font-bold text-base text-[#0A1A3A] font-title tracking-wide">Navegador Web Embebido</h3>
-              <p class="text-xs text-[#64748B] max-w-sm mt-1 leading-relaxed">
-                Navega en sitios autorizados (<span class="text-[#C5A059] font-mono">google.com.pe</span>) en tiempo real junto a tu conversación sin salir de SYNC ENGINE.
-              </p>
-              <div class="mt-4 flex items-center gap-2">
-                <button type="button" onclick="loadWebUrl('https://www.google.com.pe', true)" class="px-3.5 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.3)] text-xs text-[#C5A059] font-bold shadow-xs transition-all cursor-pointer">
-                  🔍 Abrir Google Perú
-                </button>
-              </div>
-            </div>
           </div>
 
         </section>
@@ -1160,233 +1034,11 @@
   let currentSearchIndex = -1;
   let isRegisterMode = false;
 
-  // Referencias DOM Split Workspace & Navegador Web Embebido
-  const workspaceSplitContainer = document.getElementById('workspace-split-container');
-  const toggleWebPanelBtn = document.getElementById('toggle-web-panel-btn');
-  const webPanel = document.getElementById('web-panel');
-  const webToolbar = document.getElementById('web-toolbar');
-  const webBackBtn = document.getElementById('web-back-btn');
-  const webReloadBtn = document.getElementById('web-reload-btn');
-  const webUrlForm = document.getElementById('web-url-form');
-  const webUrlInput = document.getElementById('web-url-input');
-  const webGoBtn = document.getElementById('web-go-btn');
-  const webExternalBtn = document.getElementById('web-external-btn');
-  const webSplitRatioBtn = document.getElementById('web-split-ratio-btn');
-  const webProxyToggleBtn = document.getElementById('web-proxy-toggle-btn');
-  const webCloseBtn = document.getElementById('web-close-btn');
-  const embeddedBrowser = document.getElementById('embedded-browser');
-  const webLoadingBar = document.getElementById('web-loading-bar');
-  const webEmptyState = document.getElementById('web-empty-state');
-  const webUnauthorizedState = document.getElementById('web-unauthorized-state');
-  const unauthorizedHostName = document.getElementById('unauthorized-host-name');
-  const unauthorizedExternalBtn = document.getElementById('unauthorized-external-btn');
-  const unauthorizedBackBtn = document.getElementById('unauthorized-back-btn');
-  const mobileTabToChatBtn = document.getElementById('mobile-tab-to-chat-btn');
-  const mobileTabActiveWebBtn = document.getElementById('mobile-tab-active-web-btn');
-
-  // Lista Blanca de Dominios Autorizados para Navegación Embebida
-  const ALLOWED_DOMAINS = [
-    'google.com.pe'
-  ];
-
-  function isDomainAllowed(targetUrl) {
-    if (!targetUrl) return false;
-    try {
-      let target = String(targetUrl).trim();
-      if (!/^https?:\/\//i.test(target)) {
-        target = 'https://' + target;
-      }
-      const host = new URL(target).hostname.toLowerCase();
-      return ALLOWED_DOMAINS.some(allowed => host === allowed || host.endsWith('.' + allowed));
-    } catch (_e) {
-      return false;
-    }
-  }
-
-  // Estado del Navegador Embebido
-  let isWebPanelOpen = false;
-  let currentSplitRatio = '50-50'; // '50-50' o '60-40'
-  let isProxyModeActive = true; // Por defecto proxy activo para superar restricciones de iframe
-  let mobileActiveTab = 'chat'; // 'chat' o 'web'
-  let webHistory = [];
-  let currentWebHistoryIndex = -1;
-
-  // FUNCIONES DE CONTROL DEL NAVEGADOR EMBEBIDO Y VISTA DIVIDIDA
-  function toggleWebPanel(forceState) {
-    if (typeof forceState === 'boolean') {
-      isWebPanelOpen = forceState;
-    } else {
-      isWebPanelOpen = !isWebPanelOpen;
-    }
-
-    if (window.innerWidth < 1024) {
-      if (isWebPanelOpen) {
-        setMobileTab('web');
-      } else {
-        setMobileTab('chat');
-      }
-    } else {
-      if (isWebPanelOpen) {
-        workspaceSplitContainer.classList.add('split-active');
-        applySplitRatioUI();
-        if (toggleWebPanelBtn) {
-          toggleWebPanelBtn.classList.add('bg-gradient-to-r', 'from-[#C5A059]', 'to-[#99793D]', 'text-[#0A1A3A]');
-          toggleWebPanelBtn.classList.remove('bg-[#0A1A3A]', 'text-[#C5A059]');
-        }
-      } else {
-        workspaceSplitContainer.classList.remove('split-active');
-        if (toggleWebPanelBtn) {
-          toggleWebPanelBtn.classList.remove('bg-gradient-to-r', 'from-[#C5A059]', 'to-[#99793D]', 'text-[#0A1A3A]');
-          toggleWebPanelBtn.classList.add('bg-[#0A1A3A]', 'text-[#C5A059]');
-        }
-      }
-    }
-  }
-
-  function setMobileTab(tab) {
-    mobileActiveTab = tab;
-    if (tab === 'web') {
-      isWebPanelOpen = true;
-      workspaceSplitContainer.classList.remove('mobile-tab-chat');
-      workspaceSplitContainer.classList.add('mobile-tab-web');
-      chatPanel.classList.add('hidden');
-      chatPanel.classList.remove('flex');
-      webPanel.classList.remove('hidden');
-      webPanel.classList.add('flex');
-    } else {
-      workspaceSplitContainer.classList.remove('mobile-tab-web');
-      workspaceSplitContainer.classList.add('mobile-tab-chat');
-      webPanel.classList.add('hidden');
-      webPanel.classList.remove('flex');
-      chatPanel.classList.remove('hidden');
-      chatPanel.classList.add('flex');
-    }
-  }
-
-  function applySplitRatioUI() {
-    workspaceSplitContainer.classList.remove('ratio-50-50', 'ratio-60-40');
-    workspaceSplitContainer.classList.add('ratio-' + currentSplitRatio);
-    if (webSplitRatioBtn) {
-      webSplitRatioBtn.textContent = '◫ ' + (currentSplitRatio === '50-50' ? '50/50' : '60/40');
-    }
-  }
-
-  function toggleSplitRatio() {
-    currentSplitRatio = (currentSplitRatio === '50-50') ? '60-40' : '50-50';
-    applySplitRatioUI();
-  }
-
-  function toggleProxyMode() {
-    isProxyModeActive = !isProxyModeActive;
-    if (isProxyModeActive) {
-      webProxyToggleBtn.classList.add('text-[#0072CE]', 'border-[#0072CE]');
-      webProxyToggleBtn.title = 'Modo Proxy Activo (Supera bloqueos X-Frame-Options)';
-      triggerPopupNotification('Navegador Web', 'Modo Proxy Activo: Permite cargar cualquier sitio web sin bloqueo de iframe', '🛡️');
-    } else {
-      webProxyToggleBtn.classList.remove('text-[#0072CE]', 'border-[#0072CE]');
-      webProxyToggleBtn.title = 'Modo Directo Activo (Sitios con X-Frame-Options podrían bloquearse)';
-      triggerPopupNotification('Navegador Web', 'Modo Directo Activo', '🌐');
-    }
-    const currentUrl = webUrlInput.value.trim();
-    if (currentUrl) {
-      loadWebUrl(currentUrl, false);
-    }
-  }
-
-  function loadWebUrl(rawUrl, addToHistory = true) {
-    if (!rawUrl) return;
-    let target = rawUrl.trim();
-    if (!/^https?:\/\//i.test(target)) {
-      if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(target)) {
-        target = 'https://' + target;
-      } else {
-        target = 'https://www.google.com.pe/search?q=' + encodeURIComponent(target);
-      }
-    }
-
-    if (!isWebPanelOpen || (window.innerWidth < 1024 && mobileActiveTab !== 'web')) {
-      toggleWebPanel(true);
-    }
-
-    webUrlInput.value = target;
-
-    let targetHost = '';
-    try {
-      targetHost = new URL(target).hostname;
-    } catch (_e) {
-      targetHost = target;
-    }
-
-    // Comprobación de Lista Blanca de Dominios Autorizados
-    if (!isDomainAllowed(target)) {
-      if (webLoadingBar) webLoadingBar.classList.add('hidden');
-      if (webEmptyState) webEmptyState.classList.add('hidden');
-      if (webUnauthorizedState) {
-        webUnauthorizedState.classList.remove('hidden');
-        if (unauthorizedHostName) unauthorizedHostName.textContent = targetHost;
-      }
-      triggerPopupNotification(
-        'Dominio No Autorizado',
-        `"${targetHost}" no está en la lista blanca embebida. Puedes abrirlo externamente con [🔗].`,
-        '🛡️'
-      );
-      if (webExternalBtn) {
-        webExternalBtn.classList.add('ring-2', 'ring-[#C5A059]');
-        setTimeout(() => webExternalBtn.classList.remove('ring-2', 'ring-[#C5A059]'), 3000);
-      }
-      return;
-    }
-
-    if (webUnauthorizedState) webUnauthorizedState.classList.add('hidden');
-    if (webEmptyState) webEmptyState.classList.add('hidden');
-    if (webLoadingBar) webLoadingBar.classList.remove('hidden');
-
-    if (addToHistory) {
-      if (currentWebHistoryIndex < webHistory.length - 1) {
-        webHistory = webHistory.slice(0, currentWebHistoryIndex + 1);
-      }
-      webHistory.push(target);
-      currentWebHistoryIndex = webHistory.length - 1;
-    }
-
-    let finalSrc = target;
-    if (isProxyModeActive) {
-      finalSrc = '/api/proxy-web?url=' + encodeURIComponent(target);
-    }
-
-    embeddedBrowser.src = finalSrc;
-
-    embeddedBrowser.onload = () => {
-      if (webLoadingBar) webLoadingBar.classList.add('hidden');
-    };
-
-    embeddedBrowser.onerror = () => {
-      if (webLoadingBar) webLoadingBar.classList.add('hidden');
-      triggerPopupNotification('Navegador Web', 'No se pudo cargar en visor embebido. Usa [🔗 Abrir en pestaña nueva].', '⚠️');
-    };
-  }
-
-  function openInWebPanel(url) {
-    if (!url) return;
-    toggleWebPanel(true);
-    loadWebUrl(url, true);
-  }
-
   function showLinkActionPopover(url, event) {
     document.querySelectorAll('.link-action-popover').forEach(el => el.remove());
 
     const popover = document.createElement('div');
     popover.className = 'link-action-popover';
-
-    const btnPanel = document.createElement('button');
-    btnPanel.type = 'button';
-    btnPanel.className = 'link-action-btn';
-    btnPanel.innerHTML = '<span>🌐</span> <span>Abrir en panel web</span>';
-    btnPanel.addEventListener('click', (e) => {
-      e.stopPropagation();
-      popover.remove();
-      openInWebPanel(url);
-    });
 
     const btnNewTab = document.createElement('button');
     btnNewTab.type = 'button';
@@ -1410,7 +1062,6 @@
       });
     });
 
-    popover.appendChild(btnPanel);
     popover.appendChild(btnNewTab);
     popover.appendChild(btnCopy);
 
@@ -1429,83 +1080,6 @@
     };
     setTimeout(() => document.addEventListener('click', closeHandler), 10);
   }
-
-  // Inicialización de Listeners del Panel Web
-  if (toggleWebPanelBtn) toggleWebPanelBtn.addEventListener('click', () => toggleWebPanel());
-  if (webCloseBtn) webCloseBtn.addEventListener('click', () => toggleWebPanel(false));
-  if (webSplitRatioBtn) webSplitRatioBtn.addEventListener('click', toggleSplitRatio);
-  if (webProxyToggleBtn) webProxyToggleBtn.addEventListener('click', toggleProxyMode);
-  if (mobileTabToChatBtn) mobileTabToChatBtn.addEventListener('click', () => setMobileTab('chat'));
-  if (mobileTabActiveWebBtn) mobileTabActiveWebBtn.addEventListener('click', () => setMobileTab('web'));
-
-  if (webUrlForm) {
-    webUrlForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      loadWebUrl(webUrlInput.value);
-    });
-  }
-
-  if (webBackBtn) {
-    webBackBtn.addEventListener('click', () => {
-      if (currentWebHistoryIndex > 0) {
-        currentWebHistoryIndex--;
-        loadWebUrl(webHistory[currentWebHistoryIndex], false);
-      }
-    });
-  }
-
-  if (webReloadBtn) {
-    webReloadBtn.addEventListener('click', () => {
-      if (webUrlInput.value) {
-        loadWebUrl(webUrlInput.value, false);
-      }
-    });
-  }
-
-  // Abrir en pestaña nueva (Permite navegación externa sin restricciones)
-  if (webExternalBtn) {
-    webExternalBtn.addEventListener('click', () => {
-      const url = webUrlInput.value.trim();
-      if (url) {
-        let fullUrl = url;
-        if (!/^https?:\/\//i.test(fullUrl)) {
-          fullUrl = 'https://' + fullUrl;
-        }
-        window.open(fullUrl, '_blank', 'noopener,noreferrer');
-      } else {
-        triggerPopupNotification('Navegador Web', 'Ingresa una URL en la barra para abrirla externamente', 'ℹ️');
-      }
-    });
-  }
-
-  if (unauthorizedExternalBtn) {
-    unauthorizedExternalBtn.addEventListener('click', () => {
-      const url = webUrlInput.value.trim();
-      if (url) {
-        let fullUrl = url;
-        if (!/^https?:\/\//i.test(fullUrl)) {
-          fullUrl = 'https://' + fullUrl;
-        }
-        window.open(fullUrl, '_blank', 'noopener,noreferrer');
-      }
-    });
-  }
-
-  if (unauthorizedBackBtn) {
-    unauthorizedBackBtn.addEventListener('click', () => {
-      if (webUnauthorizedState) webUnauthorizedState.classList.add('hidden');
-      if (webEmptyState) webEmptyState.classList.remove('hidden');
-      webUrlInput.value = '';
-    });
-  }
-
-  // Accesos Rápidos
-  document.querySelectorAll('.web-quick-link').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const url = btn.getAttribute('data-url');
-      if (url) loadWebUrl(url, true);
-    });
-  });
 
   // Sanitización de Emoticones en Identidad
   function purgeEmojis(str) {
@@ -2414,9 +1988,6 @@
             <span class="preview-domain text-[10px] uppercase font-bold text-[#C5A059] tracking-wider truncate"></span>
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
-            <button type="button" class="preview-open-web-btn px-2 py-0.5 rounded-lg bg-[#C5A059]/15 hover:bg-[#C5A059] text-[#C5A059] hover:text-[#0A1A3A] text-[10px] font-bold transition-all border border-[#C5A059]/30 cursor-pointer" title="Abrir en Panel Web">
-              🌐 Panel
-            </button>
             <a target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded-lg bg-black/5 hover:bg-black/10 text-[#0A1A3A] text-[10px] font-bold transition-all cursor-pointer" title="Abrir en pestaña nueva">
               ↗
             </a>
@@ -2446,14 +2017,7 @@
       titleEl.textContent = link.title || link.domain || '';
       titleEl.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        openInWebPanel(linkUrl);
-      });
-    }
-    const previewBtn = linkCard.querySelector('.preview-open-web-btn');
-    if (previewBtn) {
-      previewBtn.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        openInWebPanel(linkUrl);
+        window.open(linkUrl, '_blank', 'noopener,noreferrer');
       });
     }
 
@@ -3490,7 +3054,7 @@
       const rawText = msg.text || '';
       const urlRegex = /(https?:\/\/[^\s]+)/gi;
 
-      // Si el texto contiene enlaces web, permitimos abrir menú de opciones y botón directo de Panel Web
+      // Si el texto contiene enlaces web, permitimos abrir el menú de opciones del enlace
       if (urlRegex.test(rawText)) {
         let lastIndex = 0;
         let match;
@@ -3519,18 +3083,6 @@
             showLinkActionPopover(url, ev);
           });
           linkSpan.appendChild(a);
-
-          const openBtn = document.createElement('button');
-          openBtn.type = 'button';
-          openBtn.className = 'open-in-panel-chip';
-          openBtn.title = 'Abrir en panel web dividido';
-          openBtn.innerHTML = '<span>🌐</span><span>Panel</span>';
-          openBtn.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            openInWebPanel(url);
-          });
-          linkSpan.appendChild(openBtn);
 
           textEl.appendChild(linkSpan);
           lastIndex = matchEnd;
@@ -4206,16 +3758,7 @@
     if (window.innerWidth >= 1024) {
       document.body.classList.remove('mobile-view-contacts', 'mobile-view-chat');
       if (drawerBackdrop) drawerBackdrop.classList.add('hidden');
-      if (isWebPanelOpen) {
-        workspaceSplitContainer.classList.add('split-active');
-        applySplitRatioUI();
-        chatPanel.classList.remove('hidden');
-        webPanel.classList.remove('hidden');
-      } else {
-        workspaceSplitContainer.classList.remove('split-active');
-        chatPanel.classList.remove('hidden');
-        webPanel.classList.add('hidden');
-      }
+      chatPanel.classList.remove('hidden');
     } else {
       if (activeContactSyncId) {
         document.body.classList.add('mobile-view-chat');
@@ -4223,11 +3766,6 @@
       } else {
         document.body.classList.add('mobile-view-contacts');
         document.body.classList.remove('mobile-view-chat');
-      }
-      if (isWebPanelOpen && mobileActiveTab === 'web') {
-        setMobileTab('web');
-      } else {
-        setMobileTab('chat');
       }
     }
   });
@@ -4602,9 +4140,6 @@
             <button type="button" class="copy-link-btn px-2.5 py-1.5 rounded-xl bg-white hover:bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs text-[#64748B] hover:text-[#C5A059] font-semibold transition-colors cursor-pointer" title="Copiar enlace">
               📋
             </button>
-            <button type="button" class="open-web-panel-btn px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1 cursor-pointer" title="Abrir en Panel Web dividido">
-              🌐 Panel
-            </button>
             <a target="_blank" rel="noopener noreferrer"
               class="px-2.5 py-1.5 rounded-xl bg-black/5 hover:bg-black/10 text-[#0A1A3A] font-bold text-xs shadow-xs transition-all flex items-center gap-1 cursor-pointer" title="Abrir en pestaña nueva">
               ↗
@@ -4622,14 +4157,6 @@
             setTimeout(() => { copyBtn.textContent = '📋'; }, 1500);
           });
         });
-
-        const panelBtn = item.querySelector('.open-web-panel-btn');
-        if (panelBtn) {
-          panelBtn.addEventListener('click', () => {
-            closeMediaHub();
-            openInWebPanel(linkItem.url);
-          });
-        }
 
         list.appendChild(item);
       });

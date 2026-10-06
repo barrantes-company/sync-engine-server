@@ -800,7 +800,7 @@ header.sticky {
 }
 
 /* ==========================================================================
-   4. PANEL DE NAVEGADOR WEB EMBEBIDO (#web-panel) Y ENLACES
+   4. LAYOUT PRINCIPAL DE TRABAJO Y ENLACES
    ========================================================================== */
 
 #workspace-split-container {
@@ -813,74 +813,10 @@ header.sticky {
 }
 
 @media (min-width: 1024px) {
-  #workspace-split-container:not(.split-active) #chat-panel {
+  #workspace-split-container #chat-panel {
     flex: 1 1 100%;
     max-width: 100%;
   }
-  #workspace-split-container:not(.split-active) #web-panel {
-    display: none !important;
-  }
-
-  #workspace-split-container.split-active.ratio-50-50 #chat-panel {
-    flex: 1 1 50%;
-    max-width: 50%;
-  }
-  #workspace-split-container.split-active.ratio-50-50 #web-panel {
-    display: flex !important;
-    flex: 1 1 50%;
-    max-width: 50%;
-  }
-
-  #workspace-split-container.split-active.ratio-60-40 #chat-panel {
-    flex: 1 1 60%;
-    max-width: 60%;
-  }
-  #workspace-split-container.split-active.ratio-60-40 #web-panel {
-    display: flex !important;
-    flex: 1 1 40%;
-    max-width: 40%;
-  }
-
-  #workspace-split-container.split-active.ratio-40-60 #chat-panel {
-    flex: 1 1 40%;
-    max-width: 40%;
-  }
-  #workspace-split-container.split-active.ratio-40-60 #web-panel {
-    display: flex !important;
-    flex: 1 1 60%;
-    max-width: 60%;
-  }
-}
-
-#web-panel {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 1px rgba(197, 160, 89, 0.2);
-}
-
-.web-control-btn {
-  height: 32px;
-  min-width: 32px;
-  padding: 0 8px;
-  border-radius: 8px;
-  background-color: var(--bg-main);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.web-control-btn:hover {
-  background-color: #F1F5F9;
-  border-color: var(--accent-gold);
-  color: var(--accent-gold-dark);
 }
 
 .chat-link {
@@ -894,30 +830,6 @@ header.sticky {
 .chat-link:hover {
   text-decoration-color: var(--accent-tech);
   filter: brightness(1.2);
-}
-
-.open-in-panel-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: 6px;
-  padding: 2px 7px;
-  font-size: 10px;
-  font-weight: 700;
-  border-radius: 6px;
-  background-color: var(--bg-main);
-  color: var(--accent-gold);
-  border: 1px solid rgba(197, 160, 89, 0.35);
-  cursor: pointer;
-  vertical-align: middle;
-  transition: all 0.15s ease;
-  -webkit-user-select: none;
-  user-select: none;
-}
-.open-in-panel-chip:hover {
-  background-color: var(--accent-gold);
-  color: #FFFFFF;
-  box-shadow: 0 0 8px rgba(197, 160, 89, 0.5);
 }
 
 .link-action-popover {
@@ -981,14 +893,12 @@ header.sticky {
 
 #sidebar-panel,
 #chat-panel-container,
-#info-drawer-panel,
-#web-panel {
+#info-drawer-panel {
   color: var(--text-primary);
 }
 
 #sidebar-panel,
-#info-drawer-panel,
-#web-panel {
+#info-drawer-panel {
   background-color: var(--bg-card);
 }
 
