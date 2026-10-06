@@ -163,30 +163,30 @@
       <!-- COLUMNA 1: LISTA DE CONTACTOS (SIDEBAR - ANCHO FIJO 320px - 360px EN DESKTOP) -->
       <aside id="sidebar-panel" class="w-full lg:w-[260px] flex-shrink-0 bg-white border-r lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full min-h-0 overflow-hidden shadow-sm transition-all z-10">
         
-        <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-2 flex-shrink-0">
+        <div class="panel-head p-3 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-2 flex-shrink-0">
           <div class="flex items-center gap-2">
-            <h2 class="font-bold text-base text-[#0A1A3A] font-title">Chats</h2>
+            <h2 class="font-bold text-[15px] text-[#0A1A3A] font-title tracking-tight">Chats</h2>
             <span id="contacts-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#F8FAFC] text-[#C5A059] border border-[rgba(197,160,89,0.25)]">0</span>
           </div>
-          <span class="text-xs text-[#64748B] font-medium font-mono">Directorio Privado</span>
+          <span class="text-[10px] text-[#94A3B8] font-semibold font-mono uppercase tracking-[0.12em]">Directorio Privado</span>
         </div>
 
-        <div class="p-2 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex flex-col gap-1 flex-shrink-0">
-          <div class="flex items-center gap-1.5">
+        <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex flex-col gap-1.5 flex-shrink-0">
+          <div class="flex items-center gap-2">
             <div class="relative flex-1">
-              <span class="absolute left-3 top-2.5 text-[#C5A059] text-xs">🔍</span>
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#C5A059] text-xs pointer-events-none">🔍</span>
               <input type="text" id="contact-search-input" maxlength="20" placeholder="Buscar o agregar ID (ej. SYNC-8821)..."
-                class="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-xs text-[#0A1A3A] uppercase placeholder-gray-400 font-mono shadow-sm">
+                class="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/25 outline-none text-xs text-[#0A1A3A] uppercase placeholder-gray-400 font-mono shadow-xs">
             </div>
             <button id="add-contact-btn" type="button" title="Agregar contacto por Código ID"
-              class="h-8 px-2.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-sm flex items-center justify-center transition-all flex-shrink-0 cursor-pointer">
+              class="h-9 px-3 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-sm flex items-center justify-center transition-all flex-shrink-0 cursor-pointer whitespace-nowrap">
               + ID
             </button>
           </div>
-          <p id="contact-action-msg" class="text-[11px] text-red-500 hidden px-1 font-medium"></p>
+          <p id="contact-action-msg" class="field-error hidden"></p>
         </div>
 
-        <div id="contacts-list" class="flex-1 min-h-0 overflow-y-auto divide-y divide-[rgba(197,160,89,0.08)] p-1.5 space-y-1 bg-white"></div>
+        <div id="contacts-list" class="flex-1 min-h-0 overflow-y-auto p-1.5 px-2 bg-white"></div>
 
         <div id="edit-profile-modal" class="profile-settings-popover hidden" role="dialog" aria-modal="false" aria-labelledby="profile-settings-title">
           <div class="bg-white rounded-2xl p-4 flex flex-col gap-3 shadow-xl border border-[rgba(197,160,89,0.3)] text-[#0A1A3A]">
@@ -243,26 +243,26 @@
           <section id="chat-panel" class="flex flex-1 min-h-0 bg-white lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full overflow-hidden shadow-sm relative min-w-0 transition-all">
             
             <!-- Header del Chat Activo -->
-            <div id="chat-header-bar" class="px-3 py-2 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-3 flex-shrink-0 shadow-xs z-10">
-              <div class="flex items-center gap-3 min-w-0">
+            <div id="chat-header-bar" class="chat-header-bar px-3 sm:px-4 py-2.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-3 flex-shrink-0 z-10">
+              <div class="flex items-center gap-2.5 min-w-0">
                 
                 <button id="back-to-contacts-btn" type="button" title="Volver a la lista de chats"
-                  class="lg:hidden p-1.5 -ml-1 rounded-xl text-[#C5A059] hover:bg-[#F8FAFC] transition-colors flex items-center justify-center cursor-pointer">
+                  class="icon-btn lg:hidden p-1.5 -ml-1 rounded-xl text-[#C5A059] hover:bg-[#F8FAFC] transition-colors flex items-center justify-center cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
 
                 <div id="active-chat-info-trigger" class="flex items-center gap-3 min-w-0 cursor-pointer group" title="Ver detalles y medios del contacto">
-                  <div id="active-chat-avatar" class="w-10 h-10 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm font-mono avatar-circle overflow-hidden">
+                  <div id="active-chat-avatar" class="chat-header-avatar w-11 h-11 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm font-mono avatar-circle overflow-hidden">
                     💬
                   </div>
 
                   <div class="min-w-0">
-                    <h2 id="active-chat-name" class="font-bold text-sm sm:text-base text-[#0A1A3A] group-hover:text-[#C5A059] transition-colors truncate font-title">Selecciona un contacto</h2>
+                    <h2 id="active-chat-name" class="font-bold text-sm sm:text-[15px] leading-tight text-[#0A1A3A] group-hover:text-[#C5A059] transition-colors truncate font-title">Selecciona un contacto</h2>
                     <div class="flex items-center gap-2 mt-0.5">
-                      <span id="active-chat-id" class="text-[11px] text-[#64748B] font-mono truncate">ID: —</span>
-                      <span id="active-chat-status" class="text-[11px] font-semibold text-[#64748B]">· Desconectado</span>
+                      <span id="active-chat-id" class="chat-header-id text-[11px] text-[#64748B] font-mono truncate">ID: —</span>
+                      <span id="active-chat-status" class="chat-header-status text-[11px] font-semibold is-offline"><span class="status-dot"></span><span>Desconectado</span></span>
                     </div>
                   </div>
                 </div>
@@ -271,26 +271,26 @@
               <div class="flex items-center gap-1.5 sm:gap-2">
                 <!-- Botón Drawer / Información y Medios (Columna 3) -->
                 <button id="toggle-drawer-btn" type="button" title="Información del Contacto y Medios (Columna 3)" aria-label="Información y Centro de Medios"
-                  class="h-9 px-3 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center gap-1.5 text-xs font-bold shadow-xs transition-all cursor-pointer">
+                  class="icon-btn h-9 px-3 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center gap-1.5 text-xs font-bold shadow-xs transition-all cursor-pointer">
                   <span>ℹ️</span>
                   <span class="hidden xl:inline">Info &amp; Medios</span>
                 </button>
 
                 <!-- Botón Centro de Medios Compartidos -->
                 <button id="open-media-hub-btn" type="button" title="Archivos y medios compartidos" aria-label="Archivos y medios compartidos"
-                  class="h-9 w-9 rounded-full bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
+                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
                   📁
                 </button>
 
                 <!-- Botón Búsqueda Interna -->
                 <button id="toggle-chat-search-btn" type="button" title="Buscar en la conversación" aria-label="Buscar en la conversación"
-                  class="h-9 w-9 rounded-full bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
+                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
                   🔍
                 </button>
 
                 <!-- Botón Llamada de Voz WebRTC -->
                 <button id="start-call-btn" type="button" title="Iniciar llamada de voz WebRTC" aria-label="Iniciar llamada de voz"
-                  class="h-9 w-9 rounded-full bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
+                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
                   📞
                 </button>
               </div>
@@ -333,15 +333,16 @@
           </div>
 
           <!-- HILO DE CONVERSACIÓN -->
-          <div id="chat-messages" class="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 space-y-3 scroll-smooth chat-canvas">
-            <div id="chat-welcome" class="h-full flex flex-col items-center justify-center text-center p-6 text-[#64748B]">
-              <div class="w-16 h-16 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] flex items-center justify-center text-[#C5A059] mb-3 shadow-xs">
+          <div id="chat-messages" class="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 scroll-smooth chat-canvas">
+            <div id="chat-welcome" class="empty-state h-full flex flex-col items-center justify-center text-center p-6 text-[#64748B]">
+              <div class="empty-state-icon w-16 h-16 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] flex items-center justify-center text-[#C5A059] mb-4 shadow-xs">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                 </svg>
               </div>
-              <p class="text-base font-bold text-[#0A1A3A] font-title">SYNC ENGINE para Web &amp; Móvil</p>
-              <p class="text-xs text-[#64748B] max-w-sm mt-1">Selecciona una conversación existente o agrega un compañero mediante su Código ID único arriba.</p>
+              <p class="empty-state-title text-base font-bold text-[#0A1A3A] font-title">SYNC ENGINE para Web &amp; Móvil</p>
+              <p class="empty-state-text text-xs text-[#64748B] max-w-sm mt-1.5 leading-relaxed">Selecciona una conversación existente o agrega un compañero mediante su Código ID único arriba.</p>
+              <span class="empty-state-hint mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[10px] font-bold uppercase tracking-wider text-[#C5A059]">🔒 Solo contactos con Código ID</span>
             </div>
           </div>
 
@@ -364,61 +365,61 @@
             </div>
             
             <!-- Selector Flotante de Emoticones -->
-            <div id="emoji-picker" class="hidden absolute bottom-20 left-3 sm:left-6 z-50 p-3 rounded-2xl bg-white border border-[rgba(197,160,89,0.25)] shadow-xl w-72 max-w-[90vw]">
+            <div id="emoji-picker" class="hidden absolute bottom-20 left-3 sm:left-6 z-50 p-3 rounded-2xl bg-white border border-[rgba(197,160,89,0.3)] shadow-xl w-72 max-w-[90vw]">
               <div class="flex items-center justify-between pb-2 mb-2 border-b border-[rgba(197,160,89,0.18)] text-xs font-bold text-[#C5A059]">
                 <span>Emoticones</span>
-                <button id="close-emoji-btn" type="button" class="text-gray-400 hover:text-[#0A1A3A]">✕</button>
+                <button id="close-emoji-btn" type="button" aria-label="Cerrar emoticones" class="h-6 w-6 rounded-md text-gray-400 hover:text-[#0A1A3A] hover:bg-[#F8FAFC] flex items-center justify-center transition-colors cursor-pointer">✕</button>
               </div>
-              <div class="grid grid-cols-6 gap-2 text-xl select-none">
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">😀</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">😂</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">😍</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">😎</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">👍</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">🔥</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">🎉</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">❤️</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">🚀</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">💡</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">✅</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">💻</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">📱</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">🔒</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">✨</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">☕</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">🎧</button>
-                <button type="button" class="emoji-btn p-1.5 hover:bg-[#F8FAFC] rounded-lg transition-colors">⚡</button>
+              <div class="grid grid-cols-6 gap-1.5 text-xl select-none">
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">😀</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">😂</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">😍</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">😎</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">👍</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">🔥</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">🎉</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">❤️</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">🚀</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">💡</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">✅</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">💻</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">📱</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">🔒</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">✨</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">☕</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">🎧</button>
+                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">⚡</button>
               </div>
             </div>
 
             <!-- Barra de Grabación de Audio en Tiempo Real -->
-            <div id="recording-bar" class="hidden items-center justify-between p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs">
+            <div id="recording-bar" class="hidden items-center justify-between gap-3 p-3 rounded-2xl bg-red-50 border border-red-200 text-xs flex-wrap">
               <div class="flex items-center gap-3">
                 <span class="w-3 h-3 rounded-full bg-red-500 pulse-record"></span>
                 <span class="font-bold text-red-700">Grabando nota de voz...</span>
-                <span id="recording-timer" class="font-mono text-red-600 font-bold">0:00</span>
+                <span id="recording-timer" class="px-2 py-0.5 rounded-md bg-white/70 border border-red-200 font-mono text-red-600 font-bold">0:00</span>
               </div>
               <div class="flex items-center gap-2">
-                <button id="cancel-recording-btn" type="button" class="px-3 py-1.5 rounded-lg bg-white border border-red-300 text-gray-700 hover:bg-red-50 font-semibold cursor-pointer">✕ Cancelar</button>
-                <button id="send-recording-btn" type="button" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-[#C5A059] to-[#99793D] text-white font-bold shadow-xs cursor-pointer">✓ Enviar Audio</button>
+                <button id="cancel-recording-btn" type="button" class="px-3.5 py-2 rounded-xl bg-white border border-red-300 text-gray-700 hover:bg-red-50 font-semibold cursor-pointer transition-colors">✕ Cancelar</button>
+                <button id="send-recording-btn" type="button" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold shadow-sm cursor-pointer transition-all">✓ Enviar Audio</button>
               </div>
             </div>
 
             <!-- Fila de Entrada: [😃], [🎙], [📎], [Textarea], [➤ Enviar] -->
-            <div id="normal-input-bar" class="flex items-end gap-1.5 sm:gap-2">
+            <div id="normal-input-bar" class="flex items-end gap-2">
               
               <button id="toggle-emoji-btn" type="button" title="Insertar emoticones" aria-label="Insertar emoticones"
-                class="h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
+                class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
                 😃
               </button>
 
               <button id="voice-record-btn" type="button" title="Grabar nota de voz" aria-label="Grabar nota de voz"
-                class="h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
+                class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
                 🎙
               </button>
 
               <button id="attach-btn" type="button" title="Adjuntar archivo o imagen" aria-label="Adjuntar archivo o imagen"
-                class="h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
+                class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
                 📎
               </button>
               <input type="file" id="file-input" title="Seleccionar archivo" aria-label="Seleccionar archivo" class="hidden">
@@ -426,12 +427,13 @@
               <div class="flex-1 relative min-w-0">
                 <label for="chat-textarea" class="sr-only">Escribe un mensaje privado</label>
                 <textarea id="chat-textarea" rows="1" placeholder="Escribe un mensaje privado..."
-                  class="w-full resize-none rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none px-4 py-2.5 text-xs sm:text-sm text-[#0A1A3A] placeholder-gray-400 max-h-36 overflow-y-auto leading-relaxed shadow-xs transition-all"></textarea>
+                  class="composer-field w-full resize-none rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/25 outline-none px-4 py-3 text-sm text-[#0A1A3A] placeholder-gray-400 max-h-36 overflow-y-auto leading-relaxed shadow-xs transition-all"></textarea>
               </div>
 
               <button id="send-btn" type="button" title="Enviar mensaje (Enter)" aria-label="Enviar mensaje"
-                class="h-11 w-11 sm:w-auto sm:px-5 rounded-2xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-sm shadow-md active:scale-95 flex items-center justify-center gap-1.5 transition-all flex-shrink-0 cursor-pointer">
-                <span class="text-base">➤</span>
+                class="btn-send h-11 min-w-[44px] px-3.5 sm:px-5 rounded-2xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-sm shadow-md active:scale-95 flex items-center justify-center gap-1.5 transition-all flex-shrink-0 cursor-pointer">
+                <span class="text-base leading-none">➤</span>
+                <span class="hidden sm:inline">Enviar</span>
               </button>
 
             </div>
@@ -447,12 +449,12 @@
     <aside id="info-drawer-panel" class="drawer-closed flex flex-col h-full bg-white border-l border-[rgba(197,160,89,0.22)] lg:rounded-2xl overflow-hidden shadow-sm z-20">
       
       <!-- Cabecera del Drawer -->
-      <div class="p-3.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-2 flex-shrink-0">
+      <div class="panel-head p-3.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-2 flex-shrink-0">
         <div class="flex items-center gap-2">
           <span class="text-[#C5A059] text-base">ℹ️</span>
           <h3 class="font-bold text-sm text-[#0A1A3A] font-title">Información &amp; Medios</h3>
         </div>
-        <button id="close-drawer-btn" type="button" title="Cerrar panel de información" class="h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-all cursor-pointer">
+        <button id="close-drawer-btn" type="button" title="Cerrar panel de información" aria-label="Cerrar panel de información" class="icon-btn h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-all cursor-pointer">
           ✕
         </button>
       </div>
@@ -461,7 +463,7 @@
       <div class="flex-1 overflow-y-auto p-4 space-y-4">
         
         <!-- Ficha de Contacto con Recorte Circular 1080x1080 px -->
-        <div class="flex flex-col items-center text-center p-4 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.2)] shadow-xs">
+        <div class="drawer-contact-card flex flex-col items-center text-center p-4 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.2)] shadow-xs">
           <div class="relative mb-3">
             <div id="drawer-contact-avatar-box" class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-lg flex items-center justify-center font-mono avatar-circle shadow-md overflow-hidden">
               <span id="drawer-contact-avatar-fallback">💬</span>
@@ -476,28 +478,28 @@
 
         <!-- Centro de Medios Compartidos Integrado en Columna 3 -->
         <div class="rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.2)] overflow-hidden shadow-xs">
-          <div class="p-3 border-b border-[rgba(197,160,89,0.18)] bg-white flex items-center justify-between">
+          <div class="p-3 border-b border-[rgba(197,160,89,0.18)] bg-white flex items-center justify-between gap-2">
             <span class="font-bold text-xs text-[#0A1A3A] font-title flex items-center gap-1.5">
               <span>📁</span> Centro de Medios
             </span>
-            <span id="drawer-media-count" class="text-[10px] font-mono text-[#C5A059]">0 archivos</span>
+            <span id="drawer-media-count" class="px-2 py-0.5 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[10px] font-mono font-semibold text-[#C5A059] whitespace-nowrap">0 archivos</span>
           </div>
 
           <!-- Pestañas Rápidas del Drawer -->
           <div class="flex border-b border-[rgba(197,160,89,0.12)] bg-[#F1F5F9] p-1 gap-1 text-[11px] font-bold">
-            <button id="drawer-tab-img" type="button" class="flex-1 py-1.5 rounded-lg bg-white text-[#C5A059] border border-[rgba(197,160,89,0.25)] text-center cursor-pointer transition-colors shadow-xs">Fotos/Video</button>
-            <button id="drawer-tab-doc" type="button" class="flex-1 py-1.5 rounded-lg text-[#64748B] hover:text-[#C5A059] text-center cursor-pointer transition-colors">Docs</button>
-            <button id="drawer-tab-link" type="button" class="flex-1 py-1.5 rounded-lg text-[#64748B] hover:text-[#C5A059] text-center cursor-pointer transition-colors">Links</button>
+            <button id="drawer-tab-img" type="button" class="drawer-tab drawer-tab-active flex-1 py-1.5 rounded-lg bg-white text-[#C5A059] border border-[rgba(197,160,89,0.25)] text-center cursor-pointer transition-colors shadow-xs">Fotos/Video</button>
+            <button id="drawer-tab-doc" type="button" class="drawer-tab flex-1 py-1.5 rounded-lg text-[#64748B] hover:text-[#C5A059] text-center cursor-pointer transition-colors">Docs</button>
+            <button id="drawer-tab-link" type="button" class="drawer-tab flex-1 py-1.5 rounded-lg text-[#64748B] hover:text-[#C5A059] text-center cursor-pointer transition-colors">Links</button>
           </div>
 
           <!-- Lista de Medios -->
           <div id="drawer-media-content" class="p-3 max-h-56 overflow-y-auto space-y-2">
-            <p class="text-xs text-[#64748B] text-center py-4">Sin medios compartidos</p>
+            <p class="media-empty text-xs text-[#64748B] text-center py-4">Sin medios compartidos</p>
           </div>
         </div>
 
         <!-- Especificaciones Técnicas y Canónicas Barrantes Co. -->
-        <div class="rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.2)] p-3.5 space-y-2 text-xs text-[#64748B]">
+        <div class="drawer-specs rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.2)] p-3.5 space-y-2 text-xs text-[#64748B]">
           <h5 class="font-bold text-[#C5A059] font-title text-[11px] uppercase tracking-wider flex items-center gap-1.5">
             <span>🛡️</span> Especificaciones de Medios
           </h5>
@@ -1445,6 +1447,7 @@
       document.body.classList.remove('mobile-view-chat');
     }
     closeInfoDrawer();
+    chatMessages.replaceChildren(chatWelcome);
     chatWelcome.classList.remove('hidden');
   });
 
@@ -1484,10 +1487,10 @@
 
     if (validContacts.length === 0) {
       contactsList.innerHTML = `
-        <div class="p-6 text-center text-[#64748B]">
-          <div class="w-12 h-12 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[#C5A059] flex items-center justify-center mx-auto mb-2 text-xl font-bold shadow-xs">💬</div>
-          <p class="text-xs font-bold text-[#0A1A3A]">Sin contactos agregados</p>
-          <p class="text-[11px] mt-1 text-[#64748B]">Ingresa el Código ID de un compañero en el buscador superior para iniciar una conversación.</p>
+        <div class="empty-state p-6 text-center text-[#64748B]">
+          <div class="empty-state-icon w-14 h-14 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[#C5A059] flex items-center justify-center mx-auto mb-3 text-xl font-bold shadow-xs">💬</div>
+          <p class="text-xs font-bold text-[#0A1A3A] font-title">Sin contactos agregados</p>
+          <p class="text-[11px] mt-1.5 text-[#64748B] leading-relaxed">Ingresa el Código ID de un compañero en el buscador superior para iniciar una conversación.</p>
         </div>
       `;
       return;
@@ -1498,8 +1501,8 @@
 
       const item = document.createElement('div');
       const isActive = (c.syncId === activeContactSyncId);
-      item.className = `p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all ${
-        isActive ? 'bg-[rgba(197,160,89,0.12)] border-l-4 border-[#C5A059] shadow-xs' : 'hover:bg-[#F8FAFC]'
+      item.className = `contact-item p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all ${
+        isActive ? 'is-active bg-[rgba(197,160,89,0.12)] border-l-4 border-[#C5A059] shadow-xs' : 'hover:bg-[#F8FAFC]'
       }`;
 
       const avatarGradient = getAvatarColor(c.syncId);
@@ -1593,10 +1596,37 @@
   contactSearchInput.addEventListener('input', () => {
     const term = contactSearchInput.value.trim().toLowerCase();
     const items = contactsList.querySelectorAll('div[class*="cursor-pointer"]');
+    let visible = 0;
     items.forEach((it) => {
-      const text = it.textContent.toLowerCase();
-      it.style.display = text.includes(term) ? '' : 'none';
+      const match = it.textContent.toLowerCase().includes(term);
+      it.style.display = match ? '' : 'none';
+      if (match) visible += 1;
     });
+
+    const previousEmpty = document.getElementById('contact-search-empty');
+    if (previousEmpty) previousEmpty.remove();
+
+    if (items.length > 0 && visible === 0) {
+      const block = document.createElement('div');
+      block.id = 'contact-search-empty';
+      block.className = 'empty-state flex flex-col items-center p-6 text-center text-[#64748B]';
+      block.setAttribute('role', 'status');
+
+      const icon = document.createElement('div');
+      icon.className = 'empty-state-icon w-14 h-14 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[#C5A059] flex items-center justify-center mx-auto mb-3 text-xl font-bold shadow-xs';
+      icon.textContent = '🔍';
+
+      const title = document.createElement('p');
+      title.className = 'text-xs font-bold text-[#0A1A3A] font-title';
+      title.textContent = 'No se encontraron contactos';
+
+      const hint = document.createElement('p');
+      hint.className = 'text-[11px] mt-1.5 text-[#64748B] leading-relaxed';
+      hint.textContent = 'Prueba con otro término de búsqueda o revisa el Código ID.';
+
+      block.append(icon, title, hint);
+      contactsList.appendChild(block);
+    }
   });
 
   // CONTROL DEL DRAWER / CENTRO DE MEDIOS (COLUMNA 3 - 340px)
@@ -1659,18 +1689,18 @@
     currentDrawerTab = tab;
     if (drawerTabImg) {
       drawerTabImg.className = tab === 'img' 
-        ? 'flex-1 py-1.5 rounded-lg bg-[#0A1A3A] text-[#C5A059] border border-[rgba(197,160,89,0.25)] text-center cursor-pointer transition-colors'
-        : 'flex-1 py-1.5 rounded-lg text-[#94A3B8] hover:text-[#C5A059] text-center cursor-pointer transition-colors';
+        ? 'drawer-tab drawer-tab-active flex-1 py-1.5 rounded-lg bg-white text-[#C5A059] border border-[rgba(197,160,89,0.25)] text-center cursor-pointer transition-colors shadow-xs'
+        : 'drawer-tab flex-1 py-1.5 rounded-lg text-[#64748B] hover:text-[#C5A059] text-center cursor-pointer transition-colors';
     }
     if (drawerTabDoc) {
       drawerTabDoc.className = tab === 'doc'
-        ? 'flex-1 py-1.5 rounded-lg bg-[#0A1A3A] text-[#C5A059] border border-[rgba(197,160,89,0.25)] text-center cursor-pointer transition-colors'
-        : 'flex-1 py-1.5 rounded-lg text-[#94A3B8] hover:text-[#C5A059] text-center cursor-pointer transition-colors';
+        ? 'drawer-tab drawer-tab-active flex-1 py-1.5 rounded-lg bg-white text-[#C5A059] border border-[rgba(197,160,89,0.25)] text-center cursor-pointer transition-colors shadow-xs'
+        : 'drawer-tab flex-1 py-1.5 rounded-lg text-[#64748B] hover:text-[#C5A059] text-center cursor-pointer transition-colors';
     }
     if (drawerTabLink) {
       drawerTabLink.className = tab === 'link'
-        ? 'flex-1 py-1.5 rounded-lg bg-[#0A1A3A] text-[#C5A059] border border-[rgba(197,160,89,0.25)] text-center cursor-pointer transition-colors'
-        : 'flex-1 py-1.5 rounded-lg text-[#94A3B8] hover:text-[#C5A059] text-center cursor-pointer transition-colors';
+        ? 'drawer-tab drawer-tab-active flex-1 py-1.5 rounded-lg bg-white text-[#C5A059] border border-[rgba(197,160,89,0.25)] text-center cursor-pointer transition-colors shadow-xs'
+        : 'drawer-tab flex-1 py-1.5 rounded-lg text-[#64748B] hover:text-[#C5A059] text-center cursor-pointer transition-colors';
     }
     renderDrawerMedia(tab);
   }
@@ -1692,7 +1722,7 @@
       if (drawerMediaCount) drawerMediaCount.textContent = `${mediaList.length} archivos`;
 
       if (mediaList.length === 0) {
-        drawerMediaContent.innerHTML = '<p class="text-xs text-[#94A3B8] text-center py-4">Sin fotos o videos</p>';
+        drawerMediaContent.innerHTML = '<p class="media-empty text-xs text-[#94A3B8] text-center py-4">Sin fotos o videos</p>';
         return;
       }
 
@@ -1819,9 +1849,12 @@
     const contact = contactsMap.get(activeContactSyncId);
     if (!contact) return;
 
-    activeChatStatus.innerHTML = contact.isOnline 
-      ? '<span class="text-waGreen font-bold">● En línea</span>' 
-      : '<span class="text-waTextSecondary">· Desconectado</span>';
+    activeChatStatus.className = contact.isOnline
+      ? 'chat-header-status text-[11px] font-semibold is-online'
+      : 'chat-header-status text-[11px] font-semibold is-offline';
+    activeChatStatus.innerHTML = contact.isOnline
+      ? '<span class="status-dot"></span><span>En línea</span>'
+      : '<span class="status-dot"></span><span>Desconectado</span>';
   }
 
   // CITAR Y RESPONDER MENSAJES (REPLY)
@@ -2187,7 +2220,7 @@
     updateDrawerContact(contact);
 
     chatWelcome.classList.add('hidden');
-    chatMessages.innerHTML = '';
+    chatMessages.replaceChildren(chatWelcome);
 
     if (startCallBtn) startCallBtn.classList.remove('opacity-40', 'pointer-events-none');
     if (openMediaHubBtn) openMediaHubBtn.classList.remove('opacity-40', 'pointer-events-none');
@@ -2202,12 +2235,17 @@
         data.messages.forEach((msg) => {
           renderMessageBubble(msg);
         });
+        anchorChatToBottom();
 
         // Configurar mensaje fijado
         updatePinnedMessageUI(data.pinnedMessage || null);
       }
     } catch (e) {
       console.warn('Error al cargar historial:', e);
+    }
+
+    if (!chatMessages.querySelector('.msg-item')) {
+      chatWelcome.classList.remove('hidden');
     }
 
     // Notificar lectura al servidor
@@ -2833,6 +2871,18 @@
   }
 
   // RENDERIZADO DE BURBUJAS DE MENSAJE
+  // Ancla el hilo al final cuando terminan de cargar imágenes y previsualizaciones
+  function anchorChatToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatMessages.querySelectorAll('img').forEach((img) => {
+      if (img.complete || img.dataset.anchorScroll) return;
+      img.dataset.anchorScroll = '1';
+      img.addEventListener('load', () => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }, { once: true });
+    });
+  }
+
   function renderMessageBubble(msg) {
     if (!msg || !msg.id) return;
     if (renderedMessageIds.has(msg.id)) return;
@@ -2844,7 +2894,19 @@
     const wrapper = document.createElement('div');
     wrapper.id = 'msg-' + msg.id;
     wrapper.setAttribute('data-msg-id', msg.id);
-    wrapper.className = `relative group flex flex-col ${isLocal ? 'items-end ml-auto' : 'items-start mr-auto'} max-w-[88%] sm:max-w-[72%] msg-enter`;
+
+    // AGRUPACIÓN VISUAL: mensajes consecutivos del mismo emisor se pegan entre sí
+    const msgTs = msg.timestamp ? new Date(msg.timestamp).getTime() : 0;
+    const prevEl = chatMessages.lastElementChild;
+    const isGrouped = !!prevEl && prevEl.classList.contains('msg-item') &&
+      prevEl.getAttribute('data-from-id') === msg.fromId &&
+      msgTs > 0 && Number(prevEl.getAttribute('data-ts') || 0) > 0 &&
+      msgTs >= Number(prevEl.getAttribute('data-ts') || 0) &&
+      (msgTs - Number(prevEl.getAttribute('data-ts') || 0)) <= 5 * 60 * 1000;
+
+    wrapper.setAttribute('data-from-id', msg.fromId || '');
+    wrapper.setAttribute('data-ts', String(msgTs || ''));
+    wrapper.className = `msg-item ${isGrouped ? 'msg-grouped' : 'msg-group-start'} relative group flex flex-col ${isLocal ? 'items-end ml-auto' : 'items-start mr-auto'} max-w-[88%] sm:max-w-[72%] msg-enter`;
 
     const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '';
     const senderHeader = isLocal ? 'Tú' : (msg.fromName || msg.fromId);
@@ -2863,17 +2925,17 @@
     }
 
     const headerEl = document.createElement('div');
-    headerEl.className = `flex items-center gap-1.5 mb-1 px-1 text-[11px] ${isLocal ? 'flex-row-reverse text-[#C5A059]' : 'text-[#94A3B8]'}`;
+    headerEl.className = `msg-meta${isGrouped ? ' msg-meta-grouped' : ''}${isLocal ? ' msg-meta-sent' : ' msg-meta-received'}`;
     headerEl.innerHTML = `
-      <span class="font-bold tracking-wide"></span>
-      <span class="text-[#94A3B8] font-mono text-[10px]"></span>
+      <span class="msg-meta-sender font-bold tracking-wide"></span>
+      <span class="msg-meta-time font-mono text-[10px]"></span>
       ${checkIcon}
     `;
     headerEl.children[0].textContent = senderHeader;
     headerEl.children[1].textContent = timeStr;
 
     const bubble = document.createElement('div');
-    bubble.className = `chat-bubble-inner relative p-3 sm:p-3.5 text-sm transition-all ${
+    bubble.className = `chat-bubble-inner relative ${
       isLocal 
         ? 'chat-bubble-sent' 
         : 'chat-bubble-received'
@@ -2890,7 +2952,7 @@
       wrapper.appendChild(headerEl);
       wrapper.appendChild(bubble);
       chatMessages.appendChild(wrapper);
-      chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+      anchorChatToBottom();
       return;
     }
 
@@ -3048,7 +3110,7 @@
     // TEXTO REGULAR (CON SOPORTE PARA ENLACES AL PANEL WEB Y RICH LINK CARDS)
     else {
       const textEl = document.createElement('div');
-      textEl.className = 'msg-text-content whitespace-pre-wrap leading-relaxed select-text font-sans text-xs sm:text-sm break-words text-[#0A1A3A]';
+      textEl.className = 'msg-text-content whitespace-pre-wrap select-text break-words';
       textEl.dataset.rawText = msg.text || '';
 
       const rawText = msg.text || '';
@@ -3244,7 +3306,7 @@
     wrapper.appendChild(bubble);
     chatMessages.appendChild(wrapper);
 
-    chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+    anchorChatToBottom();
   }
 
   function copyToClipboard(text, btn) {
