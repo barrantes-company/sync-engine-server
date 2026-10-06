@@ -1,3 +1,6 @@
 node_modules/
 .env
 server.bundle.js
+syncengine-release.keystore
+android/.gradle/
+android/app/build/

@@ -83,6 +83,7 @@ const multer = require("multer");
 const { Server } = require("socket.io");
 const selfsigned = require("selfsigned");
 const db = require("./db");
+const { safeUrl } = require("./public/safe-content");
 
 const PORT = (process.env.PORT && process.env.PORT !== "8080") ? process.env.PORT : 3000;
 const HOST = "0.0.0.0";
@@ -118,6 +119,24 @@ app.use(
     setHeaders: (res) => res.setHeader("Content-Type", "application/json; charset=utf-8")
   })
 );
+// Intercept normalized/encoded upload paths BEFORE the public static middleware.
+// No alternate static spelling may expose the physical file without authorization.
+app.use((req, res, next) => {
+  let pathname;
+  try {
+    pathname = path.posix.normalize(decodeURIComponent(req.path).replace(/\\/g, "/"));
+  } catch (_) {
+    return res.status(400).json({ error: "Ruta no válida" });
+  }
+  const parts = pathname.split("/").filter(Boolean);
+  if (pathname.includes(":")) return res.status(400).json({ error: "Ruta no válida" });
+  if ((parts[0] || "").replace(/[. ]+$/, "").toLowerCase() !== "uploads") return next();
+  res.setHeader("Cache-Control", "private, no-store");
+  requireFileAuth(req, res, () => {
+    const file = parts.length === 2 ? db.getFileByFilename(parts[1]) : null;
+    servePrivateFile(req, res, file);
+  });
+});
 app.use(express.static(path.join(__dirname, "public")));
 app.use((err, req, res, next) => {
   if (req.path === "/api/save-subscription" && err instanceof SyntaxError && err.status === 400) {
@@ -165,6 +184,88 @@ function requireAuth(req, res, next) {
 
   req.user = user;
   next();
+}
+
+const FILE_COOKIE = "sync_engine_file_auth";
+const FILE_COOKIE_PATHS = ["/api/files", "/uploads"];
+
+function fileCookieOptions(req, cookiePath) {
+  return {
+    path: cookiePath, httpOnly: true, sameSite: "strict",
+    secure: req.secure || String(req.get("x-forwarded-proto") || "").split(",")[0].trim() === "https" ||
+      /^https:\/\//i.test(req.get("origin") || "")
+  };
+}
+
+// Only file routes accept this transport of an EXISTING session token.
+// Login/session creation, expiration and other API authentication are unchanged.
+function requireFileAuth(req, res, next) {
+  res.setHeader("Cache-Control", "private, no-store");
+  if (!req.headers.authorization) {
+    const cookie = String(req.headers.cookie || "").split(";")
+      .map((part) => part.trim()).find((part) => part.startsWith(FILE_COOKIE + "="));
+    if (cookie) {
+      try { req.headers.authorization = "Bearer " + decodeURIComponent(cookie.slice(FILE_COOKIE.length + 1)); }
+      catch (_) { return res.status(401).json({ error: "Credencial de archivo inválida" }); }
+    }
+  }
+  requireAuth(req, res, next);
+}
+
+app.post("/api/files/access", requireAuth, (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  const token = req.headers.authorization.slice(7).trim();
+  for (const cookiePath of FILE_COOKIE_PATHS) res.cookie(FILE_COOKIE, token, fileCookieOptions(req, cookiePath));
+  res.json({ ok: true });
+});
+
+app.post("/api/files/access/clear", (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  for (const cookiePath of FILE_COOKIE_PATHS) res.clearCookie(FILE_COOKIE, fileCookieOptions(req, cookiePath));
+  res.json({ ok: true });
+});
+
+function servePrivateFile(req, res, file) {
+  if (!file) return res.status(404).json({ error: "Archivo no registrado" });
+  if (!db.canReadFile(file.id, req.user.syncId)) return res.status(403).json({ error: "Sin acceso a este archivo" });
+  if (!file.filename || /[/\\:\u0000]/.test(file.filename) || [".", ".."].includes(file.filename)) {
+    return res.status(404).json({ error: "Archivo no disponible" });
+  }
+  // Preserve P0-01 protections, streaming and native byte-range handling.
+  res.setHeader("Content-Security-Policy", "sandbox; default-src 'none'; script-src 'none'");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Vary", "Authorization, Cookie");
+  const inlineMedia = /\.(?:png|jpe?g|gif|webp|avif|bmp|ico|mp4|m4v|mov|webm|mp3|wav|ogg|oga|m4a|aac|flac|opus)$/i.test(file.filename);
+  if (!inlineMedia || req.query.download === "1") res.attachment(file.name);
+  res.sendFile(file.filename, { root: UPLOADS_DIR, cacheControl: false, acceptRanges: true, dotfiles: "deny" }, (err) => {
+    if (!err || res.headersSent) return;
+    res.status(err.statusCode || 500).json({ error: "No se pudo leer el archivo" });
+  });
+}
+
+app.get("/api/files/:fileId", requireFileAuth, (req, res) => {
+  servePrivateFile(req, res, db.getFileById(req.params.fileId));
+});
+
+function messageFileIds(senderId, references, serverHost) {
+  const ids = new Set();
+  const origin = new URL("http://" + serverHost);
+  for (const reference of references) {
+    if (typeof reference !== "string" || !reference) continue;
+    const url = new URL(reference, origin);
+    if (url.host !== origin.host || !["http:", "https:"].includes(url.protocol)) continue;
+    const pathname = path.posix.normalize(decodeURIComponent(url.pathname).replace(/\\/g, "/"));
+    const parts = pathname.split("/").filter(Boolean);
+    let file;
+    if ((parts[0] || "").replace(/[. ]+$/, "").toLowerCase() === "uploads") {
+      file = parts.length === 2 ? db.getFileByFilename(parts[1]) : null;
+    } else if (parts[0] === "api" && parts[1] === "files") {
+      file = parts.length === 3 ? db.getFileById(parts[2]) : null;
+    } else continue;
+    if (!file || file.ownerId !== senderId) throw new Error("No puedes compartir este archivo");
+    ids.add(file.id);
+  }
+  return [...ids];
 }
 
 // Endpoint to receive subscription from client
@@ -324,6 +425,9 @@ app.post("/api/save-subscription", requireAuth, async (req, res) => {
 app.post("/api/user/profile", requireAuth, async (req, res) => {
   try {
     const { displayName, avatarUrl } = req.body || {};
+    if (avatarUrl !== undefined && avatarUrl !== null && !safeUrl(avatarUrl, "avatar")) {
+      return res.status(400).json({ error: "URL de avatar no válida" });
+    }
     const updated = await db.updateUserProfile(req.user.syncId, displayName, avatarUrl);
     io.emit("user-profile-updated", updated);
     res.json({ ok: true, user: updated });
@@ -333,13 +437,14 @@ app.post("/api/user/profile", requireAuth, async (req, res) => {
 });
 
 // Endpoint de Subida de Documentos y Archivos Pesados (hasta 2 GB sin compresión)
-app.post("/api/upload", requireAuth, upload.single("file"), (req, res) => {
+app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No se proporcionó ningún archivo" });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    const registeredFile = await db.registerFile(req.user.syncId, req.file);
+    const fileUrl = `/api/files/${registeredFile.id}`;
     const mime = (req.file.mimetype || "").toLowerCase();
     const orig = req.file.originalname || "";
 
@@ -350,6 +455,7 @@ app.post("/api/upload", requireAuth, upload.single("file"), (req, res) => {
     res.json({
       ok: true,
       file: {
+        id: registeredFile.id,
         url: fileUrl,
         name: req.file.originalname,
         size: req.file.size,
@@ -653,6 +759,26 @@ io.on("connection", function (socket) {
     }
 
     const msgType = type || "text";
+    // Reject executable resource schemes before storing or broadcasting user-controlled data.
+    if (fileData) {
+      if (typeof fileData !== "object" || Array.isArray(fileData) ||
+          ["url", "data"].some((key) => fileData[key] != null &&
+            !safeUrl(fileData[key], "download") && !safeUrl(fileData[key], "image"))) {
+        socket.emit("error-message", { message: "URL de archivo no válida" });
+        return;
+      }
+    }
+    if (audioData != null && !safeUrl(audioData, "audio")) {
+      socket.emit("error-message", { message: "URL de audio no válida" });
+      return;
+    }
+    let fileIds;
+    try {
+      fileIds = messageFileIds(sender.syncId, [fileData?.url, fileData?.data, audioData], socket.handshake.headers.host);
+    } catch (err) {
+      socket.emit("error-message", { message: err.message });
+      return;
+    }
     const targetSockets = onlineUsers.get(targetSyncId);
     const isTargetOnline = Boolean(targetSockets && targetSockets.size > 0);
     const initialStatus = isTargetOnline ? "delivered" : "sent";
@@ -695,10 +821,17 @@ io.on("connection", function (socket) {
             const audioFileName = `voice-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
             const audioFilePath = path.join(UPLOADS_DIR, audioFileName);
             fs.writeFileSync(audioFilePath, buffer);
-            finalAudioData = `/uploads/${audioFileName}`;
+            const audioFile = await db.registerFile(sender.syncId, {
+              filename: audioFileName, originalname: audioFileName, size: buffer.length,
+              mimetype: "audio/" + rawFormat
+            });
+            finalAudioData = `/api/files/${audioFile.id}`;
+            fileIds.push(audioFile.id);
           }
         } catch (err) {
           console.warn("[AUDIO] Error al persistir audio en disco:", err.message);
+          socket.emit("error-message", { message: "No se pudo registrar el audio" });
+          return;
         }
       }
 
@@ -720,6 +853,7 @@ io.on("connection", function (socket) {
         text: text,
         audioData: finalAudioData,
         fileData: fileData,
+        fileIds: fileIds,
         replyTo: replyTo || null,
         status: initialStatus
       });

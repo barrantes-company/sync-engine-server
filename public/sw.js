@@ -1,8 +1,10 @@
-const CACHE_NAME = 'sync-engine-v2';
+const CACHE_NAME = 'sync-engine-v4';
 const CACHE_PREFIX = 'sync-engine-';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
+  '/safe-content.js',
+  '/private-files.js',
   '/widget.html',
   '/widget.css',
   '/widget.js',
@@ -40,6 +42,7 @@ self.addEventListener('fetch', (event) => {
     url.origin !== self.location.origin ||
     url.pathname.startsWith('/socket.io/') ||
     url.pathname.startsWith('/api/') ||
+    url.pathname.toLowerCase().startsWith('/uploads') ||
     event.request.method !== 'GET'
   ) {
     return;
@@ -48,7 +51,8 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic' &&
+            !/no-store/i.test(networkResponse.headers.get('cache-control') || '')) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
         }

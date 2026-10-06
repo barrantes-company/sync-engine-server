@@ -23,6 +23,8 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
+<script src="/safe-content.js"></script>
+<script src="/private-files.js"></script>
 
 <script>
   tailwind.config = {
@@ -937,6 +939,7 @@
   // ESTADO GLOBAL DE LA APLICACIÓN
   const SERVER_URL = window.location.origin;
   const TOKEN_KEY = 'sync_engine_auth_token';
+  const { safeUrl, setSafeUrl } = SyncSafeContent;
 
   let currentUser = null;
   let currentToken = localStorage.getItem(TOKEN_KEY) || null;
@@ -1537,13 +1540,15 @@
     popup.className = 'b2b-toast msg-enter pointer-events-auto flex items-start gap-3 p-2.5 rounded-full text-xs transition-all duration-300';
     popup.innerHTML = `
       <div class="b2b-toast-icon flex items-center justify-center text-sm flex-shrink-0 font-bold">
-        ${icon}
       </div>
       <div class="flex-1 min-w-0">
-        <p class="b2b-toast-title font-bold truncate font-title">${escapeHtml(title)}</p>
-        <p class="b2b-toast-message text-[11px] truncate mt-0.5">${escapeHtml(message)}</p>
+        <p class="b2b-toast-title font-bold truncate font-title"></p>
+        <p class="b2b-toast-message text-[11px] truncate mt-0.5"></p>
       </div>
     `;
+    popup.querySelector('.b2b-toast-icon').textContent = icon;
+    popup.querySelector('.b2b-toast-title').textContent = title;
+    popup.querySelector('.b2b-toast-message').textContent = message;
     popupNotifications.appendChild(popup);
     setTimeout(() => {
       popup.style.opacity = '0';
@@ -1668,8 +1673,7 @@
     if (currentUser && currentUser.syncId === user.syncId) {
       currentUser = { ...currentUser, ...user };
       headerUserCleanName.textContent = currentUser.cleanDisplayName;
-      if (currentUser.avatarUrl) {
-        headerUserAvatar.src = currentUser.avatarUrl;
+      if (setSafeUrl(headerUserAvatar, 'src', currentUser.avatarUrl, 'avatar')) {
         headerUserAvatar.classList.remove('hidden');
       } else {
         headerUserAvatar.removeAttribute('src');
@@ -1683,7 +1687,13 @@
     }
   }
 
-  function showApp() {
+  async function showApp() {
+    try {
+      await SyncPrivateFiles.prepare(currentToken);
+    } catch (err) {
+      triggerPopupNotification('Archivos privados', err.message, '⚠️');
+      return;
+    }
     authScreen.classList.add('hidden');
     authScreen.style.setProperty('display', 'none', 'important');
     appContainer.classList.remove('hidden');
@@ -1694,8 +1704,7 @@
     headerUserSyncId.textContent = currentUser.syncId;
     headerUserCleanName.textContent = purgeEmojis(currentUser.cleanDisplayName);
 
-    if (currentUser.avatarUrl) {
-      headerUserAvatar.src = currentUser.avatarUrl;
+    if (setSafeUrl(headerUserAvatar, 'src', currentUser.avatarUrl, 'avatar')) {
       headerUserAvatar.classList.remove('hidden');
     } else {
       headerUserAvatar.classList.add('hidden');
@@ -1715,6 +1724,7 @@
   logoutBtn.addEventListener('click', () => {
     endCall(true);
     localStorage.removeItem(TOKEN_KEY);
+    SyncPrivateFiles.clear().catch(() => {});
     currentToken = null;
     currentUser = null;
     activeContactSyncId = null;
@@ -1725,30 +1735,30 @@
   // Procesamiento Automático de Foto de Perfil: Recorte Circular 1:1 (1080 × 1080 px)
   function processProfileAvatar(file) {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const side = Math.min(img.naturalWidth, img.naturalHeight);
-          const startX = Math.round((img.naturalWidth - side) / 2);
-          const startY = Math.round((img.naturalHeight - side) / 2);
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        const startX = Math.round((img.naturalWidth - side) / 2);
+        const startY = Math.round((img.naturalHeight - side) / 2);
 
-          const canvas = document.createElement('canvas');
-          canvas.width = 1080;
-          canvas.height = 1080;
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          // Recorte automático circular basado en imagen cuadrada de 1080x1080
-          ctx.drawImage(img, startX, startY, side, side, 0, 0, 1080, 1080);
-          const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
-          resolve(croppedDataUrl);
-        };
-        img.onerror = () => reject(new Error('Error al decodificar la imagen'));
-        img.src = e.target.result;
+        const canvas = document.createElement('canvas');
+        canvas.width = 1080;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        // Recorte automático circular basado en imagen cuadrada de 1080x1080
+        ctx.drawImage(img, startX, startY, side, side, 0, 0, 1080, 1080);
+        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        resolve(croppedDataUrl);
       };
-      reader.onerror = () => reject(new Error('Error al leer el archivo de imagen'));
-      reader.readAsDataURL(file);
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Error al decodificar la imagen'));
+      };
+      img.src = objectUrl; // Locally created image-only blob, never a received URL.
     });
   }
 
@@ -1762,7 +1772,7 @@
     try {
       const croppedDataUrl = await processProfileAvatar(file);
       currentSelectedAvatarData = croppedDataUrl;
-      profileAvatarPreview.src = croppedDataUrl;
+      setSafeUrl(profileAvatarPreview, 'src', croppedDataUrl, 'avatar');
       profileAvatarPreview.classList.remove('hidden');
       profileAvatarFallback.classList.add('hidden');
     } catch (err) {
@@ -1801,8 +1811,7 @@
   function openProfileSettings() {
     profileNameInput.value = currentUser ? purgeEmojis(currentUser.cleanDisplayName) : '';
     currentSelectedAvatarData = null;
-    if (currentUser && currentUser.avatarUrl) {
-      profileAvatarPreview.src = currentUser.avatarUrl;
+    if (setSafeUrl(profileAvatarPreview, 'src', currentUser && currentUser.avatarUrl, 'avatar')) {
       profileAvatarPreview.classList.remove('hidden');
       profileAvatarFallback.classList.add('hidden');
     } else {
@@ -1929,8 +1938,9 @@
         ? new Date(c.lastMessage.timestamp).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
         : '';
 
-      const avatarMarkup = c.avatarUrl
-        ? `<img src="${c.avatarUrl}" class="w-11 h-11 rounded-full object-cover avatar-circle flex-shrink-0 shadow-xs" alt="${escapeHtml(c.cleanDisplayName)}">`
+      const avatarUrl = safeUrl(c.avatarUrl, 'avatar');
+      const avatarMarkup = avatarUrl
+        ? '<img class="w-11 h-11 rounded-full object-cover avatar-circle flex-shrink-0 shadow-xs" alt="">'
         : `<div class="w-11 h-11 rounded-full bg-gradient-to-tr ${avatarGradient} text-white flex items-center justify-center font-bold text-xs shadow-xs font-mono flex-shrink-0 avatar-circle">${escapeHtml(c.syncId.replace('SYNC-', ''))}</div>`;
 
       item.innerHTML = `
@@ -1940,12 +1950,19 @@
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between gap-1">
-            <p class="font-bold text-xs text-[#0A1A3A] font-title truncate">${escapeHtml(c.formattedName)}</p>
+            <p class="font-bold text-xs text-[#0A1A3A] font-title truncate"></p>
             <span class="text-[10px] text-[#94A3B8] font-mono flex-shrink-0">${lastTime}</span>
           </div>
-          <p class="text-[11px] text-[#64748B] truncate mt-0.5">${escapeHtml(lastSnippet)}</p>
+          <p class="text-[11px] text-[#64748B] truncate mt-0.5"></p>
         </div>
       `;
+      item.querySelector('p.font-bold').textContent = c.formattedName;
+      item.querySelector('p.mt-0\\.5').textContent = lastSnippet;
+      if (avatarUrl) {
+        const avatar = item.querySelector('img');
+        setSafeUrl(avatar, 'src', avatarUrl, 'avatar');
+        avatar.alt = c.cleanDisplayName || '';
+      }
 
       item.addEventListener('click', () => selectContact(c.syncId));
       contactsList.appendChild(item);
@@ -2041,8 +2058,8 @@
     if (drawerContactName) drawerContactName.textContent = contact.formattedName || contact.displayName || contact.syncId;
     if (drawerContactId) drawerContactId.textContent = 'ID: ' + contact.syncId;
 
-    if (contact.avatarUrl && drawerContactAvatarImg && drawerContactAvatarFallback) {
-      drawerContactAvatarImg.src = contact.avatarUrl;
+    if (drawerContactAvatarImg && drawerContactAvatarFallback &&
+        setSafeUrl(drawerContactAvatarImg, 'src', contact.avatarUrl, 'avatar')) {
       drawerContactAvatarImg.classList.remove('hidden');
       drawerContactAvatarFallback.classList.add('hidden');
     } else if (drawerContactAvatarFallback && drawerContactAvatarImg) {
@@ -2129,9 +2146,12 @@
           });
         } else {
           item.innerHTML = `
-            <img src="${url}" alt="${escapeHtml(f.name)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+            <img alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
             <span class="absolute top-1 right-1 px-1 py-0.5 rounded bg-black/70 text-[8px] font-mono text-[#C5A059]">${f.isHd ? 'HD' : 'STD'}</span>
           `;
+          const image = item.querySelector('img');
+          setSafeUrl(image, 'src', url, 'image');
+          image.alt = f.name || '';
           item.addEventListener('click', () => openLightbox(url, f.name, f.size, f.isHd));
         }
 
@@ -2168,8 +2188,11 @@
               <p class="text-[10px] text-[#64748B] font-mono">${formatSize(f.size || 0)}</p>
             </div>
           </div>
-          <a href="${f.url || f.data || '#'}" download="${escapeHtml(f.name)}" class="px-2 py-1 rounded bg-[#C5A059]/20 hover:bg-[#C5A059] text-[#C5A059] hover:text-[#0A1A3A] font-bold text-[10px] transition-colors flex-shrink-0">⬇</a>
+          <a class="px-2 py-1 rounded bg-[#C5A059]/20 hover:bg-[#C5A059] text-[#C5A059] hover:text-[#0A1A3A] font-bold text-[10px] transition-colors flex-shrink-0">⬇</a>
         `;
+        const download = item.querySelector('a');
+        setSafeUrl(download, 'href', f.url || f.data, 'download');
+        download.download = f.name || '';
         list.appendChild(item);
       });
       drawerMediaContent.appendChild(list);
@@ -2196,7 +2219,7 @@
       list.className = 'flex flex-col gap-1.5';
       links.forEach(l => {
         const item = document.createElement('a');
-        item.href = l.url;
+        setSafeUrl(item, 'href', l.url, 'link');
         item.target = '_blank';
         item.rel = 'noopener noreferrer';
         item.className = 'p-2 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.2)] text-xs text-[#0072CE] truncate block transition-colors';
@@ -2366,17 +2389,20 @@
 
   function createLinkCardElement(link) {
     if (!link || !link.url) return null;
+    const linkUrl = safeUrl(link.url, 'link');
+    if (!linkUrl) return null;
     const linkCard = document.createElement('div');
     linkCard.className = 'link-preview-card mt-2.5 block rounded-xl overflow-hidden border border-[rgba(197,160,89,0.25)] bg-[#F8FAFC] hover:bg-[#F1F5F9] shadow-sm transition-all group text-left';
 
-    const imageHtml = link.image ? `
+    const imageUrl = safeUrl(link.image, 'image');
+    const imageHtml = imageUrl ? `
       <div class="w-full h-32 bg-black/5 overflow-hidden relative border-b border-[rgba(197,160,89,0.18)]">
-        <img src="${escapeHtml(link.image)}" alt="${escapeHtml(link.title || 'Vista previa')}" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-200" onerror="this.parentElement.style.display='none'">
+        <img alt="" class="preview-image w-full h-full object-cover group-hover:scale-102 transition-transform duration-200">
       </div>
     ` : '';
 
     const descHtml = link.description ? `
-      <p class="text-[11px] text-[#64748B] line-clamp-2 mt-0.5">${escapeHtml(link.description)}</p>
+      <p class="preview-description text-[11px] text-[#64748B] line-clamp-2 mt-0.5"></p>
     ` : '';
 
     linkCard.innerHTML = `
@@ -2384,35 +2410,50 @@
       <div class="p-2.5 flex flex-col gap-1">
         <div class="flex items-center justify-between gap-1.5">
           <div class="flex items-center gap-1.5 min-w-0">
-            <img src="https://www.google.com/s2/favicons?domain=${escapeHtml(link.domain)}&sz=32" alt="" class="w-3.5 h-3.5 rounded-xs object-contain" onerror="this.style.display='none'">
-            <span class="text-[10px] uppercase font-bold text-[#C5A059] tracking-wider truncate">${escapeHtml(link.domain)}</span>
+            <img alt="" class="preview-favicon w-3.5 h-3.5 rounded-xs object-contain">
+            <span class="preview-domain text-[10px] uppercase font-bold text-[#C5A059] tracking-wider truncate"></span>
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
             <button type="button" class="preview-open-web-btn px-2 py-0.5 rounded-lg bg-[#C5A059]/15 hover:bg-[#C5A059] text-[#C5A059] hover:text-[#0A1A3A] text-[10px] font-bold transition-all border border-[#C5A059]/30 cursor-pointer" title="Abrir en Panel Web">
               🌐 Panel
             </button>
-            <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded-lg bg-black/5 hover:bg-black/10 text-[#0A1A3A] text-[10px] font-bold transition-all cursor-pointer" title="Abrir en pestaña nueva">
+            <a target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded-lg bg-black/5 hover:bg-black/10 text-[#0A1A3A] text-[10px] font-bold transition-all cursor-pointer" title="Abrir en pestaña nueva">
               ↗
             </a>
           </div>
         </div>
-        <p class="font-bold text-xs text-[#0A1A3A] line-clamp-1 group-hover:text-[#0072CE] transition-colors cursor-pointer">${escapeHtml(link.title || link.domain)}</p>
+        <p class="font-bold text-xs text-[#0A1A3A] line-clamp-1 group-hover:text-[#0072CE] transition-colors cursor-pointer"></p>
         ${descHtml}
       </div>
     `;
+    linkCard.querySelector('.preview-domain').textContent = link.domain || '';
+    const description = linkCard.querySelector('.preview-description');
+    if (description) description.textContent = link.description;
+    setSafeUrl(linkCard.querySelector('a'), 'href', linkUrl, 'link');
+    const favicon = linkCard.querySelector('.preview-favicon');
+    setSafeUrl(favicon, 'src', 'https://www.google.com/s2/favicons?domain=' +
+      encodeURIComponent(link.domain || '') + '&sz=32', 'image');
+    favicon.addEventListener('error', () => { favicon.style.display = 'none'; });
+    if (imageUrl) {
+      const image = linkCard.querySelector('.preview-image');
+      setSafeUrl(image, 'src', imageUrl, 'image');
+      image.alt = link.title || 'Vista previa';
+      image.addEventListener('error', () => { image.parentElement.style.display = 'none'; });
+    }
 
     const titleEl = linkCard.querySelector('p.font-bold');
     if (titleEl) {
+      titleEl.textContent = link.title || link.domain || '';
       titleEl.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        openInWebPanel(link.url);
+        openInWebPanel(linkUrl);
       });
     }
     const previewBtn = linkCard.querySelector('.preview-open-web-btn');
     if (previewBtn) {
       previewBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        openInWebPanel(link.url);
+        openInWebPanel(linkUrl);
       });
     }
 
@@ -2564,8 +2605,12 @@
       document.body.classList.remove('mobile-view-contacts', 'mobile-view-chat');
     }
 
-    if (contact.avatarUrl) {
-      activeChatAvatar.innerHTML = `<img src="${contact.avatarUrl}" class="w-full h-full rounded-full object-cover avatar-circle" alt="Avatar">`;
+    if (safeUrl(contact.avatarUrl, 'avatar')) {
+      const avatar = document.createElement('img');
+      avatar.className = 'w-full h-full rounded-full object-cover avatar-circle';
+      avatar.alt = 'Avatar';
+      setSafeUrl(avatar, 'src', contact.avatarUrl, 'avatar');
+      activeChatAvatar.replaceChildren(avatar);
     } else {
       const gradient = getAvatarColor(contact.syncId);
       activeChatAvatar.className = `w-10 h-10 rounded-full bg-gradient-to-tr ${gradient} text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-md font-mono avatar-circle`;
@@ -3256,10 +3301,12 @@
     const headerEl = document.createElement('div');
     headerEl.className = `flex items-center gap-1.5 mb-1 px-1 text-[11px] ${isLocal ? 'flex-row-reverse text-[#C5A059]' : 'text-[#94A3B8]'}`;
     headerEl.innerHTML = `
-      <span class="font-bold tracking-wide">${escapeHtml(senderHeader)}</span>
-      <span class="text-[#94A3B8] font-mono text-[10px]">${escapeHtml(timeStr)}</span>
+      <span class="font-bold tracking-wide"></span>
+      <span class="text-[#94A3B8] font-mono text-[10px]"></span>
       ${checkIcon}
     `;
+    headerEl.children[0].textContent = senderHeader;
+    headerEl.children[1].textContent = timeStr;
 
     const bubble = document.createElement('div');
     bubble.className = `chat-bubble-inner relative p-3 sm:p-3.5 text-sm transition-all ${
@@ -3288,9 +3335,11 @@
       const replyBlock = document.createElement('div');
       replyBlock.className = 'mb-2 p-2 rounded-xl bg-[rgba(197,160,89,0.08)] hover:bg-[rgba(197,160,89,0.15)] border-l-4 border-[#C5A059] cursor-pointer transition-colors text-left';
       replyBlock.innerHTML = `
-        <div class="text-[11px] font-bold text-[#C5A059] truncate">${escapeHtml(msg.replyTo.fromName || 'Usuario')}</div>
-        <div class="text-xs text-[#64748B] line-clamp-2">${escapeHtml(msg.replyTo.text || 'Mensaje')}</div>
+        <div class="text-[11px] font-bold text-[#C5A059] truncate"></div>
+        <div class="text-xs text-[#64748B] line-clamp-2"></div>
       `;
+      replyBlock.children[0].textContent = msg.replyTo.fromName || 'Usuario';
+      replyBlock.children[1].textContent = msg.replyTo.text || 'Mensaje';
       replyBlock.addEventListener('click', () => {
         const targetEl = document.getElementById('msg-' + msg.replyTo.id);
         if (targetEl) {
@@ -3309,7 +3358,8 @@
       const audioCard = document.createElement('div');
       audioCard.className = 'flex items-center gap-3 min-w-[220px] sm:min-w-[270px]';
 
-      const audio = new Audio(msg.audioData);
+      const audio = new Audio();
+      setSafeUrl(audio, 'src', msg.audioData, 'audio');
       const playBtn = document.createElement('button');
       playBtn.type = 'button';
       playBtn.className = 'w-10 h-10 rounded-full bg-[#C5A059] hover:bg-[#d4b068] text-[#0A1A3A] font-extrabold flex items-center justify-center flex-shrink-0 cursor-pointer shadow-sm transition-colors';
@@ -3366,15 +3416,17 @@
         const vidContainer = document.createElement('div');
         vidContainer.className = 'video-card-container mb-2';
         vidContainer.innerHTML = `
-          <video controls playsinline preload="metadata" class="video-player-element" src="${fileUrl}">
+          <video controls playsinline preload="metadata" class="video-player-element">
             Tu navegador no soporta reproducción de video HTML5 H.264/AAC.
           </video>
           <div class="video-meta-bar">
             <span class="video-codec-badge">H.264 / AAC HTML5</span>
-            <span class="text-[10px] font-mono text-[#64748B] truncate max-w-[160px]">${escapeHtml(f.name)}</span>
+            <span class="video-filename text-[10px] font-mono text-[#64748B] truncate max-w-[160px]"></span>
             <span class="text-[10px] font-mono text-[#C5A059] ml-auto">${formatSize(f.size || 0)}</span>
           </div>
         `;
+        setSafeUrl(vidContainer.querySelector('video'), 'src', fileUrl, 'video');
+        vidContainer.querySelector('.video-filename').textContent = f.name || '';
         bubble.appendChild(vidContainer);
       }
       // 2. IMÁGENES CON VISOR LIGHTBOX Y SOPORTE HD (HASTA 4096px) / STD (~1600px)
@@ -3387,13 +3439,16 @@
 
         imgCard.innerHTML = `
           <div class="relative overflow-hidden max-h-72 bg-black/5 flex items-center justify-center">
-            <img src="${fileUrl}" alt="${escapeHtml(f.name)}" class="w-full h-auto max-h-72 object-contain group-hover:scale-[1.01] transition-transform">
+            <img alt="" class="w-full h-auto max-h-72 object-contain group-hover:scale-[1.01] transition-transform">
             ${badgeHtml}
             <div class="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 flex items-center justify-center text-white text-xs font-semibold backdrop-blur-[2px] transition-opacity">
               🔍 Abrir en Lightbox
             </div>
           </div>
         `;
+        const image = imgCard.querySelector('img');
+        setSafeUrl(image, 'src', fileUrl, 'image');
+        image.alt = f.name || '';
         imgCard.addEventListener('click', () => openLightbox(fileUrl, f.name, f.size, f.isHd));
         bubble.appendChild(imgCard);
       }
@@ -3409,17 +3464,21 @@
           <span class="p-2 rounded-lg bg-[#C5A059]/15 text-[#C5A059] text-base flex-shrink-0">📄</span>
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
-              <p class="font-bold text-xs text-[#0A1A3A] truncate">${escapeHtml(f.name)}</p>
+              <p class="font-bold text-xs text-[#0A1A3A] truncate"></p>
               ${heavyBadge}
             </div>
             <p class="text-[10px] text-[#64748B] font-mono">${formatSize(f.size || 0)}</p>
           </div>
         </div>
-        <a href="${fileUrl || '#'}" download="${escapeHtml(f.name)}"
+        <a
           class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-sm cursor-pointer transition-all flex-shrink-0 flex items-center gap-1">
           <span>⬇</span> <span>Descargar</span>
         </a>
       `;
+      fileCard.querySelector('p.font-bold').textContent = f.name || '';
+      const download = fileCard.querySelector('a');
+      setSafeUrl(download, 'href', fileUrl, 'download');
+      download.download = f.name || '';
       bubble.appendChild(fileCard);
     }
     // TEXTO REGULAR (CON SOPORTE PARA ENLACES AL PANEL WEB Y RICH LINK CARDS)
@@ -3450,7 +3509,7 @@
           linkSpan.className = 'inline-flex items-center flex-wrap align-middle my-0.5';
 
           const a = document.createElement('a');
-          a.href = url;
+          setSafeUrl(a, 'href', url, 'link');
           a.className = 'chat-link';
           a.textContent = url;
           a.title = 'Clic para opciones de enlace';
@@ -3809,14 +3868,12 @@
 
     if (isImg) {
       if (mediaModalTitle) mediaModalTitle.textContent = 'Enviar Imagen (Especificaciones Canónicas)';
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        if (mediaModalImgPreview) {
-          mediaModalImgPreview.src = ev.target.result;
-          mediaModalImgPreview.classList.remove('hidden');
-        }
-      };
-      reader.readAsDataURL(file);
+      if (mediaModalImgPreview) {
+        const objectUrl = URL.createObjectURL(file);
+        mediaModalImgPreview.onload = mediaModalImgPreview.onerror = () => URL.revokeObjectURL(objectUrl);
+        mediaModalImgPreview.src = objectUrl; // Local file in an image context only.
+        mediaModalImgPreview.classList.remove('hidden');
+      }
       if (imageQualityOptions) {
         imageQualityOptions.classList.remove('hidden');
         imageQualityOptions.classList.add('flex');
@@ -3852,48 +3909,48 @@
   // Reescalado de imágenes con Canvas (Estándar 1600px o HD 4096px)
   function processChatImage(file, maxDimension, quality) {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          let width = img.naturalWidth;
-          let height = img.naturalHeight;
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
 
-          if (width > maxDimension || height > maxDimension) {
-            if (width > height) {
-              height = Math.round((height * maxDimension) / width);
-              width = maxDimension;
-            } else {
-              width = Math.round((width * maxDimension) / height);
-              height = maxDimension;
-            }
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
           }
+        }
 
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, width, height);
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
 
-          canvas.toBlob((blob) => {
-            if (!blob) {
-              resolve(file);
-              return;
-            }
-            const processedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            });
-            resolve(processedFile);
-          }, 'image/jpeg', quality);
-        };
-        img.onerror = () => reject(new Error('Error al cargar la imagen'));
-        img.src = e.target.result;
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          const processedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          resolve(processedFile);
+        }, 'image/jpeg', quality);
       };
-      reader.onerror = () => reject(new Error('Error al leer el archivo'));
-      reader.readAsDataURL(file);
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Error al cargar la imagen'));
+      };
+      img.src = objectUrl; // Locally created image-only blob, never a received URL.
     });
   }
 
@@ -3971,6 +4028,10 @@
         }
 
         const uploadResult = await uploadFileWithProgress(fileToUpload, file.name);
+        const uploadedFile = uploadResult.file;
+        if (!uploadedFile || !safeUrl(uploadedFile.url, 'download')) {
+          throw new Error('URL de archivo no válida en la respuesta de subida');
+        }
 
         const clientMsgId = 'fil_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
         const replyData = currentReplyTo;
@@ -3981,11 +4042,11 @@
           toSyncId: activeContactSyncId,
           type: 'file',
           fileData: {
-            name: uploadResult.name || file.name,
-            size: uploadResult.size || fileToUpload.size,
-            type: uploadResult.mimetype || fileToUpload.type || 'application/octet-stream',
-            url: uploadResult.fileUrl,
-            data: uploadResult.fileUrl,
+            name: uploadedFile.name || file.name,
+            size: uploadedFile.size || fileToUpload.size,
+            type: uploadedFile.type || fileToUpload.type || 'application/octet-stream',
+            url: uploadedFile.url,
+            data: uploadedFile.url,
             isHd: isHd
           },
           replyTo: replyData
@@ -4019,7 +4080,7 @@
 
   function openLightbox(src, name, size, isHd) {
     if (!lightboxModal || !lightboxImg) return;
-    lightboxImg.src = src;
+    if (!setSafeUrl(lightboxImg, 'src', src, 'image')) return;
     if (lightboxFilename) lightboxFilename.textContent = name || 'Imagen';
     if (lightboxSpecs) {
       lightboxSpecs.textContent = isHd ? 'HD 4096px' : '1600px';
@@ -4029,7 +4090,7 @@
       lightboxDimensions.textContent = size ? formatSize(size) : '';
     }
     if (lightboxDownloadBtn) {
-      lightboxDownloadBtn.href = src;
+      setSafeUrl(lightboxDownloadBtn, 'href', src, 'download');
       lightboxDownloadBtn.download = name || 'imagen.jpg';
     }
     currentLightboxZoom = 1;
@@ -4236,20 +4297,19 @@
       <div class="flex items-start justify-between gap-2 border-b border-waBorder/60 pb-2">
         <div class="flex items-center gap-2 min-w-0">
           <span class="w-7 h-7 rounded-full bg-[#E8F5E9] text-waDarkTeal flex items-center justify-center text-sm font-bold flex-shrink-0">
-            ${data.icon || '📱'}
           </span>
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
               <span class="text-[10px] font-bold text-waTeal uppercase tracking-wider">Espejo Móvil</span>
               <span class="text-[10px] text-waTextSecondary font-mono">${timeStr}</span>
             </div>
-            <p class="font-bold text-waTextPrimary truncate text-xs">${escapeHtml(data.title || 'Notificación')}</p>
+            <p class="font-bold text-waTextPrimary truncate text-xs"></p>
           </div>
         </div>
         <button type="button" class="dismiss-mirror-btn text-waTextSecondary hover:text-waTextPrimary p-1 text-xs font-bold cursor-pointer">✕</button>
       </div>
 
-      <p class="text-xs text-waTextSecondary line-clamp-2 px-0.5">${escapeHtml(data.body || '')}</p>
+      <p class="text-xs text-waTextSecondary line-clamp-2 px-0.5"></p>
 
       <form class="quick-reply-form flex items-center gap-1.5 pt-1">
         <input type="text" class="quick-reply-input flex-1 px-3 py-1.5 rounded-xl bg-waBg border border-waBorder focus:border-waTeal focus:ring-1 focus:ring-waTeal/20 text-xs text-waTextPrimary outline-none shadow-xs" placeholder="Respuesta rápida...">
@@ -4258,6 +4318,9 @@
         </button>
       </form>
     `;
+    toast.querySelector('span.w-7').textContent = data.icon || '📱';
+    toast.querySelector('p.font-bold').textContent = data.title || 'Notificación';
+    toast.querySelector('p.line-clamp-2').textContent = data.body || '';
 
     const dismissBtn = toast.querySelector('.dismiss-mirror-btn');
     const form = toast.querySelector('.quick-reply-form');
@@ -4373,12 +4436,16 @@
         const dateStr = new Date(imgMsg.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
 
         item.innerHTML = `
-          <img src="${imgUrl}" alt="${escapeHtml(imgMsg.fileData.name || 'Foto')}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200">
+          <img alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200">
           <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-end text-white text-[10px]">
-            <p class="truncate font-semibold">${escapeHtml(imgMsg.fileData.name || 'Foto')}</p>
+            <p class="truncate font-semibold"></p>
             <span class="text-white/80">${dateStr}</span>
           </div>
         `;
+        const image = item.querySelector('img');
+        setSafeUrl(image, 'src', imgUrl, 'image');
+        image.alt = imgMsg.fileData.name || 'Foto';
+        item.querySelector('p').textContent = imgMsg.fileData.name || 'Foto';
 
         item.addEventListener('click', () => {
           openLightbox(imgUrl, imgMsg.fileData.name, imgMsg.fileData.size, imgMsg.fileData.isHd);
@@ -4421,7 +4488,7 @@
               📄
             </div>
             <div class="min-w-0">
-              <p class="font-bold text-xs text-[#0A1A3A] truncate">${escapeHtml(fileData.name || 'Documento')}</p>
+              <p class="font-bold text-xs text-[#0A1A3A] truncate"></p>
               <div class="flex items-center gap-2 mt-0.5 text-[11px] text-[#64748B]">
                 <span>${formatSize(fileData.size || 0)}</span>
                 <span>·</span>
@@ -4429,11 +4496,15 @@
               </div>
             </div>
           </div>
-          <a href="${fileData.data || '#'}" download="${escapeHtml(fileData.name || 'documento')}"
+          <a
             class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 flex-shrink-0">
             ⬇ Bajar
           </a>
         `;
+        item.querySelector('p.font-bold').textContent = fileData.name || 'Documento';
+        const download = item.querySelector('a');
+        setSafeUrl(download, 'href', fileData.data || fileData.url, 'download');
+        download.download = fileData.name || 'documento';
         list.appendChild(item);
       });
       mediaHubContent.appendChild(list);
@@ -4464,12 +4535,14 @@
           <div class="flex items-center justify-between text-xs text-[#64748B]">
             <span class="font-bold text-[#C5A059] flex items-center gap-1.5">
               <span>🎙️</span>
-              <span>Nota de voz (${escapeHtml(senderLabel)})</span>
+              <span class="audio-sender"></span>
             </span>
             <span class="text-[10px] font-mono">${dateStr}</span>
           </div>
-          <audio controls src="${audioMsg.audioData || ''}" class="w-full h-8 mt-1"></audio>
+          <audio controls class="w-full h-8 mt-1"></audio>
         `;
+        item.querySelector('.audio-sender').textContent = 'Nota de voz (' + senderLabel + ')';
+        setSafeUrl(item.querySelector('audio'), 'src', audioMsg.audioData, 'audio');
         list.appendChild(item);
       });
       mediaHubContent.appendChild(list);
@@ -4520,8 +4593,8 @@
               🔗
             </div>
             <div class="min-w-0">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-[#C5A059] bg-[#C5A059]/15 px-1.5 py-0.5 rounded border border-[#C5A059]/30">${escapeHtml(domain)}</span>
-              <p class="text-xs text-[#0A1A3A] truncate font-medium mt-0.5">${escapeHtml(linkItem.url)}</p>
+              <span class="link-domain text-[10px] font-bold uppercase tracking-wider text-[#C5A059] bg-[#C5A059]/15 px-1.5 py-0.5 rounded border border-[#C5A059]/30"></span>
+              <p class="text-xs text-[#0A1A3A] truncate font-medium mt-0.5"></p>
               <span class="text-[10px] text-[#64748B]">${dateStr}</span>
             </div>
           </div>
@@ -4532,12 +4605,15 @@
             <button type="button" class="open-web-panel-btn px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1 cursor-pointer" title="Abrir en Panel Web dividido">
               🌐 Panel
             </button>
-            <a href="${escapeHtml(linkItem.url)}" target="_blank" rel="noopener noreferrer"
+            <a target="_blank" rel="noopener noreferrer"
               class="px-2.5 py-1.5 rounded-xl bg-black/5 hover:bg-black/10 text-[#0A1A3A] font-bold text-xs shadow-xs transition-all flex items-center gap-1 cursor-pointer" title="Abrir en pestaña nueva">
               ↗
             </a>
           </div>
         `;
+        item.querySelector('.link-domain').textContent = domain;
+        item.querySelector('p').textContent = linkItem.url;
+        setSafeUrl(item.querySelector('a'), 'href', linkItem.url, 'link');
 
         const copyBtn = item.querySelector('.copy-link-btn');
         copyBtn.addEventListener('click', () => {

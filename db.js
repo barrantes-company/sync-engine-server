@@ -16,6 +16,7 @@ function ensureDbFile() {
       sessions: [],
       contacts: {},
       messages: [],
+      files: [],
       pinnedMessages: {},
       subscriptions: {}
     };
@@ -39,13 +40,17 @@ function readDb() {
     if (!data.sessions) data.sessions = [];
     if (!data.contacts) data.contacts = {};
     if (!data.messages) data.messages = [];
+    if (!Array.isArray(data.files)) data.files = [];
     if (!data.pinnedMessages) data.pinnedMessages = {};
     if (!data.subscriptions) data.subscriptions = {};
     cachedDb = data;
+    if (seedDevelopmentAdmin(cachedDb)) {
+      writeDb(cachedDb);
+    }
     return cachedDb;
   } catch (err) {
     console.error("[DB] Error al leer base de datos, inicializando respaldo:", err.message);
-    cachedDb = { users: [], sessions: [], contacts: {}, messages: [], pinnedMessages: {} };
+    cachedDb = { users: [], sessions: [], contacts: {}, messages: [], files: [], pinnedMessages: {} };
     return cachedDb;
   }
 }
@@ -108,6 +113,44 @@ function formatFullName(syncId, cleanName) {
 
 function hashPassword(password, salt) {
   return crypto.pbkdf2Sync(password, salt, 10000, 64, "sha512").toString("hex");
+}
+
+function seedDevelopmentAdmin(data) {
+  const isDevelopment = (process.env.NODE_ENV === "development" || !process.env.NODE_ENV) &&
+    !process.env.RENDER && !process.env.RENDER_EXTERNAL_URL;
+  if (!isDevelopment) {
+    return false;
+  }
+
+  const existingAdmin = data.users.some((user) =>
+    String(user.username || "").trim().toLowerCase() === "admin"
+  );
+  const existingSyncId = data.users.some((user) =>
+    String(user.syncId || "").trim().toUpperCase() === "SYNC-0000"
+  );
+  if (existingAdmin || existingSyncId) {
+    if (existingAdmin !== existingSyncId) {
+      console.warn("[DB] No se creó el usuario de desarrollo: admin o SYNC-0000 ya está asignado.");
+    }
+    return false;
+  }
+
+  const salt = crypto.randomBytes(16).toString("hex");
+  const cleanDisplayName = "Admin";
+  data.users.push({
+    id: crypto.randomUUID ? crypto.randomUUID() : "usr_" + Date.now(),
+    syncId: "SYNC-0000",
+    username: "admin",
+    cleanDisplayName: cleanDisplayName,
+    formattedName: formatFullName("SYNC-0000", cleanDisplayName),
+    salt: salt,
+    passwordHash: hashPassword("password123", salt),
+    createdAt: Date.now()
+  });
+  if (!data.contacts["SYNC-0000"]) {
+    data.contacts["SYNC-0000"] = [];
+  }
+  return true;
 }
 
 function generateSyncId(users) {
@@ -321,16 +364,58 @@ function getUserContacts(userSyncId, onlineSyncIds = new Set()) {
   return contactsList;
 }
 
+async function registerFile(ownerId, file) {
+  if (!file.filename || file.filename === "." || file.filename === ".." ||
+      /[/\\:\u0000]/.test(file.filename)) throw new Error("Nombre físico de archivo inválido");
+  const data = readDb();
+  const record = {
+    id: crypto.randomUUID(),
+    ownerId: String(ownerId).trim().toUpperCase(),
+    filename: file.filename,
+    name: file.originalname || file.filename,
+    size: file.size,
+    type: file.mimetype || "application/octet-stream",
+    createdAt: Date.now()
+  };
+  data.files.push(record);
+  await writeDb(data);
+  return record;
+}
+
+function getFileById(id) {
+  return readDb().files.find((file) => file.id === id) || null;
+}
+
+function getFileByFilename(filename) {
+  return readDb().files.find((file) => file.filename === filename) || null;
+}
+
+function canReadFile(fileId, userId) {
+  const data = readDb();
+  const file = data.files.find((item) => item.id === fileId);
+  if (!file) return false;
+  return data.messages.some((message) => !message.deletedForEveryone &&
+    message.fromId === file.ownerId && Array.isArray(message.fileIds) && message.fileIds.includes(fileId) &&
+    (message.fromId === userId || message.toId === userId));
+}
+
 function saveMessage(msgData) {
   const db = readDb();
+  const fromId = String(msgData.fromId).trim().toUpperCase();
+  const fileIds = [...new Set(msgData.fileIds || [])];
+  for (const fileId of fileIds) {
+    const file = db.files.find((item) => item.id === fileId);
+    if (!file || file.ownerId !== fromId) throw new Error("No puedes compartir este archivo");
+  }
   const newMsg = {
     id: msgData.id || ("msg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
-    fromId: String(msgData.fromId).trim().toUpperCase(),
+    fromId: fromId,
     toId: String(msgData.toId).trim().toUpperCase(),
     type: msgData.type || "text",
     text: msgData.text || "",
     audioData: msgData.audioData || null,
     fileData: msgData.fileData || null,
+    fileIds: fileIds,
     callData: msgData.callData || null,
     replyTo: msgData.replyTo || null,
     linkPreview: msgData.linkPreview || null,
@@ -558,6 +643,10 @@ function removePushSubscription(syncId, endpoint) {
 }
 
 module.exports = {
+  registerFile,
+  getFileById,
+  getFileByFilename,
+  canReadFile,
   removeEmojis,
   formatFullName,
   registerUser,
