@@ -59,6 +59,7 @@ function readDb() {
     if (!data.channelMessages) data.channelMessages = [];
     if (!data.vaultItems) data.vaultItems = {};
     if (!data.invoices) data.invoices = {};
+    if (!Array.isArray(data.calls)) data.calls = [];
     cachedDb = data;
     if (seedDevelopmentAdmin(cachedDb)) {
       writeDb(cachedDb);
@@ -385,6 +386,77 @@ function getUserContacts(userSyncId, onlineSyncIds = new Set()) {
   return contactsList;
 }
 
+/**
+ * Registra el inicio de una llamada para poder contabilizar las perdidas.
+ * @param {string} fromId syncId de quien llama.
+ * @param {string} toId syncId de quien recibe.
+ * @param {boolean} unavailable true si el destinatario no estaba en línea.
+ * @returns {object} Registro de llamada creado.
+ */
+function recordCall(fromId, toId, unavailable) {
+  const db = readDb();
+  const call = {
+    id: 'call_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    fromId: fromId,
+    toId: toId,
+    timestamp: Date.now(),
+    status: unavailable ? 'missed' : 'ringing'
+  };
+  db.calls.push(call);
+  if (db.calls.length > 2000) {
+    db.calls = db.calls.slice(-2000);
+  }
+  writeDb(db);
+  return call;
+}
+
+/**
+ * Actualiza la última llamada pendiente entre dos usuarios.
+ * @param {string} fromId syncId de quien llamó.
+ * @param {string} toId syncId de quien recibió.
+ * @param {'answered'|'rejected'|'missed'} status Nuevo estado.
+ * @returns {boolean} true si se encontró una llamada en curso.
+ */
+function resolveCall(fromId, toId, status) {
+  const db = readDb();
+  for (let i = db.calls.length - 1; i >= 0; i--) {
+    const call = db.calls[i];
+    if (call.fromId === fromId && call.toId === toId && call.status === 'ringing') {
+      call.status = status;
+      writeDb(db);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Resumen para el widget nativo: mensajes sin leer y llamadas perdidas.
+ * @param {string} syncId syncId del usuario autenticado.
+ * @param {number} callsSince Marca de tiempo desde la que se cuentan llamadas perdidas.
+ * @returns {{unreadMessages:number, missedCalls:number, latest:Array<object>}}
+ */
+function getWidgetSummary(syncId, callsSince) {
+  const db = readDb();
+  const since = Number(callsSince) || 0;
+  const unread = db.messages
+    .filter((m) => m.toId === syncId && m.fromId !== syncId && !m.read && m.status !== 'read' && !m.deletedForEveryone)
+    .sort((a, b) => b.timestamp - a.timestamp);
+  const missed = db.calls.filter((c) => c.toId === syncId && c.status === 'missed' && c.timestamp > since);
+  const nameOf = (id) => {
+    const user = db.users.find((u) => u.syncId === id);
+    return user ? (user.formattedName || formatFullName(user.syncId, user.cleanDisplayName)) : id;
+  };
+  const latest = unread.slice(0, 5).map((m) => ({
+    id: m.id,
+    fromId: m.fromId,
+    fromName: nameOf(m.fromId),
+    type: m.type || 'text',
+    text: m.type === 'text' || !m.type ? String(m.text || '').slice(0, 120) : '',
+    timestamp: m.timestamp
+  }));
+  return { unreadMessages: unread.length, missedCalls: missed.length, latest: latest };
+}
 async function registerFile(ownerId, file) {
   if (!file.filename || file.filename === "." || file.filename === ".." ||
       /[/\\:\u0000]/.test(file.filename)) throw new Error("Nombre físico de archivo inválido");
@@ -1080,5 +1152,8 @@ module.exports = {
   createWorkspaceChannel,
   getChannelMessages,
   saveChannelMessage,
-  exportConversation
+  exportConversation,
+  recordCall,
+  resolveCall,
+  getWidgetSummary
 };

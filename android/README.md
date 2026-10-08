@@ -19,3 +19,12 @@ Desde este directorio, ejecuta `gradle :app:assembleDebug` (o la tarea `:app:com
 ## URL de fábrica
 
 Para no escribir la URL en cada instalación, defínela al compilar: `$env:SYNC_DEFAULT_URL="https://tu-dominio.example"`. Se usa como URL predeterminada y, si es válida, el widget se añade sin pedir configuración. Sigue siendo editable en la app. Para firmar en release, define también `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` y `KEY_PASSWORD`.
+
+## Contadores, avisos y ajustes
+
+- Abre la app (o el engranaje del widget), escribe la dirección del servidor e **inicia sesión**. Solo se guarda el token en el almacenamiento privado del teléfono, nunca la contraseña.
+- El widget muestra mensajes sin leer y llamadas perdidas (`GET /api/widget/summary`). Se actualizan cada ~15 min (mínimo de Android) y al añadir el widget.
+- Las notificaciones locales avisan de mensajes nuevos y llamadas perdidas; requieren el permiso de notificaciones (Android 13+).
+- Tocar el widget abre la app y pone a cero las llamadas perdidas.
+- Ajustes: formato 24 h, zona horaria, contadores, animación de estelas y notificaciones.
+- Límite conocido: sin FCM no hay avisos instantáneos con la app cerrada.

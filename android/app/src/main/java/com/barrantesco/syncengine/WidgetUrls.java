@@ -52,6 +52,16 @@ final class WidgetUrls {
         }
     }
 
+    /** Devuelve solo esquema, host y puerto (sin barra final), base de las llamadas a la API. */
+    static String origin(String url) {
+        try {
+            URI uri = new URI(url.trim());
+            return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), null, null, null).toString();
+        } catch (URISyntaxException exception) {
+            return url;
+        }
+    }
+
     static boolean isWidgetUrl(String value) {
         if (value == null || value.trim().isEmpty()) {
             return false;

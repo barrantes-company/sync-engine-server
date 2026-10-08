@@ -9,6 +9,42 @@
     android:paddingRight="8dp"
     android:paddingBottom="12dp">
 
+    <ImageView
+        android:id="@+id/widget_trails_static"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/widget_trails"
+        android:visibility="gone" />
+
+    <ViewFlipper
+        android:id="@+id/widget_trails_flipper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:autoStart="true"
+        android:flipInterval="3200"
+        android:inAnimation="@anim/widget_fade_in"
+        android:outAnimation="@anim/widget_fade_out">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/widget_trails" />
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/widget_trails_b" />
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/widget_trails_c" />
+    </ViewFlipper>
+
     <ImageButton
         android:id="@+id/widget_open"
         android:layout_width="44dp"
@@ -71,7 +107,7 @@
             android:layout_marginTop="10dp"
             android:fontFamily="sans-serif"
             android:includeFontPadding="false"
-            android:text="@string/tap_to_open"
+            android:text="0 mensajes · 0 llamadas"
             android:textColor="#8CFFFFFF"
             android:textSize="13sp" />
     </LinearLayout>
