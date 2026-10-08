@@ -14,9 +14,13 @@ final class WidgetUrls {
     private WidgetUrls() {
     }
 
+    /**
+     * Devuelve la URL predeterminada: la guardada por el usuario o, si no hay,
+     * la configurada en el build mediante SYNC_DEFAULT_URL.
+     */
     static String defaultUrl(Context context) {
-        return context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-                .getString(DEFAULT_URL, "");
+        String saved = preferences(context).getString(DEFAULT_URL, "");
+        return saved.isEmpty() ? BuildConfig.DEFAULT_WIDGET_URL : saved;
     }
 
     static void saveDefaultUrl(Context context, String url) {

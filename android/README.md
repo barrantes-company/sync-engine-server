@@ -15,3 +15,7 @@ El widget nativo no ofrece unread counts, captura de imágenes ni otras acciones
 ## Compilar desde la línea de comandos
 
 Desde este directorio, ejecuta `gradle :app:assembleDebug` (o la tarea `:app:compileDebugJavaWithJavac` para compilar el código Java). Android Studio puede descargar los componentes Gradle/Android que falten.
+
+## URL de fábrica
+
+Para no escribir la URL en cada instalación, defínela al compilar: `$env:SYNC_DEFAULT_URL="https://tu-dominio.example/widget.html"`. Se usa como URL predeterminada y, si es válida, el widget se añade sin pedir configuración. Sigue siendo editable en la app. Para firmar en release, define también `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` y `KEY_PASSWORD`.
