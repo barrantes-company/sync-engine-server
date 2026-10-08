@@ -217,6 +217,16 @@ function requireAuth(req, res, next) {
   next();
 }
 
+function requireFeature(feature) {
+  return (req, res, next) => {
+    const entitlements = db.getPlanEntitlements(req.user.syncId);
+    if (!entitlements || !entitlements[feature]) {
+      return res.status(403).json({ error: "Esta función requiere un plan superior" });
+    }
+    next();
+  };
+}
+
 const FILE_COOKIE = "sync_engine_file_auth";
 const FILE_COOKIE_PATHS = ["/api/files", "/uploads"];
 
@@ -635,7 +645,7 @@ app.get("/api/vault", requireAuth, (req, res) => {
   res.json({ ok: true, items: items });
 });
 
-app.post("/api/vault", requireAuth, (req, res) => {
+app.post("/api/vault", requireAuth, requireFeature("encryptedVault"), (req, res) => {
   res.setHeader("Cache-Control", "private, no-store");
   try {
     const item = db.saveVaultItem(req.user.syncId, req.body);
@@ -657,7 +667,7 @@ app.get("/api/channels", requireAuth, (req, res) => {
   res.json({ ok: true, channels: channels });
 });
 
-app.post("/api/channels", requireAuth, (req, res) => {
+app.post("/api/channels", requireAuth, requireFeature("teamChannels"), (req, res) => {
   const { name, description } = req.body || {};
   try {
     const channel = db.createWorkspaceChannel(name, description, req.user.syncId);
