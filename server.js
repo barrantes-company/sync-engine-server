@@ -2,11 +2,14 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 // ==== Web Push Setup ====
 const webPush = require('web-push');
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BD7oG-w_r6z79_nS7N4K43m_B9k4vN5uP8q9l2m3n4o5p6q7r8s9t0u1v2w3x4y5z_SYNC_ENGINE_KEY";
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "YOUR_PRIVATE_VAPID_KEY_PLACEHOLDER";
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@syncengine.local';
 let webPushConfigured = false;
 try {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    throw new Error("VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY no están configuradas");
+  }
   webPush.setVapidDetails(
     VAPID_EMAIL,
     VAPID_PUBLIC_KEY,
@@ -292,18 +295,8 @@ function messageFileIds(senderId, references, serverHost) {
 }
 
 // Endpoint to receive subscription from client
-app.post('/api/notifications/subscribe', requireAuth, (req, res) => {
-  const { syncId, subscription } = req.body || {};
-  if (!syncId || !subscription) {
-    return res.status(400).json({ error: 'syncId y subscription son requeridos' });
-  }
-  try {
-    storeSubscription(syncId, subscription);
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error('[Push] Error storing subscription:', err);
-    return res.status(500).json({ error: 'Error interno al guardar suscripción' });
-  }
+app.get('/api/notifications/vapid-public-key', requireAuth, (_req, res) => {
+  res.json({ ok: true, configured: webPushConfigured, publicKey: webPushConfigured ? VAPID_PUBLIC_KEY : null });
 });
 
 // Extractor de Metadatos OpenGraph y Favicon para Rich Link Cards
@@ -907,12 +900,13 @@ io.on("connection", function (socket) {
     const targetSockets = onlineUsers.get(targetSyncId);
     const isTargetOnline = Boolean(targetSockets && targetSockets.size > 0);
     const initialStatus = isTargetOnline ? "delivered" : "sent";
+    const isRetry = Boolean(clientMsgId && db.getMessageById(clientMsgId));
 
     let messageObj = null;
 
     if (msgType === "text") {
       // If recipient is offline, send Web Push notification
-      if (!isTargetOnline) {
+      if (!isTargetOnline && !isRetry) {
         const pushPayload = {
           title: `Nuevo mensaje de ${sender.formattedName}`,
           body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
@@ -961,7 +955,7 @@ io.on("connection", function (socket) {
       }
 
       // If recipient is offline, send Web Push notification
-      if (!isTargetOnline) {
+      if (!isTargetOnline && !isRetry) {
         const pushPayload = {
           title: `Nuevo mensaje de ${sender.formattedName}`,
           body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,

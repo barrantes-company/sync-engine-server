@@ -273,6 +273,11 @@
             </div>
 
             <div>
+              <button id="enable-push-notifications-btn" type="button" class="text-xs text-[#C5A059] hover:text-[#99793D] font-bold cursor-pointer transition-colors">Activar notificaciones cuando SYNC ENGINE está cerrado</button>
+              <p id="push-notifications-status" class="text-[10px] text-[#64748B] mt-1" role="status" aria-live="polite"></p>
+            </div>
+
+            <div>
               <label for="profile-name-input" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre personalizado</label>
               <input type="text" id="profile-name-input" maxlength="35" title="Nombre personalizado, sin emojis" placeholder="ej. Laptop de Jose" class="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A]">
               <p class="text-[10px] text-[#64748B] mt-1 font-mono">Formato: [ID] - [Nombre] · Los emojis se eliminan automáticamente.</p>
@@ -1199,11 +1204,14 @@
   let activeContactSyncId = null;
   let contactsMap = new Map();
   let socket = null;
+  let isSocketAuthenticated = false;
 
   // Deduplicación local de mensajes
   const renderedMessageIds = new Set();
   let activeConversationMessages = [];
   let currentPinnedMessage = null;
+  let offlineOutboxDatabase = null;
+  let flushingOfflineMessages = false;
 
   // Grabación de Audio (MediaRecorder API)
   let mediaRecorder = null;
@@ -1232,6 +1240,8 @@
   const headerUserSyncId = document.getElementById('header-user-sync-id');
   const headerUserCleanName = document.getElementById('header-user-clean-name');
   const openEditProfileBtn = document.getElementById('open-edit-profile-btn');
+  const enablePushNotificationsBtn = document.getElementById('enable-push-notifications-btn');
+  const pushNotificationsStatus = document.getElementById('push-notifications-status');
   const logoutBtn = document.getElementById('logout-btn');
 
   const sidebarPanel = document.getElementById('sidebar-panel');
@@ -1473,12 +1483,6 @@
   }
 
   // Notificaciones Web & Pop-up flotante
-  function initWebNotifications() {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
-    }
-  }
-
   function triggerPopupNotification(title, message, icon = '💬') {
     if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
       try {
@@ -1509,6 +1513,202 @@
       popup.style.transform = 'translateY(-10px)';
       setTimeout(() => popup.remove(), 300);
     }, 3800);
+  }
+
+  function openOfflineOutbox() {
+    if (offlineOutboxDatabase) return Promise.resolve(offlineOutboxDatabase);
+    if (!('indexedDB' in window)) return Promise.reject(new Error('El almacenamiento offline no está disponible.'));
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('sync-engine-chat-outbox', 1);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains('messages')) {
+          request.result.createObjectStore('messages', { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = () => {
+        offlineOutboxDatabase = request.result;
+        resolve(offlineOutboxDatabase);
+      };
+      request.onerror = () => reject(request.error || new Error('No se pudo abrir la cola offline.'));
+    });
+  }
+
+  async function saveOfflineMessage(message) {
+    const database = await openOfflineOutbox();
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction('messages', 'readwrite');
+      transaction.objectStore('messages').put(message);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error('No se pudo guardar el mensaje offline.'));
+      transaction.onabort = () => reject(transaction.error || new Error('Se canceló el guardado del mensaje offline.'));
+    });
+  }
+
+  async function getOfflineMessages() {
+    const database = await openOfflineOutbox();
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction('messages', 'readonly');
+      const request = transaction.objectStore('messages').getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error || new Error('No se pudo leer la cola offline.'));
+      transaction.onerror = () => reject(transaction.error || new Error('No se pudo leer la cola offline.'));
+    });
+  }
+
+  async function deleteOfflineMessage(messageId) {
+    const database = await openOfflineOutbox();
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction('messages', 'readwrite');
+      transaction.objectStore('messages').delete(messageId);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error('No se pudo quitar el mensaje de la cola.'));
+      transaction.onabort = () => reject(transaction.error || new Error('No se pudo quitar el mensaje de la cola.'));
+    });
+  }
+
+  async function renderOfflineMessages(contactSyncId) {
+    if (!contactSyncId || !currentUser) return;
+    try {
+      const queued = await getOfflineMessages();
+      if (activeContactSyncId !== contactSyncId) return;
+      queued
+        .filter((message) => message.fromId === currentUser.syncId && message.toId === contactSyncId)
+        .sort((a, b) => a.timestamp - b.timestamp)
+        .forEach((message) => {
+          if (!activeConversationMessages.some((item) => item.id === message.id)) {
+            activeConversationMessages.push(message);
+          }
+          renderMessageBubble(message);
+        });
+    } catch (error) {
+      console.warn('No se pudo restaurar la cola offline:', error.message);
+    }
+  }
+
+  function updateMessageDeliveryStatus(messageId, status) {
+    const wrapper = document.getElementById('msg-' + messageId);
+    const statusIcon = wrapper && wrapper.querySelector('.msg-status-check');
+    if (!statusIcon) return;
+    const states = {
+      pending: ['◷', 'Pendiente de envío'],
+      failed: ['⚠', 'No enviado; se reintentará al reconectar'],
+      sent: ['✓', 'Enviado'],
+      delivered: ['✓✓', 'Entregado'],
+      read: ['✓✓', 'Leído']
+    };
+    const [label, title] = states[status] || states.sent;
+    statusIcon.textContent = label;
+    statusIcon.title = title;
+    statusIcon.classList.toggle('read', status === 'read');
+  }
+
+  async function flushOfflineMessages() {
+    if (flushingOfflineMessages || !currentUser || !socket || !socket.connected || !isSocketAuthenticated) return;
+    flushingOfflineMessages = true;
+    try {
+      const queued = (await getOfflineMessages())
+        .filter((message) => message.fromId === currentUser.syncId)
+        .sort((a, b) => a.timestamp - b.timestamp);
+      for (const message of queued) {
+        if (!socket || !socket.connected || !isSocketAuthenticated) break;
+        await saveOfflineMessage({ ...message, status: 'pending' });
+        updateMessageDeliveryStatus(message.id, 'pending');
+        try {
+          const status = await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              cleanup();
+              reject(new Error('Se agotó el tiempo para confirmar el envío.'));
+            }, 20000);
+            const cleanup = () => {
+              clearTimeout(timeout);
+              socket.off('message-sent', onSent);
+              socket.off('error-message', onError);
+            };
+            const onSent = (result) => {
+              if (!result || result.id !== message.id) return;
+              cleanup();
+              resolve(result.status || 'sent');
+            };
+            const onError = (error) => {
+              cleanup();
+              reject(new Error(error && error.message ? error.message : 'No se pudo enviar el mensaje.'));
+            };
+            socket.on('message-sent', onSent);
+            socket.on('error-message', onError);
+            socket.emit('send-private-message', {
+              clientMsgId: message.id,
+              toSyncId: message.toId,
+              text: message.text,
+              type: 'text',
+              replyTo: message.replyTo || null
+            });
+          });
+          await deleteOfflineMessage(message.id);
+          updateMessageDeliveryStatus(message.id, status);
+        } catch (error) {
+          await saveOfflineMessage({ ...message, status: 'failed' });
+          updateMessageDeliveryStatus(message.id, 'failed');
+          console.warn('No se pudo enviar un mensaje de la cola offline:', error.message);
+        }
+      }
+    } catch (error) {
+      console.warn('No se pudo procesar la cola offline:', error.message);
+    } finally {
+      flushingOfflineMessages = false;
+    }
+  }
+
+  function base64UrlToUint8Array(value) {
+    const padding = '='.repeat((4 - value.length % 4) % 4);
+    const raw = atob((value + padding).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(raw, (character) => character.charCodeAt(0));
+  }
+
+  async function enablePushNotifications() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      throw new Error('Este navegador no admite notificaciones push.');
+    }
+    if (Notification.permission !== 'granted') {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') throw new Error('No se concedió permiso para notificaciones.');
+    }
+    const keyResponse = await fetch('/api/notifications/vapid-public-key', {
+      headers: { Authorization: 'Bearer ' + currentToken }
+    });
+    const keyData = await keyResponse.json();
+    if (!keyResponse.ok || !keyData.configured || !keyData.publicKey) {
+      throw new Error('El servidor aún no tiene Web Push configurado.');
+    }
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64UrlToUint8Array(keyData.publicKey)
+      });
+    }
+    const response = await fetch('/api/save-subscription', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + currentToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ subscription: subscription.toJSON() })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || 'No se pudo registrar la suscripción push.');
+  }
+
+  if (enablePushNotificationsBtn) {
+    enablePushNotificationsBtn.addEventListener('click', async () => {
+      if (pushNotificationsStatus) pushNotificationsStatus.textContent = 'Configurando…';
+      try {
+        await enablePushNotifications();
+        if (pushNotificationsStatus) pushNotificationsStatus.textContent = 'Notificaciones push activadas.';
+      } catch (error) {
+        if (pushNotificationsStatus) pushNotificationsStatus.textContent = error.message;
+      }
+    });
   }
 
   // Pestañas y Modo de Autenticación
@@ -1652,7 +1852,6 @@
     authScreen.style.setProperty('display', 'none', 'important');
     appContainer.classList.remove('hidden');
     appContainer.style.removeProperty('display');
-    initWebNotifications();
     showNetworkLoading();
 
     headerUserSyncId.textContent = currentUser.syncId;
@@ -2627,6 +2826,8 @@
       console.warn('Error al cargar historial:', e);
     }
 
+    await renderOfflineMessages(syncId);
+
     if (!chatMessages.querySelector('.msg-item')) {
       chatWelcome.classList.remove('hidden');
     }
@@ -3057,22 +3258,28 @@
     socket.off('notification-mirrored');
 
     socket.on('connect', () => {
+      isSocketAuthenticated = false;
       if (networkLoadingMessage) networkLoadingMessage.textContent = 'Verificando sesión segura...';
       socket.emit('authenticate', { token: currentToken });
     });
 
     socket.on('authenticated', () => {
+      isSocketAuthenticated = true;
       hideNetworkLoading();
       loadContacts();
       const currentChan = activeChannelId || '#anuncios';
       socket.emit('join-channel', { channelId: currentChan });
+      if (activeContactSyncId) selectContact(activeContactSyncId);
+      flushOfflineMessages();
     });
 
     socket.on('auth-error', () => {
+      isSocketAuthenticated = false;
       hideNetworkLoading();
     });
 
     socket.on('connect_error', () => {
+      isSocketAuthenticated = false;
       const wasShowingLoader = networkLoadingScreen && !networkLoadingScreen.classList.contains('hidden');
       hideNetworkLoading();
       if (wasShowingLoader) {
@@ -3165,6 +3372,11 @@
       if (!msg || !msg.id) return;
 
       if (renderedMessageIds.has(msg.id)) {
+        const queuedIndex = activeConversationMessages.findIndex((item) => item.id === msg.id);
+        if (queuedIndex !== -1 && activeConversationMessages[queuedIndex].pendingOffline) {
+          activeConversationMessages[queuedIndex] = msg;
+          updateMessageDeliveryStatus(msg.id, msg.status || 'sent');
+        }
         return;
       }
 
@@ -3333,7 +3545,11 @@
     let checkIcon = '';
     if (isLocal) {
       const st = msg.status || (msg.read ? 'read' : 'delivered');
-      if (st === 'read') {
+      if (st === 'pending') {
+        checkIcon = `<span class="msg-status-check text-[11px] text-gray-400 font-bold" title="Pendiente de envío">◷</span>`;
+      } else if (st === 'failed') {
+        checkIcon = `<span class="msg-status-check text-[11px] text-red-500 font-bold" title="No enviado; se reintentará al reconectar">⚠</span>`;
+      } else if (st === 'read') {
         checkIcon = `<span class="msg-status-check read text-[11px] font-bold" title="Leído">✓✓</span>`;
       } else if (st === 'delivered') {
         checkIcon = `<span class="msg-status-check text-[11px] text-gray-400 font-bold" title="Entregado">✓✓</span>`;
@@ -3781,12 +3997,16 @@
   }
 
   // ENVÍO DE MENSAJES
-  function handleSendMessage() {
+  async function handleSendMessage() {
     const text = chatTextarea.value.trim();
     const targetChannel = activeChannelId || (!activeContactSyncId ? '#anuncios' : null);
-    if (!text || (!activeContactSyncId && !targetChannel) || !socket) return;
+    if (!text || (!activeContactSyncId && !targetChannel)) return;
 
     if (targetChannel && !activeContactSyncId) {
+      if (!socket || !socket.connected || !isSocketAuthenticated) {
+        triggerPopupNotification('Sin conexión', 'Los mensajes de canal requieren conexión.', '⚠️');
+        return;
+      }
       socket.emit('send-channel-message', {
         channelId: targetChannel,
         text: text,
@@ -3795,15 +4015,41 @@
     } else {
       const clientMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
       const replyData = currentReplyTo;
-      cancelReply();
-
-      socket.emit('send-private-message', {
-        clientMsgId: clientMsgId,
-        toSyncId: activeContactSyncId,
-        text: text,
-        type: 'text',
-        replyTo: replyData
-      });
+      if (!socket || !socket.connected || !isSocketAuthenticated) {
+        const queuedMessage = {
+          id: clientMsgId,
+          fromId: currentUser.syncId,
+          toId: activeContactSyncId,
+          text,
+          type: 'text',
+          replyTo: replyData || null,
+          timestamp: Date.now(),
+          status: 'pending',
+          pendingOffline: true
+        };
+        try {
+          await saveOfflineMessage(queuedMessage);
+          if (activeContactSyncId === queuedMessage.toId) {
+            activeConversationMessages.push(queuedMessage);
+            renderMessageBubble(queuedMessage);
+            anchorChatToBottom();
+          }
+          cancelReply();
+          triggerPopupNotification('Mensaje en cola', 'Se enviará cuando vuelva la conexión.', '⏳');
+        } catch (error) {
+          triggerPopupNotification('No se pudo guardar', error.message, '⚠️');
+          return;
+        }
+      } else {
+        cancelReply();
+        socket.emit('send-private-message', {
+          clientMsgId: clientMsgId,
+          toSyncId: activeContactSyncId,
+          text: text,
+          type: 'text',
+          replyTo: replyData
+        });
+      }
     }
 
     chatTextarea.value = '';

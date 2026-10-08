@@ -423,6 +423,14 @@ function canReadFile(fileId, userId) {
 function saveMessage(msgData) {
   const db = readDb();
   const fromId = String(msgData.fromId).trim().toUpperCase();
+  const toId = String(msgData.toId).trim().toUpperCase();
+  if (msgData.id) {
+    const existingMessage = db.messages.find((message) => message.id === msgData.id);
+    if (existingMessage) {
+      if (existingMessage.fromId === fromId && existingMessage.toId === toId) return existingMessage;
+      throw new Error("El identificador del mensaje ya está en uso");
+    }
+  }
   const fileIds = [...new Set(msgData.fileIds || [])];
   for (const fileId of fileIds) {
     const file = db.files.find((item) => item.id === fileId);
@@ -431,7 +439,7 @@ function saveMessage(msgData) {
   const newMsg = {
     id: msgData.id || ("msg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
     fromId: fromId,
-    toId: String(msgData.toId).trim().toUpperCase(),
+    toId: toId,
     type: msgData.type || "text",
     text: msgData.text || "",
     audioData: msgData.audioData || null,
@@ -455,6 +463,10 @@ function saveMessage(msgData) {
 
   writeDb(db);
   return newMsg;
+}
+
+function getMessageById(messageId) {
+  return readDb().messages.find((message) => message.id === messageId) || null;
 }
 
 function saveTextMessage(fromId, toId, text, customId = null, replyTo = null, linkPreview = null, status = 'sent') {
@@ -1040,6 +1052,7 @@ module.exports = {
   addContact,
   getUserContacts,
   saveMessage,
+  getMessageById,
   saveTextMessage,
   updateMessageReaction,
   updateMessageStatus,
