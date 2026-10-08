@@ -395,7 +395,8 @@ async function startBrowser(t) {
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     '/usr/bin/chromium', '/usr/bin/google-chrome'].find((file) => file && fs.existsSync(file));
   if (!executable) { t.skip('Set CHROME_PATH to run real-browser assertions'); return false; }
-  browserProcess = spawn(executable, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+  const sandboxArgs = (process.env.CI || process.env.CHROMIUM_SANDBOX_DISABLED) ? ['--no-sandbox'] : [];
+  browserProcess = spawn(executable, [...sandboxArgs, '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
     '--disable-background-networking', '--remote-debugging-port=0', '--user-data-dir=' + path.join(tempDir, 'browser'),
     '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
   const browserUrl = await new Promise((resolve, reject) => {
