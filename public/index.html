@@ -1630,6 +1630,7 @@
               resolve(result.status || 'sent');
             };
             const onError = (error) => {
+              if (!error || error.id !== message.id) return;
               cleanup();
               reject(new Error(error && error.message ? error.message : 'No se pudo enviar el mensaje.'));
             };
