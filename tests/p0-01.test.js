@@ -41,6 +41,13 @@ function fixtureDb() {
   return db;
 }
 
+async function prepareAlicePro() {
+  const alice = db.testData.users.find((user) => user.syncId === users[0].syncId);
+  alice.plan = 'pro';
+  alice.planExpiresAt = Date.now() + 60_000;
+  await db.writeDb(db.testData);
+}
+
 before(async () => {
   tempDir = fs.mkdtempSync(path.join(process.env.SYNC_TEST_TMP || os.tmpdir(), 'sync-xss-'));
   fs.mkdirSync(path.join(tempDir, 'public', 'uploads'), { recursive: true });
@@ -164,7 +171,7 @@ test('all inline application scripts parse, and the safe-content dependency is a
 });
 
 test('billing cannot simulate payment and free users cannot write premium features', async () => {
-  const headers = { Authorization: '******', 'Content-Type': 'application/json' };
+  const headers = { Authorization: 'Bearer ' + 'test-alice', 'Content-Type': 'application/json' };
   const upgrade = await fetch(base + '/api/billing/upgrade', {
     method: 'POST', headers, body: JSON.stringify({ plan: 'enterprise', paymentDetails: { last4: '4242' } })
   });
@@ -192,7 +199,8 @@ test('premium feature limits apply server-side and expired plans fall back to Fr
   const alice = db.testData.users.find((user) => user.syncId === users[0].syncId);
   const previousPlan = alice.plan;
   const previousExpiry = alice.planExpiresAt;
-  const headers = { Authorization: '******', 'Content-Type': 'application/json' };
+  const previousVaultItems = db.testData.vaultItems && db.testData.vaultItems[alice.syncId];
+  const headers = { Authorization: 'Bearer ' + 'test-alice', 'Content-Type': 'application/json' };
   try {
     alice.plan = 'pro';
     alice.planExpiresAt = Date.now() + 60_000;
@@ -231,6 +239,11 @@ test('premium feature limits apply server-side and expired plans fall back to Fr
     else alice.plan = previousPlan;
     if (previousExpiry === undefined) delete alice.planExpiresAt;
     else alice.planExpiresAt = previousExpiry;
+    if (previousVaultItems === undefined) {
+      if (db.testData.vaultItems) delete db.testData.vaultItems[alice.syncId];
+    } else {
+      db.testData.vaultItems[alice.syncId] = previousVaultItems;
+    }
     await db.writeDb(db.testData);
   }
 });
@@ -304,6 +317,7 @@ test('real Socket.IO delivers normal text/files/audio and rejects executable res
 });
 
 test('channel subscriptions and history require an authenticated member', async () => {
+  await prepareAlicePro();
   const channel = db.createWorkspaceChannel('private-room', 'Private channel', users[0].syncId);
   db.saveChannelMessage(channel.id, users[0].syncId, { text: 'Private history' });
 
@@ -360,6 +374,11 @@ test('channel subscriptions and history require an authenticated member', async 
 });
 
 test('vault API stores and returns only authenticated client-encrypted payloads', async () => {
+  await prepareAlicePro();
+  const bob = db.testData.users.find((user) => user.syncId === users[1].syncId);
+  bob.plan = 'pro';
+  bob.planExpiresAt = Date.now() + 60_000;
+  await db.writeDb(db.testData);
   const legacyItems = db.testData.vaultItems || (db.testData.vaultItems = {});
   legacyItems[users[1].syncId] = [{ id: 'legacy', title: 'Legacy', secretContent: 'old plaintext' }];
   const secret = 'sensitive-vault-value';
@@ -516,7 +535,10 @@ async function startBrowser(t) {
 }
 
 test('real browser: text/name/file/quote payloads stay data across chat, avatars, previews, Media Center and notifications', async (t) => {
+  await prepareAlicePro();
   if (!await startBrowser(t)) return;
+  const browserPlan = await cdp.evaluate(`fetch('/api/billing/plan', { headers: { Authorization: 'Bearer ' + currentToken } }).then((response) => response.json())`);
+  assert.equal(browserPlan.plan, 'pro', JSON.stringify(browserPlan));
   for (const attack of attacks) {
     const result = await cdp.evaluate(`(() => {
       const attack = ${JSON.stringify(attack)};
