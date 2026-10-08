@@ -11,3 +11,5 @@ android/.gradle/
 android/app/build/
 android/build/
 .vscode/mcp.json
+*.jks
+*.keystore

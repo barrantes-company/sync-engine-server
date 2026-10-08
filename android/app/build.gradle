@@ -12,5 +12,32 @@ android {
         targetSdk 35
         versionCode 1
         versionName '1.0'
+        // URL de /widget.html de fábrica; se toma del entorno para no fijar un dominio en el repo.
+        def defaultUrl = (System.getenv('SYNC_DEFAULT_URL') ?: '').replace('\\', '\\\\').replace('"', '\\"')
+        buildConfigField 'String', 'DEFAULT_WIDGET_URL', "\"${defaultUrl}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Credenciales de release leídas del entorno; nunca se guardan en el repo.
+    signingConfigs {
+        release {
+            if (System.getenv('KEYSTORE_PATH')) {
+                storeFile file(System.getenv('KEYSTORE_PATH'))
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (System.getenv('KEYSTORE_PATH')) {
+                signingConfig signingConfigs.release
+            }
+        }
     }
 }

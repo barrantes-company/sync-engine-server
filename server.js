@@ -393,6 +393,15 @@ app.post("/api/auth/login", (req, res) => {
   }
 });
 
+/**
+ * Resumen para el widget nativo de Android.
+ * Query: callsSince (ms epoch) limita las llamadas perdidas contadas.
+ */
+app.get("/api/widget/summary", requireAuth, (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ ok: true, ...db.getWidgetSummary(req.user.syncId, req.query.callsSince) });
+});
+
 app.get("/api/auth/me", requireAuth, (req, res) => {
   res.json({ ok: true, user: req.user });
 });
@@ -1173,6 +1182,7 @@ io.on("connection", function (socket) {
 
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
+    db.recordCall(sender.syncId, targetSyncId, !(targetSockets && targetSockets.size > 0));
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
@@ -1196,6 +1206,7 @@ io.on("connection", function (socket) {
 
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
+    db.resolveCall(targetSyncId, sender.syncId, 'answered');
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
@@ -1231,6 +1242,7 @@ io.on("connection", function (socket) {
 
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
+    db.resolveCall(targetSyncId, sender.syncId, 'rejected');
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
@@ -1248,6 +1260,8 @@ io.on("connection", function (socket) {
 
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
+    // Si quien llama cuelga antes de que contesten, cuenta como llamada perdida.
+    db.resolveCall(sender.syncId, targetSyncId, 'missed');
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {

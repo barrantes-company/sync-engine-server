@@ -14,9 +14,13 @@ final class WidgetUrls {
     private WidgetUrls() {
     }
 
+    /**
+     * Devuelve la URL predeterminada: la guardada por el usuario o, si no hay,
+     * la configurada en el build mediante SYNC_DEFAULT_URL.
+     */
     static String defaultUrl(Context context) {
-        return context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-                .getString(DEFAULT_URL, "");
+        String saved = preferences(context).getString(DEFAULT_URL, "");
+        return saved.isEmpty() ? BuildConfig.DEFAULT_WIDGET_URL : saved;
     }
 
     static void saveDefaultUrl(Context context, String url) {
@@ -31,6 +35,33 @@ final class WidgetUrls {
         preferences(context).edit().putString(widgetKey(widgetId), url).apply();
     }
 
+    /**
+     * Devuelve la URL de la app principal. Si la URL termina en /widget.html
+     * (configuración antigua) se usa la raíz del dominio.
+     */
+    static String appUrl(String widgetUrl) {
+        try {
+            URI uri = new URI(widgetUrl.trim());
+            String path = uri.getPath();
+            if (path == null || path.isEmpty() || path.endsWith("/widget.html")) {
+                return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), "/", null, null).toString();
+            }
+            return uri.toString();
+        } catch (URISyntaxException exception) {
+            return widgetUrl;
+        }
+    }
+
+    /** Devuelve solo esquema, host y puerto (sin barra final), base de las llamadas a la API. */
+    static String origin(String url) {
+        try {
+            URI uri = new URI(url.trim());
+            return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), null, null, null).toString();
+        } catch (URISyntaxException exception) {
+            return url;
+        }
+    }
+
     static boolean isWidgetUrl(String value) {
         if (value == null || value.trim().isEmpty()) {
             return false;
@@ -41,9 +72,7 @@ final class WidgetUrls {
             return uri.isAbsolute()
                     && ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))
                     && uri.getHost() != null
-                    && uri.getUserInfo() == null
-                    && uri.getPath() != null
-                    && uri.getPath().endsWith("/widget.html");
+                    && uri.getUserInfo() == null;
         } catch (URISyntaxException exception) {
             return false;
         }

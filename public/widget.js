@@ -13,6 +13,16 @@
   const syncStatus = document.getElementById('sync-status');
   const syncLabel = document.getElementById('sync-label');
   const unreadCount = document.getElementById('unread-count');
+  const messagesWord = document.getElementById('messages-word');
+  const messagesCounter = document.getElementById('messages-counter');
+  const callsCount = document.getElementById('calls-count');
+  const callsWord = document.getElementById('calls-word');
+  const callsButton = document.getElementById('calls-counter');
+  const trails = document.getElementById('trails');
+  const settingsButton = document.getElementById('settings-button');
+  const settingsPanel = document.getElementById('settings-panel');
+  const toggleNotifications = document.getElementById('toggle-notifications');
+  const toggleFlash = document.getElementById('toggle-flash');
   const announcementsList = document.getElementById('announcements-list');
   const quickReplyForm = document.getElementById('quick-reply-form');
   const quickReplyInput = document.getElementById('quick-reply-input');
@@ -40,27 +50,87 @@
   let isAuthenticated = false;
   let announcements = [];
   let unreadCounter = 0;
+  let callsCounter = 0;
+  let notificationsEnabled = localStorage.getItem('sync_widget_notifications') !== 'off';
+  let flashEnabled = localStorage.getItem('sync_widget_flash') !== 'off';
   let contacts = [];
   let receivedClipboardText = '';
   let noticeTimer = null;
   let clockInterval = null;
   let unreadPollInterval = null;
 
-  // 1. Reloj y Fecha (Material You en Tiempo Real)
+  // 1. Reloj y fecha (hora de Lima, igual que el widget nativo)
+  const TIME_ZONE = 'America/Lima';
   function updateClock() {
     if (!clock || !date) return;
     const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    clock.textContent = `${hours}:${minutes}:${seconds}`;
-
-    const dateFormatted = new Intl.DateTimeFormat('es-ES', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long'
+    clock.textContent = new Intl.DateTimeFormat('es-PE', {
+      timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
     }).format(now);
-    date.textContent = dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1);
+    date.textContent = new Intl.DateTimeFormat('es-PE', {
+      timeZone: TIME_ZONE, weekday: 'long', day: 'numeric', month: 'short'
+    }).format(now).replace(/\./g, '').replace(',', '');
+  }
+
+  // Estelas de luz animadas; se detienen con prefers-reduced-motion
+  const TRAIL_COLORS = ['#3ecfff', '#e7f8ff', '#79b7ff', '#ffffff', '#ff4fd8', '#ff9ad4', '#ff3d78', '#ff3b42', '#ffc4a0'];
+  const TRAIL_COUNT = 16;
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const trailPaths = [];
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function trailPath(y, index, tick) {
+    const t = tick / 24;
+    const sway = Math.sin(t + index * 0.45) * 22;
+    const curl = 78 + Math.cos(t * 0.7 + index * 0.2) * 6;
+    const y3 = y - curl;
+    return `M-30 ${y + sway} C 180 ${y + sway * 0.35}, 460 ${y - curl * 0.28 + sway}, 680 ${y3} S 900 ${y3 - 12}, 1040 ${y3 + 6}`;
+  }
+
+  function drawTrails(tick) {
+    trailPaths.forEach((path, index) => path.setAttribute('d', trailPath(120 + index * 13, index, tick)));
+  }
+
+  function initTrails() {
+    const group = document.getElementById('trail-group');
+    if (!group) return;
+    for (let i = 0; i < TRAIL_COUNT; i += 1) {
+      const path = document.createElementNS(SVG_NS, 'path');
+      path.setAttribute('stroke', TRAIL_COLORS[i % TRAIL_COLORS.length]);
+      path.setAttribute('stroke-width', i % 3 === 0 ? '4.5' : '2.5');
+      path.setAttribute('opacity', i % 4 === 0 ? '0.82' : '0.55');
+      path.setAttribute('vector-effect', 'non-scaling-stroke');
+      group.appendChild(path);
+      trailPaths.push(path);
+    }
+    drawTrails(0);
+    if (reduceMotion) return;
+    let last = 0;
+    let tick = 0;
+    const frame = (time) => {
+      if (time - last >= 80) {
+        last = time;
+        tick += 1;
+        if (!document.hidden) drawTrails(tick);
+      }
+      window.requestAnimationFrame(frame);
+    };
+    window.requestAnimationFrame(frame);
+  }
+
+  function flashTrails() {
+    if (!flashEnabled || !trails) return;
+    trails.classList.add('flash');
+    window.setTimeout(() => trails.classList.remove('flash'), 700);
+  }
+
+  function renderCounters() {
+    if (unreadCount) unreadCount.textContent = unreadCounter > 99 ? '99+' : String(unreadCounter);
+    if (messagesWord) messagesWord.textContent = unreadCounter === 1 ? 'mensaje' : 'mensajes';
+    if (callsCount) callsCount.textContent = String(callsCounter);
+    if (callsWord) callsWord.textContent = callsCounter === 1 ? 'llamada' : 'llamadas';
+    if (messagesCounter) messagesCounter.setAttribute('aria-label', `${unreadCounter} mensajes sin leer`);
+    if (callsButton) callsButton.setAttribute('aria-label', `${callsCounter} llamadas`);
   }
 
   // 2. Avisos y Estado
@@ -77,10 +147,16 @@
   }
 
   function updateUnreadBadge(count) {
+    const previous = unreadCounter;
     unreadCounter = Math.max(0, Number(count) || 0);
-    if (unreadCount) {
-      unreadCount.textContent = unreadCounter > 0 ? (unreadCounter > 99 ? '+99' : `+${unreadCounter}`) : '0';
-      unreadCount.setAttribute('aria-label', `${unreadCounter} mensajes sin leer`);
+    renderCounters();
+    if (unreadCounter > previous) {
+      flashTrails();
+      if (messagesCounter) {
+        messagesCounter.classList.remove('pop');
+        void messagesCounter.offsetWidth;
+        messagesCounter.classList.add('pop');
+      }
     }
 
     // Sincronizar badge con la extensión de navegador si está disponible
@@ -197,6 +273,7 @@
   }
 
   function dispatchNativeNotification(title, message) {
+    if (!notificationsEnabled) return;
     if (!document.hidden) return; // Solo si el widget o pestaña no tiene el foco
 
     // Despacho vía Chrome Extension API si está corriendo como extensión
@@ -308,6 +385,15 @@
       dispatchNativeNotification(`💬 ${sender}`, text);
     });
 
+    socket.on('call-made', (data) => {
+      callsCounter += 1;
+      renderCounters();
+      flashTrails();
+      const caller = (data && (data.fromName || data.callerName || data.fromId)) || 'Alguien';
+      showIncomingNotice(`Llamada de ${caller}`);
+      dispatchNativeNotification(`Llamada de ${caller}`, 'Llamada entrante');
+    });
+
     socket.on('clipboard-sync', (payload) => {
       if (!payload || typeof payload.text !== 'string') return;
       receivedClipboardText = payload.text;
@@ -398,10 +484,51 @@
     });
   }
 
-  // 9. Botón de Bóveda y Navegación Principal
+  // 9. Abrir la app principal y ajustes
+  function openApp(view) {
+    window.open(view ? `/?view=${view}` : '/', '_blank', 'noopener');
+  }
+
   if (openChatButton) {
     openChatButton.addEventListener('click', () => {
-      window.open('/?view=vault', '_blank', 'noopener');
+      callsCounter = 0;
+      updateUnreadBadge(0);
+      openApp('');
+    });
+  }
+
+  if (messagesCounter) messagesCounter.addEventListener('click', () => openApp('anuncios'));
+  if (callsButton) {
+    callsButton.addEventListener('click', () => {
+      callsCounter = 0;
+      renderCounters();
+    });
+  }
+
+  function bindSwitch(button, enabled, storageKey, onChange) {
+    if (!button) return;
+    button.setAttribute('aria-checked', String(enabled()));
+    button.addEventListener('click', () => {
+      const next = !enabled();
+      onChange(next);
+      localStorage.setItem(storageKey, next ? 'on' : 'off');
+      button.setAttribute('aria-checked', String(next));
+    });
+  }
+
+  bindSwitch(toggleNotifications, () => notificationsEnabled, 'sync_widget_notifications', (value) => {
+    notificationsEnabled = value;
+    if (value && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  });
+  bindSwitch(toggleFlash, () => flashEnabled, 'sync_widget_flash', (value) => { flashEnabled = value; });
+
+  if (settingsButton && settingsPanel) {
+    settingsButton.addEventListener('click', () => {
+      const open = settingsPanel.hidden;
+      settingsPanel.hidden = !open;
+      settingsButton.setAttribute('aria-pressed', String(open));
     });
   }
 
@@ -574,7 +701,8 @@
   // 12. Arranque
   updateClock();
   clockInterval = setInterval(updateClock, 1000);
+  initTrails();
+  renderCounters();
   initNativeNotifications();
-  loadWeather();
   initializeSession();
 })();
