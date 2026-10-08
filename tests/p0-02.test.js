@@ -118,7 +118,12 @@ after(async () => {
   if (socketServer) await new Promise((resolve) => socketServer.close(resolve));
   if (server && server.listening) await new Promise((resolve) => server.close(resolve));
   if (db) await db.writeDb(db.testData);
-  if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  if (tempDir) {
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    } catch (_) {}
+  }
 });
 
 test('TEST 1: uploader A reads the file associated with its real A-B message', async () => {

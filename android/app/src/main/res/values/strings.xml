@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SYNC ENGINE</string>
+    <string name="widget_name">SYNC ENGINE</string>
+    <string name="configure_widget">Configurar widget SYNC ENGINE</string>
+    <string name="setup_instructions">Configura la URL completa de tu despliegue para /widget.html y guarda. Luego, mantén pulsada la pantalla de inicio, abre Widgets, busca SYNC ENGINE y arrastra el widget; podrás confirmar la URL para esa instancia.</string>
+    <string name="widget_url_instructions">Introduce la dirección HTTPS (o HTTP) completa de tu panel web. Cada widget guarda su propia dirección y al tocarlo abre ese panel en el navegador.</string>
+    <string name="widget_url_hint">https://tu-dominio.example/widget.html</string>
+    <string name="save_url">Guardar URL predeterminada</string>
+    <string name="open_panel">Abrir panel web</string>
+    <string name="add_widget">Guardar y añadir widget</string>
+    <string name="tap_to_open">Toca para abrir el panel web</string>
+    <string name="web_sign_in_note">Este widget nativo muestra la hora y la fecha y abre tu panel configurado. No muestra mensajes ni ejecuta capturas de forma nativa. Para usar las acciones web, inicia sesión en el panel abierto en tu navegador.</string>
+    <string name="invalid_widget_url">Usa una URL HTTP(S) válida que termine en /widget.html.</string>
+    <string name="url_saved">URL predeterminada guardada</string>
+    <string name="no_browser">No hay una aplicación disponible para abrir esta URL.</string>
+</resources>

@@ -107,7 +107,17 @@ function getLocalIPv4Addresses() {
 }
 
 const app = express();
-app.use(cors());
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://") || origin === "null") {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+};
+app.use(cors(corsOptions));
 
 // Configuración de body-parser para soporte de transferencias pesadas de hasta 2 GB
 app.use(express.json({ limit: "2gb" }));
@@ -137,7 +147,19 @@ app.use((req, res, next) => {
     servePrivateFile(req, res, file);
   });
 });
+
+// Servir widget universal con cabeceras para iframe y paneles laterales de extensiones
+app.get(["/widget", "/widget.html", "/public/widget.html"], (req, res) => {
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader(
+    "Content-Security-Policy",
+    "frame-ancestors 'self' chrome-extension:* moz-extension:*"
+  );
+  res.sendFile(path.join(__dirname, "public", "widget.html"));
+});
+
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/public", express.static(path.join(__dirname, "public")));
 app.use("/src/assets/images", express.static(path.join(__dirname, "src/assets/images")));
 app.use((err, req, res, next) => {
   if (req.path === "/api/save-subscription" && err instanceof SyntaxError && err.status === 400) {
@@ -797,23 +819,38 @@ io.on("connection", function (socket) {
       return;
     }
 
-    const channelId = payload && typeof payload.channelId === "string" ? payload.channelId : "";
-    if (!channelId || !db.isChannelMember(channelId, user.syncId)) {
+    const rawChannelId = payload && typeof payload.channelId === "string" ? payload.channelId.trim() : "";
+    if (!rawChannelId) {
+      emitChannelAuthorizationError(socket, "FORBIDDEN", "No tienes permisos para acceder a este canal");
+      return;
+    }
+
+    const channel = db.findChannel ? db.findChannel(rawChannelId) : null;
+    const channelId = channel ? channel.id : rawChannelId;
+
+    if (!db.isChannelMember(channelId, user.syncId)) {
       emitChannelAuthorizationError(socket, "FORBIDDEN", "No tienes permisos para acceder a este canal");
       return;
     }
 
     socket.join("channel:" + channelId);
+    if (rawChannelId !== channelId) {
+      socket.join("channel:" + rawChannelId);
+    }
   });
 
   socket.on("send-channel-message", async function (payload) {
     const sender = socketToUser.get(socket.id);
     if (!sender) {
-      socket.emit("error-message", { message: "No autenticado" });
+      emitChannelAuthorizationError(socket, "UNAUTHENTICATED", "Autenticación requerida");
       return;
     }
-    const { channelId, text, type, fileData, audioData } = payload || {};
-    if (!channelId) return;
+    const { channelId: rawChannelId, text, type, fileData, audioData } = payload || {};
+    if (!rawChannelId) return;
+
+    const channel = db.findChannel ? db.findChannel(rawChannelId) : null;
+    const channelId = channel ? channel.id : rawChannelId;
+
     if (!db.isChannelMember(channelId, sender.syncId)) {
       emitChannelAuthorizationError(socket, "FORBIDDEN", "No tienes permisos para enviar mensajes a este canal");
       return;
@@ -822,6 +859,9 @@ io.on("connection", function (socket) {
     try {
       const msg = db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });
       io.to("channel:" + channelId).emit("channel-message-received", msg);
+      if (rawChannelId !== channelId) {
+        io.to("channel:" + rawChannelId).emit("channel-message-received", msg);
+      }
     } catch (err) {
       socket.emit("error-message", { message: err.message });
     }

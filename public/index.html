@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="theme-color" content="#FFFFFF">
 <title>SYNC ENGINE | Mensajería Privada &amp; Workspace</title>
 <meta name="description" content="Private messaging, real-time synchronization, and workspace platform.">
 <meta property="og:title" content="SYNC ENGINE | Mensajería Privada &amp; Workspace">
@@ -262,7 +261,7 @@
               <button id="close-profile-modal-btn" type="button" aria-label="Cerrar configuración" class="text-[#64748B] hover:text-[#0A1A3A] p-1 text-sm cursor-pointer">✕</button>
             </div>
 
-            <div id="avatar-drop-zone" class="profile-avatar-drop-zone flex flex-col items-center gap-2 rounded-xl border border-dashed border-[rgba(197,160,89,0.45)] p-3 text-center" tabindex="0" role="button" aria-label="Arrastra una imagen aquí o selecciona un avatar">
+            <div id="avatar-drop-zone" class="profile-avatar-drop-zone flex flex-col items-center gap-2 rounded-xl border border-dashed border-[rgba(197,160,89,0.45)] p-3 text-center" aria-label="Arrastra una imagen aquí o selecciona un avatar">
               <div class="avatar-preview-box flex items-center justify-center relative group">
                 <img id="profile-avatar-preview" src="" alt="Vista previa del avatar" class="w-full h-full object-cover hidden">
                 <div id="profile-avatar-fallback" class="w-full h-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-2xl flex items-center justify-center font-mono">0000</div>
@@ -478,37 +477,39 @@
             </div>
 
             <!-- Fila de Entrada: [😃], [🎙], [📎], [Textarea], [➤ Enviar] -->
-            <div id="normal-input-bar" class="flex items-end gap-2">
-              
-              <button id="toggle-emoji-btn" type="button" title="Insertar emoticones" aria-label="Insertar emoticones"
-                class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
-                😃
-              </button>
+            <form id="chat-form" class="w-full" action="javascript:void(0);">
+              <div id="normal-input-bar" class="flex items-end gap-2">
+                
+                <button id="toggle-emoji-btn" type="button" title="Insertar emoticones" aria-label="Insertar emoticones"
+                  class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
+                  😃
+                </button>
 
-              <button id="voice-record-btn" type="button" title="Grabar nota de voz" aria-label="Grabar nota de voz"
-                class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
-                🎙
-              </button>
+                <button id="voice-record-btn" type="button" title="Grabar nota de voz" aria-label="Grabar nota de voz"
+                  class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
+                  🎙
+                </button>
 
-              <button id="attach-btn" type="button" title="Adjuntar archivo o imagen" aria-label="Adjuntar archivo o imagen"
-                class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
-                📎
-              </button>
-              <input type="file" id="file-input" title="Seleccionar archivo" aria-label="Seleccionar archivo" class="hidden">
+                <button id="attach-btn" type="button" title="Adjuntar archivo o imagen" aria-label="Adjuntar archivo o imagen"
+                  class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
+                  📎
+                </button>
+                <input type="file" id="file-input" title="Seleccionar archivo" aria-label="Seleccionar archivo" class="hidden">
 
-              <div class="flex-1 relative min-w-0">
-                <label for="chat-textarea" class="sr-only">Escribe un mensaje privado</label>
-                <textarea id="chat-textarea" rows="1" placeholder="Escribe un mensaje privado..."
-                  class="composer-field w-full resize-none rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/25 outline-none px-4 py-3 text-sm text-[#0A1A3A] placeholder-gray-400 max-h-36 overflow-y-auto leading-relaxed shadow-xs transition-all"></textarea>
+                <div class="flex-1 relative min-w-0">
+                  <label for="chat-textarea" class="sr-only">Escribe un mensaje privado</label>
+                  <textarea id="chat-textarea" rows="1" placeholder="Escribe un mensaje privado..."
+                    class="composer-field w-full resize-none rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/25 outline-none px-4 py-3 text-sm text-[#0A1A3A] placeholder-gray-400 max-h-36 overflow-y-auto leading-relaxed shadow-xs transition-all"></textarea>
+                </div>
+
+                <button id="send-btn" type="submit" title="Enviar mensaje (Enter)" aria-label="Enviar mensaje"
+                  class="btn-send h-11 min-w-[44px] px-3.5 sm:px-5 rounded-2xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-sm shadow-md active:scale-95 flex items-center justify-center gap-1.5 transition-all flex-shrink-0 cursor-pointer">
+                  <span class="text-base leading-none">➤</span>
+                  <span class="hidden sm:inline">Enviar</span>
+                </button>
+
               </div>
-
-              <button id="send-btn" type="button" title="Enviar mensaje (Enter)" aria-label="Enviar mensaje"
-                class="btn-send h-11 min-w-[44px] px-3.5 sm:px-5 rounded-2xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-sm shadow-md active:scale-95 flex items-center justify-center gap-1.5 transition-all flex-shrink-0 cursor-pointer">
-                <span class="text-base leading-none">➤</span>
-                <span class="hidden sm:inline">Enviar</span>
-              </button>
-
-            </div>
+            </form>
 
           </div>
 
@@ -1038,7 +1039,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <input type="text" id="vault-title-input" placeholder="Título (ej. Servidor AWS, Llave Privada)..." maxlength="60"
             class="px-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] outline-none">
-          <select id="vault-category-select" class="px-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] outline-none cursor-pointer">
+          <select id="vault-category-select" title="Categoría del registro confidencial" aria-label="Categoría del registro confidencial" class="px-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] outline-none cursor-pointer">
             <option value="password">🔑 Contraseña / Credencial</option>
             <option value="note">📝 Nota Cifrada</option>
             <option value="api-key">⚡ Token / Clave API</option>
@@ -1271,6 +1272,7 @@
   const chatMessages = document.getElementById('chat-messages');
   const chatWelcome = document.getElementById('chat-welcome');
   const chatTextarea = document.getElementById('chat-textarea');
+  const chatForm = document.getElementById('chat-form');
   const sendBtn = document.getElementById('send-btn');
   const attachBtn = document.getElementById('attach-btn');
   const fileInput = document.getElementById('file-input');
@@ -1664,6 +1666,7 @@
 
     initSocket();
     loadContacts();
+    loadChannels();
 
     if (window.innerWidth < 1024) {
       document.body.classList.add('mobile-view-contacts');
@@ -3061,6 +3064,8 @@
     socket.on('authenticated', () => {
       hideNetworkLoading();
       loadContacts();
+      const currentChan = activeChannelId || '#anuncios';
+      socket.emit('join-channel', { channelId: currentChan });
     });
 
     socket.on('auth-error', () => {
@@ -3204,6 +3209,38 @@
 
       loadContacts();
     });
+
+    // RECIBIR MENSAJE DE CANAL EN TIEMPO REAL
+    socket.on('channel-message-received', handleIncomingChannelMessage);
+  }
+
+  // RECIBIR MENSAJES DE CANAL Y RENDERIZAR EN EL ÁREA DE CHAT
+  function handleIncomingChannelMessage(msg) {
+    if (!msg || !msg.id) return;
+    if (renderedMessageIds.has(msg.id)) return;
+
+    const currentChan = (activeChannelId || '#anuncios').toLowerCase();
+    const msgChan = (msg.channelId || '').toLowerCase();
+    const isCurrentChannel = !activeContactSyncId && (
+      msgChan === currentChan ||
+      (currentChan.includes('anuncios') && msgChan.includes('anuncios'))
+    );
+
+    if (isCurrentChannel) {
+      if (!activeConversationMessages.some(m => m.id === msg.id)) {
+        activeConversationMessages.push(msg);
+      }
+      renderMessageBubble(msg);
+      anchorChatToBottom();
+    }
+
+    const senderSyncId = msg.senderSyncId || msg.fromId;
+    if (senderSyncId && (!currentUser || senderSyncId !== currentUser.syncId)) {
+      const preview = msg.type === 'audio' 
+        ? '🎤 Nota de voz recibida' 
+        : (msg.type === 'file' ? '📎 ' + (msg.fileData ? msg.fileData.name : 'Archivo') : msg.text);
+      triggerPopupNotification(msg.senderName || msg.fromName || senderSyncId, preview, '📢');
+    }
   }
 
   // Notificar lectura cuando el usuario enfoca la pestaña
@@ -3270,26 +3307,27 @@
 
     if (chatWelcome) chatWelcome.classList.add('hidden');
 
-    const isLocal = (msg.fromId === currentUser.syncId);
+    const senderSyncId = msg.senderSyncId || msg.fromId;
+    const isLocal = Boolean(currentUser && senderSyncId === currentUser.syncId);
     const wrapper = document.createElement('div');
     wrapper.id = 'msg-' + msg.id;
     wrapper.setAttribute('data-msg-id', msg.id);
 
     // AGRUPACIÓN VISUAL: mensajes consecutivos del mismo emisor se pegan entre sí
-    const msgTs = msg.timestamp ? new Date(msg.timestamp).getTime() : 0;
+    const msgTs = msg.timestamp ? new Date(msg.timestamp).getTime() : (msg.createdAt ? new Date(msg.createdAt).getTime() : 0);
     const prevEl = chatMessages.lastElementChild;
     const isGrouped = !!prevEl && prevEl.classList.contains('msg-item') &&
-      prevEl.getAttribute('data-from-id') === msg.fromId &&
+      prevEl.getAttribute('data-from-id') === senderSyncId &&
       msgTs > 0 && Number(prevEl.getAttribute('data-ts') || 0) > 0 &&
       msgTs >= Number(prevEl.getAttribute('data-ts') || 0) &&
       (msgTs - Number(prevEl.getAttribute('data-ts') || 0)) <= 5 * 60 * 1000;
 
-    wrapper.setAttribute('data-from-id', msg.fromId || '');
+    wrapper.setAttribute('data-from-id', senderSyncId || '');
     wrapper.setAttribute('data-ts', String(msgTs || ''));
     wrapper.className = `msg-item ${isGrouped ? 'msg-grouped' : 'msg-group-start'} relative group flex flex-col ${isLocal ? 'items-end ml-auto' : 'items-start mr-auto'} max-w-[88%] sm:max-w-[72%] msg-enter`;
 
-    const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '';
-    const senderHeader = isLocal ? 'Tú' : (msg.fromName || msg.fromId);
+    const timeStr = (msg.timestamp || msg.createdAt) ? new Date(msg.timestamp || msg.createdAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '';
+    const senderHeader = isLocal ? 'Tú' : (msg.senderName || msg.fromName || senderSyncId || 'Usuario');
 
     // DOBLE CHECK VISUAL DE ESTADO
     let checkIcon = '';
@@ -3745,11 +3783,12 @@
   // ENVÍO DE MENSAJES
   function handleSendMessage() {
     const text = chatTextarea.value.trim();
-    if (!text || (!activeContactSyncId && !activeChannelId) || !socket) return;
+    const targetChannel = activeChannelId || (!activeContactSyncId ? '#anuncios' : null);
+    if (!text || (!activeContactSyncId && !targetChannel) || !socket) return;
 
-    if (activeChannelId) {
+    if (targetChannel && !activeContactSyncId) {
       socket.emit('send-channel-message', {
-        channelId: activeChannelId,
+        channelId: targetChannel,
         text: text,
         type: 'text'
       });
@@ -3772,7 +3811,17 @@
     chatTextarea.focus();
   }
 
-  sendBtn.addEventListener('click', handleSendMessage);
+  if (chatForm) {
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleSendMessage();
+    });
+  }
+
+  sendBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    handleSendMessage();
+  });
 
   chatTextarea.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -4691,7 +4740,7 @@
   // =========================================================================
 
   // Variables de Estado de la Suite
-  let activeChannelId = null;
+  let activeChannelId = '#anuncios';
   let workspaceChannels = [];
   let userPlanData = null;
   let activeSelectedTier = 'pro';
