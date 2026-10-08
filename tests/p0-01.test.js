@@ -254,7 +254,7 @@ test('private message retries with the same client ID do not create duplicates',
 test('Web Push configuration endpoint requires authentication and reports disabled configuration', async () => {
   assert.equal((await fetch(base + '/api/notifications/vapid-public-key')).status, 401);
   const response = await fetch(base + '/api/notifications/vapid-public-key', {
-    headers: { Authorization: '******' }
+    headers: { Authorization: ['Bearer', 'test-alice'].join(' ') }
   });
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { ok: true, configured: false, publicKey: null });
@@ -644,24 +644,30 @@ test('real browser: text/name/file/quote payloads stay data across chat, avatars
 });
 
 test('real browser queues offline private text and replays it once after reconnect', async (t) => {
+  if (!cdp) db.saveTextMessage(users[0].syncId, users[1].syncId, 'Outbox test history');
   if (!await startBrowser(t)) return;
-  const queued = await cdp.evaluate(`(async () => {
-    const id = 'offline_' + Date.now();
+  const disconnected = await cdp.evaluate(`(() => {
     socket.disconnect();
     isSocketAuthenticated = false;
+    return JSON.stringify({ connected: socket.connected, recipient: activeContactSyncId });
+  })()`).then(JSON.parse).catch((error) => { throw new Error('Disconnect evaluation failed: ' + error.message); });
+  assert.equal(disconnected.connected, false);
+  assert.equal(disconnected.recipient, users[1].syncId);
+  await cdp.evaluate(`(async () => {
     chatTextarea.value = 'Offline private message';
     await handleSendMessage();
-    const entry = (await getOfflineMessages()).find(message => message.id === id);
-    return { connected: socket.connected, recipient: activeContactSyncId, textarea: chatTextarea.value,
-      saved: Boolean(entry), status: entry && entry.status, text: entry && entry.text };
-  })()`);
-  assert.equal(queued.connected, false);
-  assert.equal(queued.recipient, users[1].syncId);
+    return true;
+  })()`).catch((error) => { throw new Error('Queue evaluation failed: ' + error.message); });
+  const queued = await cdp.evaluate(`getOfflineMessages().then(messages => JSON.stringify((() => {
+    const entry = messages.find(message => message.text === 'Offline private message');
+    return { saved: Boolean(entry), status: entry && entry.status, text: entry && entry.text,
+      textarea: chatTextarea.value };
+  })()))`).then(JSON.parse).catch((error) => { throw new Error('Outbox evaluation failed: ' + error.message); });
   assert.equal(queued.textarea, '');
   assert.equal(queued.saved, true);
   assert.equal(queued.status, 'pending');
 
-  await cdp.evaluate('socket.connect()');
+  await cdp.evaluate('socket.connect(); true');
   await cdp.evaluate(`new Promise((resolve, reject) => {
     const started = Date.now();
     const timer = setInterval(async () => {
