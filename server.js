@@ -157,12 +157,20 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 2 * 1024 * 1024 * 1024 // 2 GB
-  }
-});
+function uploadForCurrentPlan(req, res, next) {
+  const entitlements = db.getPlanEntitlements(req.user.syncId);
+  if (!entitlements) return res.status(403).json({ error: "Plan de usuario no disponible" });
+  multer({
+    storage: storage,
+    limits: { fileSize: entitlements.maxUploadBytes }
+  }).single("file")(req, res, (err) => {
+    if (err && err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "El archivo supera el límite de tamaño de tu plan" });
+    }
+    if (err) return next(err);
+    next();
+  });
+}
 
 // Middleware de Autenticación
 function requireAuth(req, res, next) {
@@ -179,6 +187,16 @@ function requireAuth(req, res, next) {
 
   req.user = user;
   next();
+}
+
+function requireFeature(feature) {
+  return (req, res, next) => {
+    const entitlements = db.getPlanEntitlements(req.user.syncId);
+    if (!entitlements || !entitlements[feature]) {
+      return res.status(403).json({ error: "Esta función requiere un plan superior" });
+    }
+    next();
+  };
 }
 
 const FILE_COOKIE = "sync_engine_file_auth";
@@ -422,7 +440,7 @@ app.post("/api/user/profile", requireAuth, async (req, res) => {
 });
 
 // Endpoint de Subida de Documentos y Archivos Pesados (hasta 2 GB sin compresión)
-app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
+app.post("/api/upload", requireAuth, uploadForCurrentPlan, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No se proporcionó ningún archivo" });
@@ -544,53 +562,42 @@ app.get('/api/status', function (_req, res) {
 
 // ==== Endpoints de Monetización, Facturación y Planes ====
 app.get("/api/billing/plan", requireAuth, (req, res) => {
-  const user = db.getUserBySyncId(req.user.syncId);
-  if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+  const entitlements = db.getPlanEntitlements(req.user.syncId);
+  if (!entitlements) return res.status(404).json({ error: "Usuario no encontrado" });
   res.json({
     ok: true,
-    plan: user.plan || "free",
-    role: user.role || "member",
-    planExpiresAt: user.planExpiresAt || null,
+    plan: entitlements.plan,
+    role: req.user.role || "member",
+    planExpiresAt: req.user.planExpiresAt || null,
     features: {
-      maxUploadBytes: user.plan === "enterprise" ? 2147483648 : (user.plan === "pro" ? 2147483648 : 52428800),
-      maxVoiceSeconds: user.plan === "free" ? 60 : 600,
-      encryptedVault: user.plan !== "free",
-      teamChannels: user.plan === "enterprise" || user.plan === "pro",
-      exportAudit: true,
-      hdCalling: user.plan !== "free"
+      maxUploadBytes: entitlements.maxUploadBytes,
+      maxVaultItems: entitlements.maxVaultItems,
+      maxCustomChannels: entitlements.maxCustomChannels,
+      encryptedVault: entitlements.encryptedVault,
+      teamChannels: entitlements.teamChannels
     }
   });
 });
 
-app.post("/api/billing/upgrade", requireAuth, (req, res) => {
-  const { plan, billingCycle, paymentDetails } = req.body || {};
-  try {
-    const result = db.upgradeUserPlan(req.user.syncId, plan, billingCycle, paymentDetails);
-    res.json({ ok: true, user: result.user, invoice: result.invoice });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+app.post("/api/billing/upgrade", requireAuth, (_req, res) => {
+  res.status(503).json({
+    ok: false,
+    code: "BILLING_NOT_CONFIGURED",
+    error: "Los pagos todavía no están configurados; no se ha realizado ningún cobro ni cambio de plan."
+  });
 });
 
 app.get("/api/billing/invoices", requireAuth, (req, res) => {
-  const invoices = db.getUserInvoices(req.user.syncId);
+  const invoices = db.getUserInvoices(req.user.syncId).filter((invoice) => invoice.providerInvoiceId);
   res.json({ ok: true, invoices: invoices });
 });
 
-app.post("/api/billing/apply-coupon", requireAuth, (req, res) => {
-  const { code } = req.body || {};
-  const cleanCode = String(code || "").trim().toUpperCase();
-  const coupons = {
-    "SYNC2026": 25,
-    "LAUNCH50": 50,
-    "BARRANTES": 30,
-    "VIP": 20
-  };
-  if (coupons[cleanCode]) {
-    res.json({ ok: true, valid: true, discountPercent: coupons[cleanCode], code: cleanCode });
-  } else {
-    res.status(400).json({ ok: false, valid: false, error: "Código promocional no válido o caducado" });
-  }
+app.post("/api/billing/apply-coupon", requireAuth, (_req, res) => {
+  res.status(503).json({
+    ok: false,
+    valid: false,
+    error: "Los cupones estarán disponibles cuando se configure el proveedor de pagos."
+  });
 });
 
 // ==== Endpoints de Bóveda Cifrada Privada ====
@@ -600,7 +607,7 @@ app.get("/api/vault", requireAuth, (req, res) => {
   res.json({ ok: true, items: items });
 });
 
-app.post("/api/vault", requireAuth, (req, res) => {
+app.post("/api/vault", requireAuth, requireFeature("encryptedVault"), (req, res) => {
   res.setHeader("Cache-Control", "private, no-store");
   try {
     const item = db.saveVaultItem(req.user.syncId, req.body);
@@ -622,7 +629,7 @@ app.get("/api/channels", requireAuth, (req, res) => {
   res.json({ ok: true, channels: channels });
 });
 
-app.post("/api/channels", requireAuth, (req, res) => {
+app.post("/api/channels", requireAuth, requireFeature("teamChannels"), (req, res) => {
   const { name, description } = req.body || {};
   try {
     const channel = db.createWorkspaceChannel(name, description, req.user.syncId);
