@@ -9,3 +9,14 @@ android/.gradle/
 android/app/build/
 android/build/
 .vscode/mcp.json
+
+# Infrastructure credentials and local environments
+.env
+.env.local
+.env.development
+
+# Dependencies and runtimes
+node_modules/
+
+# State persistence layer
+*.json
