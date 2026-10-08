@@ -3,8 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0A1A3A">
-  <title>SYNC ENGINE | Widget</title>
+  <title>SYNC ENGINE | Widget Universal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -13,63 +12,87 @@
   <script src="/widget.js" defer></script>
 </head>
 <body>
-  <main class="widget-card" aria-labelledby="widget-title">
+  <main class="widget-card" id="widget-container" aria-labelledby="widget-title">
+    
+    <!-- Cabecera: Marca, Canal #anuncios, Estado Socket y Contador No Leídos -->
     <header class="widget-header">
       <div class="brand">
         <img class="brand-logo" src="/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png" alt="SYNC ENGINE">
-        <div>
-          <p class="eyebrow">SYNC ENGINE</p>
-          <h1 id="widget-title">Panel sincronizado</h1>
+        <div class="brand-title-wrap">
+          <span class="eyebrow" id="widget-title">SYNC</span>
+          <span class="channel-tag">#anuncios</span>
         </div>
       </div>
       <div class="header-meta">
-        <div class="weather-pill" aria-label="Clima local actual" aria-live="polite">
-          <span id="weather-icon" class="weather-icon" aria-hidden="true">⛅</span>
-          <span id="temperature" class="temperature">--°C</span>
-        </div>
-        <div class="sync-status" id="sync-status" data-state="offline">
+        <div class="sync-status" id="sync-status" data-state="offline" title="Estado de conexión en tiempo real">
           <span class="sync-dot" aria-hidden="true"></span>
           <span id="sync-label">Sin conexión</span>
         </div>
+        <span id="unread-count" class="unread-badge" aria-live="polite" aria-label="0 mensajes sin leer">0</span>
       </div>
     </header>
 
-    <section class="clock-hero" aria-label="Hora y fecha local">
-      <p class="hero-label">Tu tiempo, sincronizado</p>
-      <time id="clock" class="clock">--:--:--</time>
-      <p id="date" class="date">Cargando fecha…</p>
+    <!-- Glanceable Hero: Reloj digital y Clima estilo Material You -->
+    <section class="glanceable-hero" aria-label="Hora local y Clima">
+      <div class="time-box">
+        <div id="clock" class="clock">--:--:--</div>
+        <div id="date" class="date">Sincronizando…</div>
+      </div>
+      <div class="weather-pill" id="weather-pill" aria-label="Clima local" aria-live="polite">
+        <span id="weather-icon" class="weather-icon" aria-hidden="true">⛅</span>
+        <span id="temperature" class="temperature">--°C</span>
+      </div>
     </section>
 
-    <section class="contact-select">
-      <label for="contact-select">Contacto para captura</label>
-      <select id="contact-select" disabled>
-        <option value="">Inicia sesión para cargar contactos</option>
-      </select>
+    <!-- Feed de Anuncios en vivo (Últimos 3-5 mensajes) -->
+    <section class="announcements-section" aria-label="Anuncios en vivo">
+      <div class="section-label">
+        <span>📢 Canal #anuncios</span>
+        <span id="feed-live-indicator" class="feed-live-indicator">● VIVO</span>
+      </div>
+      <div id="announcements-list" class="announcements-list" role="region" aria-label="Lista de anuncios" aria-live="polite">
+        <div class="empty-announcements">
+          <span>Esperando anuncios en #anuncios…</span>
+        </div>
+      </div>
     </section>
 
-    <nav class="controls" aria-label="Acciones rápidas">
-      <button id="open-chat-button" class="button button-messages" type="button" aria-label="Abrir mensajes">
-        <span class="button-icon" aria-hidden="true">💬</span>
-        <span class="button-label">Mensajes</span>
-        <span id="unread-count" class="unread-badge" aria-live="polite" aria-label="0 mensajes sin leer">0</span>
-      </button>
-      <button id="capture-button" class="button button-capture" type="button" disabled>
-        <span aria-hidden="true">📸</span>
-        <span id="capture-label">Capturar</span>
-      </button>
-      <button id="copy-button" class="button button-copy" type="button" disabled>
-        <span aria-hidden="true">📋</span>
-        <span id="copy-label">Copiar ID</span>
-      </button>
-    </nav>
+    <!-- Barra de Respuesta Rápida al canal -->
+    <form id="quick-reply-form" class="quick-reply-form" action="javascript:void(0);">
+      <input type="text" id="quick-reply-input" class="quick-reply-input" placeholder="Escribir en #anuncios…" maxlength="250" autocomplete="off">
+      <button type="submit" id="quick-reply-send" class="quick-reply-btn" title="Enviar anuncio" aria-label="Enviar anuncio">➤</button>
+    </form>
 
+    <!-- Botón de Acción Principal: Bóveda / App Principal -->
+    <button id="open-chat-button" class="button-vault" type="button" aria-label="Abrir Bóveda en SYNC ENGINE">
+      <span aria-hidden="true">🔓</span>
+      <span>Abrir Bóveda en SYNC ENGINE</span>
+    </button>
+
+    <!-- Avisos de Estado y Notificaciones en pantalla -->
     <p id="widget-notice" class="widget-notice" role="status" aria-live="polite"></p>
     <div id="incoming-notice" class="incoming-notice" role="status" aria-live="polite" hidden></div>
-    <div id="incoming-clipboard" class="incoming-clipboard" hidden>
-      <span id="incoming-clipboard-preview"></span>
-      <button id="copy-incoming-button" class="copy-incoming-button" type="button">Copiar recibido</button>
+
+    <!-- Overlay de Autenticación Inteligente -->
+    <div id="auth-overlay" class="auth-overlay hidden">
+      <span class="auth-overlay-icon" aria-hidden="true">🔒</span>
+      <h2 class="auth-overlay-title">Sesión Requerida</h2>
+      <p class="auth-overlay-desc">Inicia sesión en SYNC ENGINE para sincronizar anuncios y tu bóveda segura.</p>
+      <button type="button" id="widget-login-btn" class="auth-login-btn">🔑 Iniciar sesión</button>
     </div>
-    <input id="camera-input" type="file" accept="image/*" capture="environment" hidden>
+
+    <!-- Controles de Utilidad y Compatibilidad (TEST 13 & Captura) -->
+    <div class="widget-utilities-drawer" aria-hidden="true">
+      <select id="contact-select" aria-label="Contacto"></select>
+      <button id="capture-button" type="button"><span id="capture-label">Capturar</span></button>
+      <button id="copy-button" type="button"><span id="copy-label">Copiar ID</span></button>
+      <div id="incoming-clipboard">
+        <span id="incoming-clipboard-preview"></span>
+        <button id="copy-incoming-button" type="button">Copiar recibido</button>
+      </div>
+      <input id="camera-input" type="file" accept="image/*">
+    </div>
+
   </main>
 </body>
 </html>

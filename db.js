@@ -865,6 +865,19 @@ function getWorkspaceChannels(userSyncId) {
   return (db.channels || []).filter((channel) => isChannelMember(channel.id, userSyncId));
 }
 
+function findChannel(channelId) {
+  if (!channelId) return null;
+  const db = readDb();
+  const raw = String(channelId).trim();
+  const clean = raw.replace(/^#/, "").toLowerCase();
+  return (db.channels || []).find((c) => 
+    c.id === raw || 
+    c.id === clean || 
+    c.id === ("chan-" + clean) || 
+    c.name.toLowerCase() === clean
+  ) || null;
+}
+
 /**
  * Checks whether a registered user is allowed to access a workspace channel.
  * Default workspace channels are available to every registered user; custom
@@ -881,7 +894,14 @@ function isChannelMember(channelId, userSyncId) {
     return false;
   }
 
-  const channel = (db.channels || []).find((item) => item.id === channelId);
+  const raw = String(channelId).trim();
+  const clean = raw.replace(/^#/, "").toLowerCase();
+  const channel = (db.channels || []).find((item) => 
+    item.id === raw || 
+    item.id === clean || 
+    item.id === ("chan-" + clean) || 
+    item.name.toLowerCase() === clean
+  );
   if (!channel) return false;
   if (channel.isDefault) return true;
   if (String(channel.creatorSyncId || "").trim().toUpperCase() === normalizedUserId) return true;
@@ -919,23 +939,29 @@ function createWorkspaceChannel(name, description, creatorSyncId) {
 }
 
 function getChannelMessages(channelId, userSyncId, limit = 100) {
-  if (!isChannelMember(channelId, userSyncId)) {
+  const channel = findChannel(channelId);
+  const resolvedChannelId = channel ? channel.id : channelId;
+
+  if (!isChannelMember(resolvedChannelId, userSyncId)) {
     throw new Error("No tienes permisos para acceder a este canal");
   }
   const db = readDb();
   if (!db.channelMessages) return [];
   return db.channelMessages
-    .filter((m) => m.channelId === channelId)
+    .filter((m) => m.channelId === resolvedChannelId || m.channelId === channelId)
     .slice(-limit);
 }
 
 function saveChannelMessage(channelId, senderSyncId, payload) {
-  const db = readDb();
-  if (!db.channelMessages) db.channelMessages = [];
+  const channel = findChannel(channelId);
+  const resolvedChannelId = channel ? channel.id : channelId;
 
-  if (!isChannelMember(channelId, senderSyncId)) {
+  if (!isChannelMember(resolvedChannelId, senderSyncId)) {
     throw new Error("No tienes permisos para enviar mensajes a este canal");
   }
+
+  const db = readDb();
+  if (!db.channelMessages) db.channelMessages = [];
 
   const sender = db.users.find((u) => u.syncId === senderSyncId);
   if (!sender) throw new Error("Emisor no encontrado");
@@ -943,7 +969,7 @@ function saveChannelMessage(channelId, senderSyncId, payload) {
   const { text, type, fileData, audioData } = payload;
   const message = {
     id: "cmsg_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
-    channelId: channelId,
+    channelId: resolvedChannelId,
     senderSyncId: senderSyncId,
     senderName: sender.cleanDisplayName,
     senderFormattedName: sender.formattedName,
@@ -1036,6 +1062,7 @@ module.exports = {
   saveVaultItem,
   deleteVaultItem,
   getWorkspaceChannels,
+  findChannel,
   isChannelMember,
   createWorkspaceChannel,
   getChannelMessages,
