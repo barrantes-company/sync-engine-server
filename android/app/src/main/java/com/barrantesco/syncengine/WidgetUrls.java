@@ -36,13 +36,17 @@ final class WidgetUrls {
     }
 
     /**
-     * Devuelve la URL de la app principal (raíz del dominio) a partir de la URL
-     * configurada, para que el widget abra la interfaz de la app y no /widget.html.
+     * Devuelve la URL de la app principal. Si la URL termina en /widget.html
+     * (configuración antigua) se usa la raíz del dominio.
      */
     static String appUrl(String widgetUrl) {
         try {
             URI uri = new URI(widgetUrl.trim());
-            return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), "/", null, null).toString();
+            String path = uri.getPath();
+            if (path == null || path.isEmpty() || path.endsWith("/widget.html")) {
+                return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), "/", null, null).toString();
+            }
+            return uri.toString();
         } catch (URISyntaxException exception) {
             return widgetUrl;
         }
@@ -58,9 +62,7 @@ final class WidgetUrls {
             return uri.isAbsolute()
                     && ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))
                     && uri.getHost() != null
-                    && uri.getUserInfo() == null
-                    && uri.getPath() != null
-                    && uri.getPath().endsWith("/widget.html");
+                    && uri.getUserInfo() == null;
         } catch (URISyntaxException exception) {
             return false;
         }
