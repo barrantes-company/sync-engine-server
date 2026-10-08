@@ -1,5 +1,4 @@
-```
-name: Node.js CI &amp; Webpack Build
+name: "Node.js CI & Webpack Build"
 
 on:
   push:
@@ -33,5 +32,3 @@ jobs:
 
     - name: Ejecutar pruebas
       run: npm test --if-present
-
-```
