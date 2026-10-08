@@ -611,11 +611,13 @@ app.post("/api/billing/apply-coupon", requireAuth, (req, res) => {
 
 // ==== Endpoints de Bóveda Cifrada Privada ====
 app.get("/api/vault", requireAuth, (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
   const items = db.getVaultItems(req.user.syncId);
   res.json({ ok: true, items: items });
 });
 
 app.post("/api/vault", requireAuth, (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
   try {
     const item = db.saveVaultItem(req.user.syncId, req.body);
     res.json({ ok: true, item: item });
@@ -625,13 +627,14 @@ app.post("/api/vault", requireAuth, (req, res) => {
 });
 
 app.delete("/api/vault/:itemId", requireAuth, (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
   const success = db.deleteVaultItem(req.user.syncId, req.params.itemId);
   res.json({ ok: true, deleted: success });
 });
 
 // ==== Endpoints de Canales de Espacio de Trabajo ====
 app.get("/api/channels", requireAuth, (req, res) => {
-  const channels = db.getWorkspaceChannels();
+  const channels = db.getWorkspaceChannels(req.user.syncId);
   res.json({ ok: true, channels: channels });
 });
 
@@ -639,7 +642,10 @@ app.post("/api/channels", requireAuth, (req, res) => {
   const { name, description } = req.body || {};
   try {
     const channel = db.createWorkspaceChannel(name, description, req.user.syncId);
-    io.emit("channel-created", channel);
+    const creatorSockets = onlineUsers.get(req.user.syncId);
+    if (creatorSockets) {
+      creatorSockets.forEach((socketId) => io.to(socketId).emit("channel-created", channel));
+    }
     res.json({ ok: true, channel: channel });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -647,8 +653,12 @@ app.post("/api/channels", requireAuth, (req, res) => {
 });
 
 app.get("/api/channels/:channelId/messages", requireAuth, (req, res) => {
-  const messages = db.getChannelMessages(req.params.channelId);
-  res.json({ ok: true, messages: messages });
+  try {
+    const messages = db.getChannelMessages(req.params.channelId, req.user.syncId);
+    res.json({ ok: true, messages: messages });
+  } catch (err) {
+    res.status(403).json({ error: err.message });
+  }
 });
 
 // ==== Endpoint de Exportación de Auditoría y Transcripción ====
@@ -724,6 +734,16 @@ if (sslOptions) {
 const onlineUsers = new Map();
 const socketToUser = new Map();
 
+/**
+ * Sends a structured channel authorization failure to a Socket.IO client.
+ * @param {import("socket.io").Socket} socket
+ * @param {string} code
+ * @param {string} message
+ */
+function emitChannelAuthorizationError(socket, code, message) {
+  socket.emit("authorization-error", { code: code, message: message });
+}
+
 io.on("connection", function (socket) {
   // Autenticación de Socket
   socket.on("authenticate", function (payload) {
@@ -771,10 +791,19 @@ io.on("connection", function (socket) {
 
   // ==== Gestión y Mensajería de Canales de Equipo ====
   socket.on("join-channel", function (payload) {
-    const channelId = payload && payload.channelId;
-    if (channelId) {
-      socket.join("channel:" + channelId);
+    const user = socketToUser.get(socket.id);
+    if (!user) {
+      emitChannelAuthorizationError(socket, "UNAUTHENTICATED", "Autenticación requerida");
+      return;
     }
+
+    const channelId = payload && typeof payload.channelId === "string" ? payload.channelId : "";
+    if (!channelId || !db.isChannelMember(channelId, user.syncId)) {
+      emitChannelAuthorizationError(socket, "FORBIDDEN", "No tienes permisos para acceder a este canal");
+      return;
+    }
+
+    socket.join("channel:" + channelId);
   });
 
   socket.on("send-channel-message", async function (payload) {
@@ -785,6 +814,10 @@ io.on("connection", function (socket) {
     }
     const { channelId, text, type, fileData, audioData } = payload || {};
     if (!channelId) return;
+    if (!db.isChannelMember(channelId, sender.syncId)) {
+      emitChannelAuthorizationError(socket, "FORBIDDEN", "No tienes permisos para enviar mensajes a este canal");
+      return;
+    }
 
     try {
       const msg = db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });

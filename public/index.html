@@ -1023,7 +1023,7 @@
             <h3 class="font-bold text-base sm:text-lg text-[#0A1A3A] font-title flex items-center gap-2">
               <span>Bóveda Cifrada Privada</span>
             </h3>
-            <p class="text-xs text-[#64748B]">Almacenamiento seguro de notas, credenciales y claves con cifrado de grado militar.</p>
+            <p class="text-xs text-[#64748B]">AES-GCM local: la clave maestra no se envía ni se guarda. El servidor sí ve título, categoría y pista; los registros antiguos sin cifrado local no se mostrarán.</p>
           </div>
         </div>
         <button id="close-vault-modal-btn" type="button" aria-label="Cerrar bóveda" class="h-8 w-8 rounded-full hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center font-bold text-sm cursor-pointer transition-colors">✕</button>
@@ -1675,6 +1675,7 @@
 
   logoutBtn.addEventListener('click', () => {
     endCall(true);
+    clearVaultSession();
     localStorage.removeItem(TOKEN_KEY);
     SyncPrivateFiles.clear().catch(() => {});
     currentToken = null;
@@ -4744,6 +4745,7 @@
   const vaultHintInput = document.getElementById('vault-hint-input');
   const saveVaultItemBtn = document.getElementById('save-vault-item-btn');
   const vaultItemsContainer = document.getElementById('vault-items-container');
+  let vaultMasterPassphrase = null;
 
   const createChannelModal = document.getElementById('create-channel-modal');
   const closeCreateChannelBtn = document.getElementById('close-create-channel-btn');
@@ -4934,6 +4936,117 @@
   }
 
   // 2. GESTIÓN DE BÓVEDA CIFRADA PRIVADA
+  const VAULT_KDF_ITERATIONS = 310000;
+  const vaultTextEncoder = new TextEncoder();
+  const vaultTextDecoder = new TextDecoder();
+
+  function vaultBytesToBase64(bytes) {
+    let binary = '';
+    bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+    return btoa(binary);
+  }
+
+  function vaultBase64ToBytes(value) {
+    const binary = atob(value);
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  }
+
+  /**
+   * Derives a non-extractable AES-256-GCM key from the local master passphrase.
+   * @param {string} passphrase
+   * @param {Uint8Array} salt
+   * @returns {Promise<CryptoKey>}
+   */
+  async function deriveVaultKey(passphrase, salt) {
+    const material = await crypto.subtle.importKey(
+      'raw', vaultTextEncoder.encode(passphrase), 'PBKDF2', false, ['deriveKey']
+    );
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: VAULT_KDF_ITERATIONS, hash: 'SHA-256' },
+      material,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  }
+
+  /**
+   * Encrypts secret text locally; Web Crypto appends the GCM authentication tag.
+   * @param {string} secret
+   * @param {string} passphrase
+   * @returns {Promise<object>}
+   */
+  async function encryptVaultSecret(secret, passphrase) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveVaultKey(passphrase, salt);
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv, tagLength: 128 }, key, vaultTextEncoder.encode(secret)
+    );
+    return {
+      version: 1,
+      algorithm: 'AES-GCM',
+      kdf: 'PBKDF2',
+      hash: 'SHA-256',
+      iterations: VAULT_KDF_ITERATIONS,
+      salt: vaultBytesToBase64(salt),
+      iv: vaultBytesToBase64(iv),
+      ciphertext: vaultBytesToBase64(new Uint8Array(ciphertext))
+    };
+  }
+
+  /**
+   * Authenticates and decrypts one item in browser memory only.
+   * @param {object} encryptedContent
+   * @param {string} passphrase
+   * @returns {Promise<string>}
+   */
+  async function decryptVaultSecret(encryptedContent, passphrase) {
+    if (!encryptedContent || encryptedContent.version !== 1 ||
+        encryptedContent.algorithm !== 'AES-GCM' || encryptedContent.kdf !== 'PBKDF2' ||
+        encryptedContent.hash !== 'SHA-256' || encryptedContent.iterations !== VAULT_KDF_ITERATIONS) {
+      throw new Error('Formato de cifrado de bóveda no compatible');
+    }
+    const salt = vaultBase64ToBytes(encryptedContent.salt);
+    const iv = vaultBase64ToBytes(encryptedContent.iv);
+    const ciphertext = vaultBase64ToBytes(encryptedContent.ciphertext);
+    if (salt.length !== 16 || iv.length !== 12 || ciphertext.length < 16) {
+      throw new Error('Payload cifrado de bóveda no válido');
+    }
+    const key = await deriveVaultKey(passphrase, salt);
+    const plaintext = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv, tagLength: 128 }, key, ciphertext
+    );
+    return vaultTextDecoder.decode(plaintext);
+  }
+
+  function clearVaultSession() {
+    vaultMasterPassphrase = null;
+    if (vaultSecretInput) vaultSecretInput.value = '';
+    if (vaultItemsContainer) vaultItemsContainer.replaceChildren();
+    if (vaultModal) vaultModal.classList.add('hidden');
+  }
+
+  /**
+   * Prompts locally for the master passphrase and unlocks the vault for this view.
+   * @returns {Promise<void>}
+   */
+  async function unlockVault() {
+    if (!window.isSecureContext || !window.crypto || !window.crypto.subtle) {
+      alert('El cifrado de la bóveda requiere una conexión HTTPS segura.');
+      return;
+    }
+    const passphrase = window.prompt('Introduce tu clave maestra de la bóveda. No se envía ni se guarda en el servidor.');
+    if (passphrase === null) return;
+    if (passphrase.length < 12) {
+      alert('La clave maestra debe tener al menos 12 caracteres.');
+      return;
+    }
+    vaultMasterPassphrase = passphrase;
+    vaultModal.classList.remove('hidden');
+    await loadVaultItems();
+  }
+
   async function loadVaultItems() {
     if (!vaultItemsContainer) return;
     vaultItemsContainer.innerHTML = '<p class="text-xs text-[#64748B] text-center py-4">Cargando registros cifrados...</p>';
@@ -4942,11 +5055,18 @@
         headers: { 'Authorization': 'Bearer ' + currentToken }
       });
       const data = await res.json();
-      if (data.ok && Array.isArray(data.items)) {
-        renderVaultItems(data.items);
+      if (!res.ok || !data.ok || !Array.isArray(data.items)) {
+        throw new Error(data.error || 'No se pudo cargar la bóveda');
       }
+      const items = await Promise.all(data.items.map(async (item) => ({
+        ...item,
+        secretContent: await decryptVaultSecret(item.encryptedContent, vaultMasterPassphrase)
+      })));
+      renderVaultItems(items);
     } catch (e) {
-      vaultItemsContainer.innerHTML = '<p class="text-xs text-red-500 text-center py-4">Error al cargar registros</p>';
+      vaultMasterPassphrase = null;
+      vaultSecretInput.value = '';
+      vaultItemsContainer.innerHTML = '<p class="text-xs text-red-500 text-center py-4">No se pudo cargar o descifrar la bóveda. Comprueba la conexión, el formato y la clave maestra.</p>';
     }
   }
 
@@ -5035,20 +5155,21 @@
     const category = vaultCategorySelect.value;
     const hint = vaultHintInput.value.trim();
 
-    if (!title || !secret) {
-      alert('Por favor especifica un título y contenido para el registro.');
+    if (!title || !secret || !vaultMasterPassphrase) {
+      alert('Desbloquea la bóveda e indica un título y contenido para el registro.');
       return;
     }
 
     saveVaultItemBtn.disabled = true;
     try {
+      const encryptedContent = await encryptVaultSecret(secret, vaultMasterPassphrase);
       const res = await fetch('/api/vault', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + currentToken
         },
-        body: JSON.stringify({ title, secretContent: secret, category, hint })
+        body: JSON.stringify({ title, category, hint, encryptedContent })
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -5280,12 +5401,9 @@
 
   // Bóveda
   if (openVaultBtn) {
-    openVaultBtn.addEventListener('click', () => {
-      loadVaultItems();
-      vaultModal.classList.remove('hidden');
-    });
+    openVaultBtn.addEventListener('click', unlockVault);
   }
-  if (closeVaultModalBtn) closeVaultModalBtn.addEventListener('click', () => vaultModal.classList.add('hidden'));
+  if (closeVaultModalBtn) closeVaultModalBtn.addEventListener('click', clearVaultSession);
   if (saveVaultItemBtn) saveVaultItemBtn.addEventListener('click', handleSaveVaultItem);
 
   // Switcher DMs vs Canales

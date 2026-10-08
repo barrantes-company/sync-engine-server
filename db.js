@@ -723,34 +723,104 @@ function getUserInvoices(syncId) {
 }
 
 // ==== Bóveda Cifrada Privada (Encrypted Vault) ====
+const VAULT_KDF_ITERATIONS = 310000;
+
+/**
+ * Validates the browser-generated encryption envelope without interpreting its contents.
+ * AES-GCM ciphertext contains its authentication tag as the final 16 bytes.
+ * @param {object} encryptedContent
+ * @returns {boolean}
+ */
+function isValidVaultEnvelope(encryptedContent) {
+  if (!encryptedContent || typeof encryptedContent !== "object" || Array.isArray(encryptedContent) ||
+      encryptedContent.version !== 1 || encryptedContent.algorithm !== "AES-GCM" ||
+      encryptedContent.kdf !== "PBKDF2" || encryptedContent.hash !== "SHA-256" ||
+      encryptedContent.iterations !== VAULT_KDF_ITERATIONS) return false;
+
+  const fields = ["salt", "iv", "ciphertext"];
+  if (fields.some((field) => typeof encryptedContent[field] !== "string" ||
+      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encryptedContent[field]))) {
+    return false;
+  }
+
+  const salt = Buffer.from(encryptedContent.salt, "base64");
+  const iv = Buffer.from(encryptedContent.iv, "base64");
+  const ciphertext = Buffer.from(encryptedContent.ciphertext, "base64");
+  return salt.length === 16 && iv.length === 12 && ciphertext.length >= 16 &&
+    ciphertext.length <= 1024 * 1024 && salt.toString("base64") === encryptedContent.salt &&
+    iv.toString("base64") === encryptedContent.iv && ciphertext.toString("base64") === encryptedContent.ciphertext;
+}
+
+/**
+ * Copies only the supported envelope fields so extra client data is never stored.
+ * @param {object} encryptedContent
+ * @returns {object|null}
+ */
+function normalizeVaultEnvelope(encryptedContent) {
+  if (!isValidVaultEnvelope(encryptedContent)) return null;
+  return {
+    version: encryptedContent.version,
+    algorithm: encryptedContent.algorithm,
+    kdf: encryptedContent.kdf,
+    hash: encryptedContent.hash,
+    iterations: encryptedContent.iterations,
+    salt: encryptedContent.salt,
+    iv: encryptedContent.iv,
+    ciphertext: encryptedContent.ciphertext
+  };
+}
+
 function getVaultItems(syncId) {
   const db = readDb();
   const sId = String(syncId).trim().toUpperCase();
-  return (db.vaultItems && db.vaultItems[sId]) || [];
+  return ((db.vaultItems && db.vaultItems[sId]) || [])
+    .filter((item) => isValidVaultEnvelope(item.encryptedContent))
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      category: item.category,
+      encryptedContent: normalizeVaultEnvelope(item.encryptedContent),
+      hint: item.hint,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
+    }));
 }
 
 function saveVaultItem(syncId, itemData) {
+  if (!itemData || typeof itemData !== "object" || Array.isArray(itemData) ||
+      Object.prototype.hasOwnProperty.call(itemData, "secretContent") ||
+      Object.prototype.hasOwnProperty.call(itemData, "secret")) {
+    throw new Error("Solo se aceptan secretos cifrados en el cliente");
+  }
+
   const db = readDb();
   const sId = String(syncId).trim().toUpperCase();
   if (!db.vaultItems) db.vaultItems = {};
   if (!db.vaultItems[sId]) db.vaultItems[sId] = [];
 
-  const { id, title, category, secretContent, secret, hint } = itemData || {};
-  const content = secretContent || secret;
-  if (!title || !content) {
-    throw new Error("El título y el contenido confidencial son obligatorios");
+  const { id, title, category, encryptedContent, hint } = itemData;
+  const allowedCategories = ["password", "note", "api-key", "financial"];
+  const safeEncryptedContent = normalizeVaultEnvelope(encryptedContent);
+  if (typeof title !== "string" || !title.trim() || title.length > 100 ||
+      !allowedCategories.includes(category) || !safeEncryptedContent ||
+      (hint != null && (typeof hint !== "string" || hint.length > 80))) {
+    throw new Error("Metadatos o payload cifrado de bóveda no válidos");
   }
 
-  const existingIdx = id ? db.vaultItems[sId].findIndex((i) => i.id === id) : -1;
+  const existingIdx = id ? db.vaultItems[sId].findIndex((i) =>
+    i.id === id && isValidVaultEnvelope(i.encryptedContent)) : -1;
   const now = Date.now();
+  const safeHint = hint ? hint : null;
 
   if (existingIdx >= 0) {
+    const existing = db.vaultItems[sId][existingIdx];
     db.vaultItems[sId][existingIdx] = {
-      ...db.vaultItems[sId][existingIdx],
+      id: existing.id,
       title: String(title).slice(0, 100),
-      category: category || "general",
-      secretContent: String(content),
-      hint: hint ? String(hint).slice(0, 80) : null,
+      category: category,
+      encryptedContent: safeEncryptedContent,
+      hint: safeHint,
+      createdAt: existing.createdAt,
       updatedAt: now
     };
     writeDb(db);
@@ -759,9 +829,9 @@ function saveVaultItem(syncId, itemData) {
     const newItem = {
       id: "vlt_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
       title: String(title).slice(0, 100),
-      category: category || "general",
-      secretContent: String(content),
-      hint: hint ? String(hint).slice(0, 80) : null,
+      category: category,
+      encryptedContent: safeEncryptedContent,
+      hint: safeHint,
       createdAt: now,
       updatedAt: now
     };
@@ -785,9 +855,38 @@ function deleteVaultItem(syncId, itemId) {
 }
 
 // ==== Canales de Espacio de Trabajo (Workspace Channels) ====
-function getWorkspaceChannels() {
+/**
+ * Returns only the channels visible to the registered user.
+ * @param {string} userSyncId
+ * @returns {Array<object>}
+ */
+function getWorkspaceChannels(userSyncId) {
   const db = readDb();
-  return db.channels || [];
+  return (db.channels || []).filter((channel) => isChannelMember(channel.id, userSyncId));
+}
+
+/**
+ * Checks whether a registered user is allowed to access a workspace channel.
+ * Default workspace channels are available to every registered user; custom
+ * channels are limited to their creator and explicitly listed members.
+ * @param {string} channelId
+ * @param {string} userSyncId
+ * @returns {boolean}
+ */
+function isChannelMember(channelId, userSyncId) {
+  if (!channelId || !userSyncId) return false;
+  const db = readDb();
+  const normalizedUserId = String(userSyncId).trim().toUpperCase();
+  if (!db.users.some((user) => String(user.syncId).trim().toUpperCase() === normalizedUserId)) {
+    return false;
+  }
+
+  const channel = (db.channels || []).find((item) => item.id === channelId);
+  if (!channel) return false;
+  if (channel.isDefault) return true;
+  if (String(channel.creatorSyncId || "").trim().toUpperCase() === normalizedUserId) return true;
+  return Array.isArray(channel.memberSyncIds) &&
+    channel.memberSyncIds.some((memberId) => String(memberId).trim().toUpperCase() === normalizedUserId);
 }
 
 function createWorkspaceChannel(name, description, creatorSyncId) {
@@ -809,6 +908,7 @@ function createWorkspaceChannel(name, description, creatorSyncId) {
     name: cleanName,
     description: String(description || "Canal de equipo").slice(0, 120),
     creatorSyncId: creatorSyncId,
+    memberSyncIds: [String(creatorSyncId).trim().toUpperCase()],
     createdAt: Date.now(),
     isDefault: false
   };
@@ -818,7 +918,10 @@ function createWorkspaceChannel(name, description, creatorSyncId) {
   return newChannel;
 }
 
-function getChannelMessages(channelId, limit = 100) {
+function getChannelMessages(channelId, userSyncId, limit = 100) {
+  if (!isChannelMember(channelId, userSyncId)) {
+    throw new Error("No tienes permisos para acceder a este canal");
+  }
   const db = readDb();
   if (!db.channelMessages) return [];
   return db.channelMessages
@@ -829,6 +932,10 @@ function getChannelMessages(channelId, limit = 100) {
 function saveChannelMessage(channelId, senderSyncId, payload) {
   const db = readDb();
   if (!db.channelMessages) db.channelMessages = [];
+
+  if (!isChannelMember(channelId, senderSyncId)) {
+    throw new Error("No tienes permisos para enviar mensajes a este canal");
+  }
 
   const sender = db.users.find((u) => u.syncId === senderSyncId);
   if (!sender) throw new Error("Emisor no encontrado");
@@ -929,6 +1036,7 @@ module.exports = {
   saveVaultItem,
   deleteVaultItem,
   getWorkspaceChannels,
+  isChannelMember,
   createWorkspaceChannel,
   getChannelMessages,
   saveChannelMessage,
