@@ -944,59 +944,27 @@
 
       </div>
 
-      <!-- Sección de Checkout / Pasarela Simulada & Cupones -->
+      <!-- Sección informativa de suscripción -->
       <div id="checkout-section" class="p-6 border-t border-[rgba(197,160,89,0.2)] bg-[#F8FAFC] hidden">
         <div class="max-w-2xl mx-auto flex flex-col gap-4">
           <div class="flex items-center justify-between">
             <h4 class="font-bold text-sm text-[#0A1A3A] font-title flex items-center gap-2">
-              <span>💳 Confirmar Suscripción a</span>
+              <span>Plan seleccionado</span>
               <span id="checkout-selected-plan-name" class="text-[#C5A059] font-mono">SYNC PRO</span>
             </h4>
             <span id="checkout-amount-tag" class="text-base font-extrabold font-mono text-[#0A1A3A]">$9.00 USD</span>
           </div>
 
-          <!-- Cupón de Descuento -->
-          <div class="flex items-center gap-2">
-            <input type="text" id="coupon-code-input" placeholder="Cupón (ej. SYNC2026, LAUNCH50)..." maxlength="15"
-              class="w-full sm:w-64 px-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] uppercase font-mono outline-none">
-            <button id="apply-coupon-btn" type="button" class="px-3 py-1.5 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0A1A3A] text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap">
-              Aplicar
-            </button>
-            <span id="coupon-msg" class="text-xs text-emerald-600 font-semibold hidden"></span>
-          </div>
-
-          <!-- Selector de Método de Pago -->
-          <div class="grid grid-cols-3 gap-2">
-            <label class="p-2.5 rounded-xl bg-white border border-[rgba(197,160,89,0.3)] flex items-center justify-center gap-2 cursor-pointer hover:border-[#C5A059] text-xs font-bold text-[#0A1A3A]">
-              <input type="radio" name="payment-method" value="card" checked class="accent-[#C5A059]">
-              <span>💳 Tarjeta</span>
-            </label>
-            <label class="p-2.5 rounded-xl bg-white border border-[rgba(197,160,89,0.3)] flex items-center justify-center gap-2 cursor-pointer hover:border-[#C5A059] text-xs font-bold text-[#0A1A3A]">
-              <input type="radio" name="payment-method" value="crypto" class="accent-[#C5A059]">
-              <span>⚡ USDC / Crypto</span>
-            </label>
-            <label class="p-2.5 rounded-xl bg-white border border-[rgba(197,160,89,0.3)] flex items-center justify-center gap-2 cursor-pointer hover:border-[#C5A059] text-xs font-bold text-[#0A1A3A]">
-              <input type="radio" name="payment-method" value="paypal" class="accent-[#C5A059]">
-              <span>🅿️ PayPal</span>
-            </label>
-          </div>
-
-          <!-- Formulario Simulado de Tarjeta -->
-          <div id="card-fields" class="p-3 bg-white rounded-xl border border-[rgba(197,160,89,0.2)] flex flex-col gap-2">
-            <input type="text" placeholder="Número de tarjeta (4242 •••• •••• 4242)" value="•••• •••• •••• 4242" readonly
-              class="w-full px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-[#0A1A3A] font-mono">
-            <div class="flex gap-2">
-              <input type="text" placeholder="MM/AA" value="12/28" readonly class="w-1/2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-[#0A1A3A] font-mono">
-              <input type="text" placeholder="CVC" value="888" readonly class="w-1/2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-[#0A1A3A] font-mono">
-            </div>
-          </div>
+          <p class="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
+            Los pagos aún no están disponibles. No introduzcas datos de pago: no se realizará ningún cobro ni se activará un plan hasta conectar y verificar un proveedor de pagos.
+          </p>
 
           <div class="flex items-center justify-between pt-2">
             <button id="cancel-checkout-btn" type="button" class="text-xs text-[#64748B] hover:text-[#0A1A3A] font-semibold cursor-pointer">
               Cancelar
             </button>
-            <button id="confirm-payment-btn" type="button" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-2">
-              <span>🔒 Pagar y Activar Inmediatamente</span>
+            <button id="confirm-payment-btn" type="button" disabled class="px-6 py-2.5 rounded-xl bg-gray-300 text-gray-600 font-bold text-xs cursor-not-allowed">
+              Pagos no disponibles
             </button>
           </div>
         </div>
@@ -4745,7 +4713,6 @@
   let userPlanData = null;
   let activeSelectedTier = 'pro';
   let currentBillingCycle = 'monthly';
-  let activeDiscountPercent = 0;
   let currentExportData = null;
 
   // Referencias DOM Suite
@@ -4779,11 +4746,7 @@
   const checkoutSection = document.getElementById('checkout-section');
   const checkoutSelectedPlanName = document.getElementById('checkout-selected-plan-name');
   const checkoutAmountTag = document.getElementById('checkout-amount-tag');
-  const couponCodeInput = document.getElementById('coupon-code-input');
-  const applyCouponBtn = document.getElementById('apply-coupon-btn');
-  const couponMsg = document.getElementById('coupon-msg');
   const cancelCheckoutBtn = document.getElementById('cancel-checkout-btn');
-  const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
   const invoicesList = document.getElementById('invoices-list');
 
   const vaultModal = document.getElementById('vault-modal');
@@ -4879,83 +4842,8 @@
     checkoutSelectedPlanName.textContent = tier === 'pro' ? 'SYNC PRO WORKSPACE' : 'SYNC ENTERPRISE SUITE';
 
     const basePrice = tier === 'pro' ? (currentBillingCycle === 'yearly' ? 89 : 9) : (currentBillingCycle === 'yearly' ? 228 : 24);
-    const finalPrice = Math.max(0, basePrice * (1 - (activeDiscountPercent / 100)));
-    checkoutAmountTag.textContent = `$${finalPrice.toFixed(2)} USD`;
+    checkoutAmountTag.textContent = `$${basePrice.toFixed(2)} USD`;
     checkoutSection.scrollIntoView({ behavior: 'smooth' });
-  }
-
-  async function applyCoupon() {
-    const code = couponCodeInput.value.trim();
-    if (!code) return;
-    try {
-      const res = await fetch('/api/billing/apply-coupon', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + currentToken
-        },
-        body: JSON.stringify({ code })
-      });
-      const data = await res.json();
-      if (data.ok && data.valid) {
-        activeDiscountPercent = data.discountPercent;
-        couponMsg.textContent = `✓ Descuento del ${data.discountPercent}% aplicado`;
-        couponMsg.className = 'text-xs text-emerald-600 font-semibold';
-        couponMsg.classList.remove('hidden');
-        initiateCheckout(activeSelectedTier);
-      } else {
-        couponMsg.textContent = data.error || 'Cupón inválido';
-        couponMsg.className = 'text-xs text-red-500 font-semibold';
-        couponMsg.classList.remove('hidden');
-      }
-    } catch (err) {
-      couponMsg.textContent = 'Error al validar cupón';
-      couponMsg.className = 'text-xs text-red-500 font-semibold';
-      couponMsg.classList.remove('hidden');
-    }
-  }
-
-  async function processPayment() {
-    confirmPaymentBtn.disabled = true;
-    confirmPaymentBtn.innerHTML = '<span>⏳ Procesando pago seguro...</span>';
-
-    try {
-      const selectedMethod = document.querySelector('input[name="payment-method"]:checked')?.value || 'card';
-      const res = await fetch('/api/billing/upgrade', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + currentToken
-        },
-        body: JSON.stringify({
-          plan: activeSelectedTier,
-          billingCycle: currentBillingCycle,
-          paymentDetails: {
-            method: selectedMethod,
-            discountApplied: activeDiscountPercent,
-            last4: '4242'
-          }
-        })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'No se pudo completar el pago');
-      }
-
-      userPlanData = { ok: true, plan: data.user.plan };
-      updateUserPlanUI(userPlanData);
-      triggerPopupNotification('¡Suscripción Activada!', `Ahora cuentas con el plan ${data.user.plan.toUpperCase()}`, '💎');
-      loadInvoices();
-      checkoutSection.classList.add('hidden');
-      setTimeout(() => {
-        pricingModal.classList.add('hidden');
-      }, 1200);
-    } catch (err) {
-      triggerPopupNotification('Error en pago', err.message, '⚠️');
-    } finally {
-      confirmPaymentBtn.disabled = false;
-      confirmPaymentBtn.innerHTML = '<span>🔒 Pagar y Activar Inmediatamente</span>';
-    }
   }
 
   async function loadInvoices() {
@@ -5444,9 +5332,7 @@
 
   if (selectPlanProBtn) selectPlanProBtn.addEventListener('click', () => initiateCheckout('pro'));
   if (selectPlanEntBtn) selectPlanEntBtn.addEventListener('click', () => initiateCheckout('enterprise'));
-  if (applyCouponBtn) applyCouponBtn.addEventListener('click', applyCoupon);
   if (cancelCheckoutBtn) cancelCheckoutBtn.addEventListener('click', () => checkoutSection.classList.add('hidden'));
-  if (confirmPaymentBtn) confirmPaymentBtn.addEventListener('click', processPayment);
 
   // Bóveda
   if (openVaultBtn) {
