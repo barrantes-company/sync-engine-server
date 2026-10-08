@@ -1,7 +1,11 @@
 node_modules/
 data/sync_db.json
+data/ssl/
+*.pem
 .env
 server.bundle.js
 syncengine-release.keystore
 android/.gradle/
 android/app/build/
+android/build/
+.vscode/mcp.json
