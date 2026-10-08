@@ -34,6 +34,15 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
                 openIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, clickIntent);
+        views.setOnClickPendingIntent(R.id.widget_open, clickIntent);
+
+        Intent settingsIntent = new Intent(context, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        views.setOnClickPendingIntent(R.id.widget_settings, PendingIntent.getActivity(
+                context,
+                -widgetId - 1,
+                settingsIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         manager.updateAppWidget(widgetId, views);
     }
 
