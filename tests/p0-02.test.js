@@ -182,9 +182,9 @@ test('TEST 6: replacing just an ID/URL cannot cross conversations; forged messag
   socket.emit('send-private-message', { toSyncId: users[3].syncId, type: 'text', text: 'not an attachment', fileIds: [fileAB.id] });
   await sent;
   assert.equal((await get(fileAB, 'charlie')).status, 403);
-  const duplicate = waitEvent(socket, 'message-sent');
+  const duplicate = waitEvent(socket, 'error-message');
   socket.emit('send-private-message', { clientMsgId: messageAB.id, toSyncId: users[3].syncId, type: 'text', text: 'same client id' });
-  await duplicate;
+  assert.match((await duplicate).message, /identificador del mensaje ya está en uso/i);
   assert.equal((await get(fileAB, 'charlie')).status, 403);
 });
 

@@ -2,11 +2,14 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 // ==== Web Push Setup ====
 const webPush = require('web-push');
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BD7oG-w_r6z79_nS7N4K43m_B9k4vN5uP8q9l2m3n4o5p6q7r8s9t0u1v2w3x4y5z_SYNC_ENGINE_KEY";
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "YOUR_PRIVATE_VAPID_KEY_PLACEHOLDER";
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@syncengine.local';
 let webPushConfigured = false;
 try {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    throw new Error("VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY no están configuradas");
+  }
   webPush.setVapidDetails(
     VAPID_EMAIL,
     VAPID_PUBLIC_KEY,
@@ -18,21 +21,6 @@ try {
     ? "[Push] Web Push deshabilitado; el servidor continuará sin notificaciones push."
     : "[Push] Web Push deshabilitado: configure claves VAPID válidas.";
   console.warn(message, err.message);
-}
-
-// Helper to store subscription per syncId (multiple devices allowed)
-function storeSubscription(syncId, subscription) {
-  const dbData = db.readDb ? db.readDb() : db.readDb(); // Ensure db is loaded
-  if (!dbData.subscriptions) dbData.subscriptions = {};
-  if (!Array.isArray(dbData.subscriptions[syncId])) {
-    dbData.subscriptions[syncId] = [];
-  }
-  // Avoid duplicates based on endpoint
-  const exists = dbData.subscriptions[syncId].some(sub => sub.endpoint === subscription.endpoint);
-  if (!exists) {
-    dbData.subscriptions[syncId].push(subscription);
-    db.writeDb(dbData);
-  }
 }
 
 // Helper to send push notification to all stored subscriptions for a syncId
@@ -54,22 +42,6 @@ async function sendPushNotification(syncId, payload) {
   );
   await Promise.all(promises);
 }
-
-// Extend send-private-message logic for offline push notification
-// (Insert after line 560 where message is emitted to target sockets)
-// Note: The following code snippet will be inserted at the appropriate location in the existing function.
-/*
-if (!isTargetOnline) {
-  // Prepare minimal push payload
-  const pushPayload = {
-    title: 'Nuevo mensaje de ' + sender.formattedName,
-    body: text.length > 100 ? text.slice(0, 97) + '...' : text,
-    icon: '/assets/logo.png',
-    data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
-  };
-  sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
-}
-*/
 
 // ==== End of Web Push Additions ====
 const fs = require("fs");
@@ -292,18 +264,8 @@ function messageFileIds(senderId, references, serverHost) {
 }
 
 // Endpoint to receive subscription from client
-app.post('/api/notifications/subscribe', requireAuth, (req, res) => {
-  const { syncId, subscription } = req.body || {};
-  if (!syncId || !subscription) {
-    return res.status(400).json({ error: 'syncId y subscription son requeridos' });
-  }
-  try {
-    storeSubscription(syncId, subscription);
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error('[Push] Error storing subscription:', err);
-    return res.status(500).json({ error: 'Error interno al guardar suscripción' });
-  }
+app.get('/api/notifications/vapid-public-key', requireAuth, (_req, res) => {
+  res.json({ ok: true, configured: webPushConfigured, publicKey: webPushConfigured ? VAPID_PUBLIC_KEY : null });
 });
 
 // Extractor de Metadatos OpenGraph y Favicon para Rich Link Cards
@@ -869,13 +831,15 @@ io.on("connection", function (socket) {
 
   // Envío de Mensaje Privado (Texto, Audio de Voz o Archivo)
   socket.on("send-private-message", async function (payload) {
+    const clientMsgId = payload && payload.clientMsgId;
+    const emitMessageError = (message) => socket.emit("error-message", { id: clientMsgId, message });
     const sender = socketToUser.get(socket.id);
     if (!sender) {
-      socket.emit("error-message", { message: "No autenticado" });
+      emitMessageError("No autenticado");
       return;
     }
 
-    const { toSyncId, text, type, fileData, audioData, clientMsgId, replyTo } = payload || {};
+    const { toSyncId, text, type, fileData, audioData, replyTo } = payload || {};
     if (!toSyncId) return;
 
     const targetSyncId = String(toSyncId).trim().toUpperCase();
@@ -889,38 +853,35 @@ io.on("connection", function (socket) {
       if (typeof fileData !== "object" || Array.isArray(fileData) ||
           ["url", "data"].some((key) => fileData[key] != null &&
             !safeUrl(fileData[key], "download") && !safeUrl(fileData[key], "image"))) {
-        socket.emit("error-message", { message: "URL de archivo no válida" });
+        emitMessageError("URL de archivo no válida");
         return;
       }
     }
     if (audioData != null && !safeUrl(audioData, "audio")) {
-      socket.emit("error-message", { message: "URL de audio no válida" });
+      emitMessageError("URL de audio no válida");
       return;
     }
     let fileIds;
     try {
       fileIds = messageFileIds(sender.syncId, [fileData?.url, fileData?.data, audioData], socket.handshake.headers.host);
     } catch (err) {
-      socket.emit("error-message", { message: err.message });
+      emitMessageError(err.message);
       return;
     }
     const targetSockets = onlineUsers.get(targetSyncId);
     const isTargetOnline = Boolean(targetSockets && targetSockets.size > 0);
     const initialStatus = isTargetOnline ? "delivered" : "sent";
+    const existingMessage = clientMsgId ? db.getMessageById(clientMsgId) : null;
+    if (existingMessage &&
+        (existingMessage.fromId !== sender.syncId || existingMessage.toId !== targetSyncId)) {
+      emitMessageError("El identificador del mensaje ya está en uso");
+      return;
+    }
+    const isRetry = Boolean(existingMessage);
 
     let messageObj = null;
 
     if (msgType === "text") {
-      // If recipient is offline, send Web Push notification
-      if (!isTargetOnline) {
-        const pushPayload = {
-          title: `Nuevo mensaje de ${sender.formattedName}`,
-          body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
-          icon: '/assets/logo.png',
-          data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
-        };
-        sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
-      }
       messageObj = db.saveTextMessage(
         sender.syncId,
         targetSyncId,
@@ -955,21 +916,11 @@ io.on("connection", function (socket) {
           }
         } catch (err) {
           console.warn("[AUDIO] Error al persistir audio en disco:", err.message);
-          socket.emit("error-message", { message: "No se pudo registrar el audio" });
+          emitMessageError("No se pudo registrar el audio");
           return;
         }
       }
 
-      // If recipient is offline, send Web Push notification
-      if (!isTargetOnline) {
-        const pushPayload = {
-          title: `Nuevo mensaje de ${sender.formattedName}`,
-          body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
-          icon: '/assets/logo.png',
-          data: { syncId: targetSyncId, type: 'message' }
-        };
-        sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
-      }
       messageObj = db.saveMessage({
         id: clientMsgId || null,
         fromId: sender.syncId,
@@ -982,6 +933,16 @@ io.on("connection", function (socket) {
         replyTo: replyTo || null,
         status: initialStatus
       });
+    }
+
+    if (!isTargetOnline && !isRetry) {
+      const pushPayload = {
+        title: `Nuevo mensaje de ${sender.formattedName}`,
+        body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
+        icon: '/assets/logo.png',
+        data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
+      };
+      sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
     }
 
     if (sender) {

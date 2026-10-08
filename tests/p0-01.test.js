@@ -231,6 +231,35 @@ test('real Socket.IO delivers normal text/files/audio and rejects executable res
   }
 });
 
+test('private message retries with the same client ID do not create duplicates', async () => {
+  const alice = await authenticatedSocket('test-alice');
+  const bob = await authenticatedSocket('test-bob');
+  const clientMsgId = 'retry_' + Date.now();
+  const received = waitEvent(bob, 'receive-private-message');
+  const firstAck = waitEvent(alice, 'message-sent');
+  alice.emit('send-private-message', {
+    clientMsgId, toSyncId: users[1].syncId, type: 'text', text: 'Queued once'
+  });
+  assert.equal((await firstAck).id, clientMsgId);
+  assert.equal((await received).id, clientMsgId);
+
+  const retryAck = waitEvent(alice, 'message-sent');
+  alice.emit('send-private-message', {
+    clientMsgId, toSyncId: users[1].syncId, type: 'text', text: 'Queued once'
+  });
+  assert.equal((await retryAck).id, clientMsgId);
+  assert.equal(messages.filter((message) => message.id === clientMsgId).length, 1);
+});
+
+test('Web Push configuration endpoint requires authentication and reports disabled configuration', async () => {
+  assert.equal((await fetch(base + '/api/notifications/vapid-public-key')).status, 401);
+  const response = await fetch(base + '/api/notifications/vapid-public-key', {
+    headers: { Authorization: ['Bearer', 'test-alice'].join(' ') }
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { ok: true, configured: false, publicKey: null });
+});
+
 test('channel subscriptions and history require an authenticated member', async () => {
   const channel = db.createWorkspaceChannel('private-room', 'Private channel', users[0].syncId);
   db.saveChannelMessage(channel.id, users[0].syncId, { text: 'Private history' });
@@ -390,6 +419,7 @@ class DevTools {
 }
 
 async function startBrowser(t) {
+  if (cdp) return true;
   const executable = [process.env.CHROME_PATH,
     'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -611,4 +641,43 @@ test('real browser: text/name/file/quote payloads stay data across chat, avatars
   const navigation = await cdp.send('Page.navigate', { url: base + html.url });
   assert.ok(navigation.isDownload || navigation.errorText === 'net::ERR_ABORTED', JSON.stringify(navigation));
   assert.equal(await cdp.evaluate('window.__xss'), 0);
+});
+
+test('real browser queues offline private text and replays it once after reconnect', async (t) => {
+  if (!cdp) db.saveTextMessage(users[0].syncId, users[1].syncId, 'Outbox test history');
+  if (!await startBrowser(t)) return;
+  const disconnected = await cdp.evaluate(`(() => {
+    socket.disconnect();
+    isSocketAuthenticated = false;
+    return JSON.stringify({ connected: socket.connected, recipient: activeContactSyncId });
+  })()`).then(JSON.parse).catch((error) => { throw new Error('Disconnect evaluation failed: ' + error.message); });
+  assert.equal(disconnected.connected, false);
+  assert.equal(disconnected.recipient, users[1].syncId);
+  await cdp.evaluate(`(async () => {
+    chatTextarea.value = 'Offline private message';
+    await handleSendMessage();
+    return true;
+  })()`).catch((error) => { throw new Error('Queue evaluation failed: ' + error.message); });
+  const queued = await cdp.evaluate(`getOfflineMessages().then(messages => JSON.stringify((() => {
+    const entry = messages.find(message => message.text === 'Offline private message');
+    return { saved: Boolean(entry), status: entry && entry.status, text: entry && entry.text,
+      textarea: chatTextarea.value };
+  })()))`).then(JSON.parse).catch((error) => { throw new Error('Outbox evaluation failed: ' + error.message); });
+  assert.equal(queued.textarea, '');
+  assert.equal(queued.saved, true);
+  assert.equal(queued.status, 'pending');
+
+  await cdp.evaluate('socket.connect(); true');
+  await cdp.evaluate(`new Promise((resolve, reject) => {
+    const started = Date.now();
+    const timer = setInterval(async () => {
+      const stillQueued = (await getOfflineMessages()).some(message => message.text === 'Offline private message');
+      if (!stillQueued && socket.connected && isSocketAuthenticated) {
+        clearInterval(timer); resolve(true);
+      } else if (Date.now() - started > 10000) {
+        clearInterval(timer); reject(new Error('Offline message did not replay'));
+      }
+    }, 50);
+  })`);
+  assert.equal(messages.filter((message) => message.text === 'Offline private message').length, 1);
 });
