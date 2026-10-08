@@ -183,6 +183,27 @@ function generateSyncId(users) {
   return `SYNC-${Date.now().toString().slice(-4)}`;
 }
 
+const PLAN_FEATURES = {
+  free: { maxUploadBytes: 50 * 1024 * 1024, maxVaultItems: 0, maxCustomChannels: 0, encryptedVault: false, teamChannels: false },
+  pro: { maxUploadBytes: 2 * 1024 * 1024 * 1024, maxVaultItems: 100, maxCustomChannels: 5, encryptedVault: true, teamChannels: true },
+  enterprise: { maxUploadBytes: 2 * 1024 * 1024 * 1024, maxVaultItems: 1000, maxCustomChannels: 100, encryptedVault: true, teamChannels: true }
+};
+
+function getActivePlan(user) {
+  const plan = user && PLAN_FEATURES[user.plan] ? user.plan : "free";
+  if (plan === "free") return plan;
+  const expiresAt = Number(user.planExpiresAt);
+  return Number.isFinite(expiresAt) && expiresAt > Date.now() ? plan : "free";
+}
+
+function getPlanEntitlements(syncId) {
+  const normalizedSyncId = String(syncId || "").trim().toUpperCase();
+  const user = readDb().users.find((item) => item.syncId === normalizedSyncId);
+  if (!user) return null;
+  const plan = getActivePlan(user);
+  return { plan, ...PLAN_FEATURES[plan] };
+}
+
 function toPublicUser(user) {
   return {
     syncId: user.syncId,
@@ -190,7 +211,7 @@ function toPublicUser(user) {
     cleanDisplayName: user.cleanDisplayName,
     formattedName: user.formattedName || formatFullName(user.syncId, user.cleanDisplayName),
     avatarUrl: user.avatarUrl || null,
-    plan: user.plan || "free",
+    plan: getActivePlan(user),
     role: user.role || "member",
     planExpiresAt: user.planExpiresAt || null
   };
@@ -664,58 +685,6 @@ function removePushSubscription(syncId, endpoint) {
 }
 
 // ==== Planes, Suscripciones y Facturación ====
-function upgradeUserPlan(syncId, plan, billingCycle = "monthly", paymentDetails = {}) {
-  const db = readDb();
-  const sId = String(syncId).trim().toUpperCase();
-  const user = db.users.find((u) => u.syncId === sId);
-  if (!user) {
-    throw new Error("Usuario no encontrado");
-  }
-
-  const validPlans = ["free", "pro", "enterprise"];
-  if (!validPlans.includes(plan)) {
-    throw new Error("Plan no válido");
-  }
-
-  const days = billingCycle === "yearly" ? 365 : 30;
-  const planExpiresAt = Date.now() + days * 24 * 60 * 60 * 1000;
-
-  user.plan = plan;
-  user.planExpiresAt = planExpiresAt;
-  user.billingCycle = billingCycle;
-  user.updatedAt = Date.now();
-
-  // Registrar Factura
-  if (!db.invoices) db.invoices = {};
-  if (!db.invoices[sId]) db.invoices[sId] = [];
-
-  const invoiceAmount = plan === "pro" 
-    ? (billingCycle === "yearly" ? 89 : 9) 
-    : (plan === "enterprise" ? (billingCycle === "yearly" ? 228 : 24) : 0);
-
-  const invoice = {
-    id: "inv_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
-    syncId: sId,
-    plan: plan,
-    billingCycle: billingCycle,
-    amountUsd: invoiceAmount,
-    discountApplied: paymentDetails.discountApplied || 0,
-    paymentMethod: paymentDetails.method || "card",
-    cardLast4: paymentDetails.last4 || "4242",
-    status: "paid",
-    issuedAt: Date.now(),
-    expiresAt: planExpiresAt
-  };
-
-  db.invoices[sId].unshift(invoice);
-  writeDb(db);
-
-  return {
-    user: toPublicUser(user),
-    invoice: invoice
-  };
-}
-
 function getUserInvoices(syncId) {
   const db = readDb();
   const sId = String(syncId).trim().toUpperCase();
@@ -795,6 +764,10 @@ function saveVaultItem(syncId, itemData) {
 
   const db = readDb();
   const sId = String(syncId).trim().toUpperCase();
+  const user = db.users.find((item) => item.syncId === sId);
+  const plan = getActivePlan(user);
+  const maxItems = PLAN_FEATURES[plan].maxVaultItems;
+  if (!maxItems) throw new Error("La bóveda requiere un plan Pro o Enterprise");
   if (!db.vaultItems) db.vaultItems = {};
   if (!db.vaultItems[sId]) db.vaultItems[sId] = [];
 
@@ -809,6 +782,9 @@ function saveVaultItem(syncId, itemData) {
 
   const existingIdx = id ? db.vaultItems[sId].findIndex((i) =>
     i.id === id && isValidVaultEnvelope(i.encryptedContent)) : -1;
+  if (existingIdx < 0 && db.vaultItems[sId].filter((item) => isValidVaultEnvelope(item.encryptedContent)).length >= maxItems) {
+    throw new Error("Has alcanzado el límite de elementos de tu plan");
+  }
   const now = Date.now();
   const safeHint = hint ? hint : null;
 
@@ -890,9 +866,8 @@ function isChannelMember(channelId, userSyncId) {
   if (!channelId || !userSyncId) return false;
   const db = readDb();
   const normalizedUserId = String(userSyncId).trim().toUpperCase();
-  if (!db.users.some((user) => String(user.syncId).trim().toUpperCase() === normalizedUserId)) {
-    return false;
-  }
+  const user = db.users.find((item) => String(item.syncId).trim().toUpperCase() === normalizedUserId);
+  if (!user) return false;
 
   const raw = String(channelId).trim();
   const clean = raw.replace(/^#/, "").toLowerCase();
@@ -904,6 +879,7 @@ function isChannelMember(channelId, userSyncId) {
   );
   if (!channel) return false;
   if (channel.isDefault) return true;
+  if (!PLAN_FEATURES[getActivePlan(user)].teamChannels) return false;
   if (String(channel.creatorSyncId || "").trim().toUpperCase() === normalizedUserId) return true;
   return Array.isArray(channel.memberSyncIds) &&
     channel.memberSyncIds.some((memberId) => String(memberId).trim().toUpperCase() === normalizedUserId);
@@ -912,6 +888,16 @@ function isChannelMember(channelId, userSyncId) {
 function createWorkspaceChannel(name, description, creatorSyncId) {
   const db = readDb();
   if (!db.channels) db.channels = [];
+  const creatorId = String(creatorSyncId || "").trim().toUpperCase();
+  const creator = db.users.find((user) => user.syncId === creatorId);
+  const plan = getActivePlan(creator);
+  const maxChannels = PLAN_FEATURES[plan].maxCustomChannels;
+  if (!maxChannels) throw new Error("La creación de canales requiere un plan Pro o Enterprise");
+  if (db.channels.filter((channel) =>
+    !channel.isDefault && String(channel.creatorSyncId || "").trim().toUpperCase() === creatorId
+  ).length >= maxChannels) {
+    throw new Error("Has alcanzado el límite de canales de tu plan");
+  }
 
   const cleanName = String(name || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 30);
   if (cleanName.length < 2) {
@@ -1056,7 +1042,7 @@ module.exports = {
   getPushSubscriptions,
   removePushSubscription,
   // Nuevas capacidades de monetización y workspace
-  upgradeUserPlan,
+  getPlanEntitlements,
   getUserInvoices,
   getVaultItems,
   saveVaultItem,
