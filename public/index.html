@@ -634,24 +634,24 @@
       <form id="auth-form" class="flex flex-col gap-4">
         <div>
           <label for="auth-username" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre de Usuario</label>
-          <input type="text" id="auth-username" required title="Nombre de usuario" placeholder="ej. jbarrantes"
+          <input type="text" id="auth-username" required title="Nombre de usuario" placeholder="ej. jbarrantes" autocomplete="username"
             class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
         </div>
 
         <div>
           <label for="auth-password" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Contraseña</label>
-          <input type="password" id="auth-password" required title="Contraseña" placeholder="••••••••"
+          <input type="password" id="auth-password" required title="Contraseña" placeholder="••••••••" autocomplete="current-password"
             class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
         </div>
 
         <div id="display-name-group" class="hidden">
           <label for="auth-display-name" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre Personalizado (sin emojis)</label>
-          <input type="text" id="auth-display-name" title="Nombre personalizado" placeholder="ej. Laptop de Jose"
+          <input type="text" id="auth-display-name" title="Nombre personalizado" placeholder="ej. Laptop de Jose" autocomplete="name"
             class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
           <p class="text-[10px] text-[#64748B] mt-1 font-mono">Se generará automáticamente tu ID único (ej. SYNC-9482).</p>
         </div>
 
-        <p id="auth-error-msg" class="text-xs text-red-500 hidden font-medium"></p>
+        <p id="auth-error-msg" class="text-xs text-red-500 hidden font-medium" role="alert"></p>
 
         <button type="submit" id="auth-submit-btn"
           class="w-full py-3 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-sm shadow-md transition-all cursor-pointer">
