@@ -35,6 +35,19 @@ final class WidgetUrls {
         preferences(context).edit().putString(widgetKey(widgetId), url).apply();
     }
 
+    /**
+     * Devuelve la URL de la app principal (raíz del dominio) a partir de la URL
+     * configurada, para que el widget abra la interfaz de la app y no /widget.html.
+     */
+    static String appUrl(String widgetUrl) {
+        try {
+            URI uri = new URI(widgetUrl.trim());
+            return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), "/", null, null).toString();
+        } catch (URISyntaxException exception) {
+            return widgetUrl;
+        }
+    }
+
     static boolean isWidgetUrl(String value) {
         if (value == null || value.trim().isEmpty()) {
             return false;

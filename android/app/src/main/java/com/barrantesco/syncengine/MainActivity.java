@@ -87,7 +87,7 @@ public final class MainActivity extends Activity {
         }
         WidgetUrls.saveDefaultUrl(this, url);
         try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(WidgetUrls.appUrl(url))));
         } catch (android.content.ActivityNotFoundException exception) {
             Toast.makeText(this, R.string.no_browser, Toast.LENGTH_LONG).show();
         }

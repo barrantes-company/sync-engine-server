@@ -22,7 +22,7 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
         String url = WidgetUrls.widgetUrl(context, widgetId);
         Intent openIntent;
         if (WidgetUrls.isWidgetUrl(url)) {
-            openIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            openIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(WidgetUrls.appUrl(url)));
         } else {
             openIntent = new Intent(context, MainActivity.class);
         }

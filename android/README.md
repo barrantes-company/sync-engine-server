@@ -8,7 +8,7 @@ Esta app instala un widget real de pantalla de inicio. Muestra la hora y fecha l
 2. Abre **SYNC ENGINE** desde el launcher, escribe la URL completa de tu instalación, por ejemplo `https://tu-dominio.example/widget.html`, y pulsa **Guardar URL predeterminada**. No se presupone ningún dominio de producción.
 3. Mantén pulsada un área vacía de la pantalla de inicio, elige **Widgets**, busca **SYNC ENGINE** y arrastra el widget a la pantalla.
 4. En la pantalla de configuración del widget, revisa o introduce la URL de `/widget.html` y pulsa **Guardar y añadir widget**. Cada instancia puede tener su propia URL.
-5. Toca el widget para abrir el panel en el navegador e inicia sesión allí. La sesión/autenticación pertenece al sitio web en el navegador; esta app no lee ni guarda tokens.
+5. Toca el widget para abrir la interfaz principal de la app (la raíz de tu dominio) en el navegador e inicia sesión allí. La sesión/autenticación pertenece al sitio web en el navegador; esta app no lee ni guarda tokens.
 
 El widget nativo no ofrece unread counts, captura de imágenes ni otras acciones web. Esas funciones, cuando estén disponibles en el panel, requieren iniciar sesión en el panel web abierto. Configura únicamente una URL HTTP(S) de confianza que termine en `/widget.html`.
 
