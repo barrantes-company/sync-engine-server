@@ -1030,6 +1030,9 @@ io.on("connection", function (socket) {
         data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
       };
       sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
+    }
+
+    if (!isRetry) {
       sendMobilePushNotification(targetSyncId, {
         title: `Nuevo mensaje de ${sender.formattedName}`,
         body: (text && text.length > 100) ? text.slice(0, 97) + "..." : (text || "Tienes un mensaje nuevo"),
@@ -1259,6 +1262,11 @@ io.on("connection", function (socket) {
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
     db.recordCall(sender.syncId, targetSyncId, !(targetSockets && targetSockets.size > 0));
+    sendMobilePushNotification(targetSyncId, {
+      title: "Llamada entrante",
+      body: `Llamada de ${sender.formattedName || sender.syncId}`,
+      type: "call"
+    }).catch(e => console.warn("[FCM] Falló el aviso de llamada:", e.message));
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
