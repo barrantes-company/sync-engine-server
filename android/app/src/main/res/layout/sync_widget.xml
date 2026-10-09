@@ -2,54 +2,74 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/widget_sync_background"
-    android:paddingLeft="8dp"
-    android:paddingTop="4dp"
-    android:paddingRight="8dp"
-    android:paddingBottom="12dp">
+    android:layout_height="match_parent">
 
     <ImageView
-        android:id="@+id/widget_trails_static"
+        android:id="@+id/widget_static"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:src="@drawable/widget_trails"
+        android:scaleType="fitXY"
         android:visibility="gone" />
 
     <ViewFlipper
-        android:id="@+id/widget_trails_flipper"
+        android:id="@+id/widget_flipper"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:autoStart="true"
-        android:flipInterval="3200"
+        android:flipInterval="900"
         android:inAnimation="@anim/widget_fade_in"
         android:outAnimation="@anim/widget_fade_out">
 
         <ImageView
+            android:id="@+id/widget_frame_0"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@drawable/widget_trails" />
+            android:scaleType="fitXY" />
 
         <ImageView
+            android:id="@+id/widget_frame_1"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@drawable/widget_trails_b" />
+            android:scaleType="fitXY" />
 
         <ImageView
+            android:id="@+id/widget_frame_2"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            android:src="@drawable/widget_trails_c" />
+            android:scaleType="fitXY" />
+
+        <ImageView
+            android:id="@+id/widget_frame_3"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY" />
+
+        <ImageView
+            android:id="@+id/widget_frame_4"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY" />
+
+        <ImageView
+            android:id="@+id/widget_frame_5"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY" />
     </ViewFlipper>
+
+    <ImageView
+        android:id="@+id/widget_text"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY" />
 
     <ImageButton
         android:id="@+id/widget_open"
         android:layout_width="44dp"
         android:layout_height="44dp"
         android:layout_gravity="start|top"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="6dp"
         android:background="@android:color/transparent"
         android:contentDescription="Abrir"
         android:padding="13dp"
@@ -61,54 +81,11 @@
         android:layout_width="44dp"
         android:layout_height="44dp"
         android:layout_gravity="end|top"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="6dp"
         android:background="@android:color/transparent"
         android:contentDescription="Ajustes"
         android:padding="13dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_widget_settings" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:paddingTop="40dp">
-
-        <TextClock
-            android:id="@+id/widget_clock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:format12Hour="HH:mm"
-            android:format24Hour="HH:mm"
-            android:includeFontPadding="false"
-            android:letterSpacing="-0.04"
-            android:textColor="#FFFFFFFF"
-            android:textSize="52sp"
-            android:timeZone="America/Lima" />
-
-        <TextClock
-            android:id="@+id/widget_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:fontFamily="sans-serif"
-            android:format12Hour="EEEE d MMM"
-            android:format24Hour="EEEE d MMM"
-            android:includeFontPadding="false"
-            android:textColor="#CCFFFFFF"
-            android:textSize="14sp"
-            android:timeZone="America/Lima" />
-
-        <TextView
-            android:id="@+id/widget_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:fontFamily="sans-serif"
-            android:includeFontPadding="false"
-            android:text="0 mensajes · 0 llamadas"
-            android:textColor="#8CFFFFFF"
-            android:textSize="13sp" />
-    </LinearLayout>
 </FrameLayout>
