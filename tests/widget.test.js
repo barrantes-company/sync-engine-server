@@ -107,6 +107,39 @@ test('WIDGET 2: extension_worker.js has valid syntax', () => {
   });
 });
 
+test('FCM Android registra tokens solo en la cuenta autenticada y permite retirarlos', async () => {
+  const token = 'fcm-test-registration-token-for-android-device';
+  const unauthorized = await fetch(base + '/api/mobile/push-token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+  assert.equal(unauthorized.status, 401);
+
+  const registered = await fetch(base + '/api/mobile/push-token', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer test-alice',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ token })
+  });
+  assert.equal(registered.status, 201);
+  assert.equal(db.getMobilePushTokens('SYNC-1001').length, 1);
+  assert.equal(db.getMobilePushTokens('SYNC-1002').length, 0);
+
+  const removed = await fetch(base + '/api/mobile/push-token', {
+    method: 'DELETE',
+    headers: {
+      Authorization: 'Bearer test-alice',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ token })
+  });
+  assert.equal(removed.status, 200);
+  assert.equal(db.getMobilePushTokens('SYNC-1001').length, 0);
+});
+
 test('WIDGET 3: GET /widget and /widget.html serve HTML with iframe and CSP headers', async () => {
   for (const endpoint of ['/widget', '/widget.html', '/public/widget.html']) {
     const res = await fetch(base + endpoint);

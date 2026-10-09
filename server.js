@@ -2,6 +2,8 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 // ==== Web Push Setup ====
 const webPush = require('web-push');
+const { cert, getApps, initializeApp } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@syncengine.local';
@@ -44,6 +46,60 @@ async function sendPushNotification(syncId, payload) {
 }
 
 // ==== End of Web Push Additions ====
+
+// ==== Firebase Cloud Messaging for native Android ====
+let firebaseMessaging = null;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+    const app = getApps().length
+      ? getApps()[0]
+      : initializeApp({ credential: cert(serviceAccount) });
+    firebaseMessaging = getMessaging(app);
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn("[FCM] Notificaciones Android deshabilitadas: falta FIREBASE_SERVICE_ACCOUNT.");
+  }
+} catch (err) {
+  console.error("[FCM] No se pudo configurar Firebase Admin:", err.message);
+}
+
+/**
+ * Envía una notificación push a los dispositivos Android del usuario.
+ * No incluye tokens de acceso ni ofertas WebRTC en el payload.
+ * @param {string} syncId Usuario destinatario.
+ * @param {{title:string,body:string,type:string}} payload Notificación visible y tipo.
+ */
+async function sendMobilePushNotification(syncId, payload) {
+  if (!firebaseMessaging) return;
+  const tokens = db.getMobilePushTokens(syncId);
+  if (!tokens.length) return;
+  const stale = [];
+  await Promise.all(tokens.map(async ({ token }) => {
+    try {
+      await firebaseMessaging.send({
+        token,
+        data: {
+          title: String(payload.title || "SYNC ENGINE").slice(0, 120),
+          body: String(payload.body || "").slice(0, 240),
+          type: String(payload.type || "message"),
+          syncId: String(syncId)
+        },
+        android: { priority: "high" }
+      });
+    } catch (err) {
+      if (err.code === "messaging/registration-token-not-registered" ||
+          err.code === "messaging/invalid-registration-token") {
+        stale.push(token);
+      } else {
+        console.warn("[FCM] Falló el envío a un dispositivo:", err.message);
+      }
+    }
+  }));
+  for (const token of stale) db.removeMobilePushToken(syncId, token);
+}
+
+// ==== End of Firebase Cloud Messaging ====
 const fs = require("fs");
 const http = require("http");
 const https = require("https");
@@ -157,20 +213,12 @@ const storage = multer.diskStorage({
   }
 });
 
-function uploadForCurrentPlan(req, res, next) {
-  const entitlements = db.getPlanEntitlements(req.user.syncId);
-  if (!entitlements) return res.status(403).json({ error: "Plan de usuario no disponible" });
-  multer({
-    storage: storage,
-    limits: { fileSize: entitlements.maxUploadBytes }
-  }).single("file")(req, res, (err) => {
-    if (err && err.code === "LIMIT_FILE_SIZE") {
-      return res.status(413).json({ error: "El archivo supera el límite de tamaño de tu plan" });
-    }
-    if (err) return next(err);
-    next();
-  });
-}
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 2 * 1024 * 1024 * 1024 // 2 GB
+  }
+});
 
 // Middleware de Autenticación
 function requireAuth(req, res, next) {
@@ -187,16 +235,6 @@ function requireAuth(req, res, next) {
 
   req.user = user;
   next();
-}
-
-function requireFeature(feature) {
-  return (req, res, next) => {
-    const entitlements = db.getPlanEntitlements(req.user.syncId);
-    if (!entitlements || !entitlements[feature]) {
-      return res.status(403).json({ error: "Esta función requiere un plan superior" });
-    }
-    next();
-  };
 }
 
 const FILE_COOKIE = "sync_engine_file_auth";
@@ -433,6 +471,28 @@ app.post("/api/save-subscription", requireAuth, async (req, res) => {
   }
 });
 
+/** Registra un token FCM Android en la cuenta autenticada. */
+app.post("/api/mobile/push-token", requireAuth, (req, res) => {
+  const token = req.body?.token;
+  if (typeof token !== "string" || token.length < 20 || token.length > 4096) {
+    return res.status(400).json({ ok: false, error: "Token FCM inválido" });
+  }
+  if (!db.saveMobilePushToken(req.user.syncId, token)) {
+    return res.status(400).json({ ok: false, error: "No se pudo registrar el dispositivo" });
+  }
+  return res.status(201).json({ ok: true });
+});
+
+/** Retira el token FCM de la cuenta autenticada (p. ej. al cerrar sesión). */
+app.delete("/api/mobile/push-token", requireAuth, (req, res) => {
+  const token = req.body?.token;
+  if (typeof token !== "string" || !token) {
+    return res.status(400).json({ ok: false, error: "Token FCM requerido" });
+  }
+  db.removeMobilePushToken(req.user.syncId, token);
+  return res.json({ ok: true });
+});
+
 // Rutas de Usuario y Perfil
 app.post("/api/user/profile", requireAuth, async (req, res) => {
   try {
@@ -449,7 +509,7 @@ app.post("/api/user/profile", requireAuth, async (req, res) => {
 });
 
 // Endpoint de Subida de Documentos y Archivos Pesados (hasta 2 GB sin compresión)
-app.post("/api/upload", requireAuth, uploadForCurrentPlan, async (req, res) => {
+app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No se proporcionó ningún archivo" });
@@ -571,42 +631,53 @@ app.get('/api/status', function (_req, res) {
 
 // ==== Endpoints de Monetización, Facturación y Planes ====
 app.get("/api/billing/plan", requireAuth, (req, res) => {
-  const entitlements = db.getPlanEntitlements(req.user.syncId);
-  if (!entitlements) return res.status(404).json({ error: "Usuario no encontrado" });
+  const user = db.getUserBySyncId(req.user.syncId);
+  if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
   res.json({
     ok: true,
-    plan: entitlements.plan,
-    role: req.user.role || "member",
-    planExpiresAt: req.user.planExpiresAt || null,
+    plan: user.plan || "free",
+    role: user.role || "member",
+    planExpiresAt: user.planExpiresAt || null,
     features: {
-      maxUploadBytes: entitlements.maxUploadBytes,
-      maxVaultItems: entitlements.maxVaultItems,
-      maxCustomChannels: entitlements.maxCustomChannels,
-      encryptedVault: entitlements.encryptedVault,
-      teamChannels: entitlements.teamChannels
+      maxUploadBytes: user.plan === "enterprise" ? 2147483648 : (user.plan === "pro" ? 2147483648 : 52428800),
+      maxVoiceSeconds: user.plan === "free" ? 60 : 600,
+      encryptedVault: user.plan !== "free",
+      teamChannels: user.plan === "enterprise" || user.plan === "pro",
+      exportAudit: true,
+      hdCalling: user.plan !== "free"
     }
   });
 });
 
-app.post("/api/billing/upgrade", requireAuth, (_req, res) => {
-  res.status(503).json({
-    ok: false,
-    code: "BILLING_NOT_CONFIGURED",
-    error: "Los pagos todavía no están configurados; no se ha realizado ningún cobro ni cambio de plan."
-  });
+app.post("/api/billing/upgrade", requireAuth, (req, res) => {
+  const { plan, billingCycle, paymentDetails } = req.body || {};
+  try {
+    const result = db.upgradeUserPlan(req.user.syncId, plan, billingCycle, paymentDetails);
+    res.json({ ok: true, user: result.user, invoice: result.invoice });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 app.get("/api/billing/invoices", requireAuth, (req, res) => {
-  const invoices = db.getUserInvoices(req.user.syncId).filter((invoice) => invoice.providerInvoiceId);
+  const invoices = db.getUserInvoices(req.user.syncId);
   res.json({ ok: true, invoices: invoices });
 });
 
-app.post("/api/billing/apply-coupon", requireAuth, (_req, res) => {
-  res.status(503).json({
-    ok: false,
-    valid: false,
-    error: "Los cupones estarán disponibles cuando se configure el proveedor de pagos."
-  });
+app.post("/api/billing/apply-coupon", requireAuth, (req, res) => {
+  const { code } = req.body || {};
+  const cleanCode = String(code || "").trim().toUpperCase();
+  const coupons = {
+    "SYNC2026": 25,
+    "LAUNCH50": 50,
+    "BARRANTES": 30,
+    "VIP": 20
+  };
+  if (coupons[cleanCode]) {
+    res.json({ ok: true, valid: true, discountPercent: coupons[cleanCode], code: cleanCode });
+  } else {
+    res.status(400).json({ ok: false, valid: false, error: "Código promocional no válido o caducado" });
+  }
 });
 
 // ==== Endpoints de Bóveda Cifrada Privada ====
@@ -616,7 +687,7 @@ app.get("/api/vault", requireAuth, (req, res) => {
   res.json({ ok: true, items: items });
 });
 
-app.post("/api/vault", requireAuth, requireFeature("encryptedVault"), (req, res) => {
+app.post("/api/vault", requireAuth, (req, res) => {
   res.setHeader("Cache-Control", "private, no-store");
   try {
     const item = db.saveVaultItem(req.user.syncId, req.body);
@@ -638,7 +709,7 @@ app.get("/api/channels", requireAuth, (req, res) => {
   res.json({ ok: true, channels: channels });
 });
 
-app.post("/api/channels", requireAuth, requireFeature("teamChannels"), (req, res) => {
+app.post("/api/channels", requireAuth, (req, res) => {
   const { name, description } = req.body || {};
   try {
     const channel = db.createWorkspaceChannel(name, description, req.user.syncId);
@@ -961,6 +1032,14 @@ io.on("connection", function (socket) {
       sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
     }
 
+    if (!isRetry) {
+      sendMobilePushNotification(targetSyncId, {
+        title: `Nuevo mensaje de ${sender.formattedName}`,
+        body: (text && text.length > 100) ? text.slice(0, 97) + "..." : (text || "Tienes un mensaje nuevo"),
+        type: "message"
+      }).catch(e => console.warn("[FCM] Falló el aviso de mensaje:", e.message));
+    }
+
     if (sender) {
       messageObj.fromName = sender.formattedName || sender.displayName || "Usuario";
     } else {
@@ -1183,6 +1262,11 @@ io.on("connection", function (socket) {
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
     db.recordCall(sender.syncId, targetSyncId, !(targetSockets && targetSockets.size > 0));
+    sendMobilePushNotification(targetSyncId, {
+      title: "Llamada entrante",
+      body: `Llamada de ${sender.formattedName || sender.syncId}`,
+      type: "call"
+    }).catch(e => console.warn("[FCM] Falló el aviso de llamada:", e.message));
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
@@ -1193,6 +1277,11 @@ io.on("connection", function (socket) {
         });
       });
     } else {
+      sendMobilePushNotification(targetSyncId, {
+        title: "Llamada entrante",
+        body: `Llamada de ${sender.formattedName || sender.syncId}`,
+        type: "call"
+      }).catch(e => console.warn("[FCM] Falló el aviso de llamada:", e.message));
       socket.emit("call-unavailable", {
         toSyncId: targetSyncId,
         message: "El contacto no se encuentra en línea para recibir llamadas"

@@ -22,7 +22,7 @@
     <string name="opt_animations">Animación de estelas</string>
     <string name="opt_notifications">Notificaciones de mensajes y llamadas perdidas</string>
     <string name="opt_timezone">Zona horaria del reloj</string>
-    <string name="sync_note">Los contadores y avisos se actualizan cada 15 minutos aproximadamente. Los avisos al instante requieren notificaciones push (FCM), que esta versión aún no incluye.</string>
+    <string name="sync_note">Con FCM configurado, mensajes y llamadas entrantes avisan en tiempo real. Los contadores se sincronizan aproximadamente cada 15 minutos. Las llamadas requieren abrir la interfaz web para establecer audio.</string>
     <string name="signed_in_as">Sesión iniciada como %1$s</string>
     <string name="sign_out">Cerrar sesión</string>
     <string name="sign_in">Iniciar sesión</string>
@@ -39,6 +39,8 @@
     <string name="preview_audio">Nota de voz</string>
     <string name="preview_file">Archivo adjunto</string>
     <string name="preview_message">Mensaje nuevo</string>
+    <string name="channel_realtime">SYNC ENGINE - avisos en tiempo real</string>
+    <string name="realtime_notification_body">Tienes una actividad nueva.</string>
     <plurals name="messages_count">
         <item quantity="one">%d mensaje</item>
         <item quantity="other">%d mensajes</item>

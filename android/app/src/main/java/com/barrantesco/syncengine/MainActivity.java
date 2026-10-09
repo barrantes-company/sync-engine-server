@@ -137,6 +137,7 @@ public final class MainActivity extends Activity {
             Button logout = new Button(this);
             logout.setText(R.string.sign_out);
             logout.setOnClickListener(view -> {
+                FcmRegistration.unregister(this);
                 AppSettings.clearSession(this);
                 SyncJobService.cancel(this);
                 SyncWidgetProvider.refreshAll(this);
@@ -194,6 +195,7 @@ public final class MainActivity extends Activity {
                 SyncJobService.schedule(this);
                 SyncWidgetProvider.refreshAll(this);
                 renderSession();
+                FcmRegistration.registerCurrentDevice(this);
                 if (AppSettings.notifications(this)) {
                     requestNotificationPermission();
                 }

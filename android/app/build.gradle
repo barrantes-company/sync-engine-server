@@ -15,6 +15,14 @@ android {
         // URL de /widget.html de fábrica; se toma del entorno para no fijar un dominio en el repo.
         def defaultUrl = (System.getenv('SYNC_DEFAULT_URL') ?: '').replace('\\', '\\\\').replace('"', '\\"')
         buildConfigField 'String', 'DEFAULT_WIDGET_URL', "\"${defaultUrl}\""
+        def firebaseApiKey = (System.getenv('FIREBASE_ANDROID_API_KEY') ?: '').replace('\\', '\\\\').replace('"', '\\"')
+        def firebaseProjectId = (System.getenv('FIREBASE_PROJECT_ID') ?: '').replace('\\', '\\\\').replace('"', '\\"')
+        def firebaseAppId = (System.getenv('FIREBASE_ANDROID_APP_ID') ?: '').replace('\\', '\\\\').replace('"', '\\"')
+        def firebaseSenderId = (System.getenv('FIREBASE_SENDER_ID') ?: '').replace('\\', '\\\\').replace('"', '\\"')
+        buildConfigField 'String', 'FIREBASE_API_KEY', "\"${firebaseApiKey}\""
+        buildConfigField 'String', 'FIREBASE_PROJECT_ID', "\"${firebaseProjectId}\""
+        buildConfigField 'String', 'FIREBASE_APP_ID', "\"${firebaseAppId}\""
+        buildConfigField 'String', 'FIREBASE_SENDER_ID', "\"${firebaseSenderId}\""
     }
 
     buildFeatures {
@@ -31,6 +39,7 @@ android {
                 keyPassword System.getenv('KEY_PASSWORD')
             }
         }
+
     }
 
     buildTypes {
@@ -40,4 +49,9 @@ android {
             }
         }
     }
+}
+
+dependencies {
+    implementation platform('com.google.firebase:firebase-bom:34.1.0')
+    implementation 'com.google.firebase:firebase-messaging'
 }

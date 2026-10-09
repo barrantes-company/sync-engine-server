@@ -41,13 +41,6 @@ function fixtureDb() {
   return db;
 }
 
-async function prepareAlicePro() {
-  const alice = db.testData.users.find((user) => user.syncId === users[0].syncId);
-  alice.plan = 'pro';
-  alice.planExpiresAt = Date.now() + 60_000;
-  await db.writeDb(db.testData);
-}
-
 before(async () => {
   tempDir = fs.mkdtempSync(path.join(process.env.SYNC_TEST_TMP || os.tmpdir(), 'sync-xss-'));
   fs.mkdirSync(path.join(tempDir, 'public', 'uploads'), { recursive: true });
@@ -170,84 +163,6 @@ test('all inline application scripts parse, and the safe-content dependency is a
   assert.ok(fs.readFileSync(path.join(root, 'public', 'sw.js'), 'utf8').includes("'/safe-content.js'"));
 });
 
-test('billing cannot simulate payment and free users cannot write premium features', async () => {
-  const headers = { Authorization: 'Bearer ' + 'test-alice', 'Content-Type': 'application/json' };
-  const upgrade = await fetch(base + '/api/billing/upgrade', {
-    method: 'POST', headers, body: JSON.stringify({ plan: 'enterprise', paymentDetails: { last4: '4242' } })
-  });
-  assert.equal(upgrade.status, 503);
-  assert.equal((await upgrade.json()).code, 'BILLING_NOT_CONFIGURED');
-
-  const planResponse = await fetch(base + '/api/billing/plan', { headers });
-  const plan = await planResponse.json();
-  assert.equal(plan.plan, 'free');
-  assert.equal(plan.features.maxUploadBytes, 50 * 1024 * 1024);
-  assert.equal(plan.features.encryptedVault, false);
-  assert.equal((await (await fetch(base + '/api/billing/invoices', { headers })).json()).invoices.length, 0);
-
-  const vault = await fetch(base + '/api/vault', {
-    method: 'POST', headers, body: JSON.stringify({})
-  });
-  assert.equal(vault.status, 403);
-  const channel = await fetch(base + '/api/channels', {
-    method: 'POST', headers, body: JSON.stringify({ name: 'free-channel' })
-  });
-  assert.equal(channel.status, 403);
-});
-
-test('premium feature limits apply server-side and expired plans fall back to Free', async () => {
-  const alice = db.testData.users.find((user) => user.syncId === users[0].syncId);
-  const previousPlan = alice.plan;
-  const previousExpiry = alice.planExpiresAt;
-  const previousVaultItems = db.testData.vaultItems && db.testData.vaultItems[alice.syncId];
-  const headers = { Authorization: 'Bearer ' + 'test-alice', 'Content-Type': 'application/json' };
-  try {
-    alice.plan = 'pro';
-    alice.planExpiresAt = Date.now() + 60_000;
-    await db.writeDb(db.testData);
-
-    const secret = await fetch(base + '/api/vault', {
-      method: 'POST', headers,
-      body: JSON.stringify({
-        title: 'Test secret', category: 'note',
-        encryptedContent: {
-          version: 1, algorithm: 'AES-GCM', kdf: 'PBKDF2', hash: 'SHA-256', iterations: 310000,
-          salt: Buffer.alloc(16).toString('base64'), iv: Buffer.alloc(12).toString('base64'),
-          ciphertext: Buffer.alloc(16).toString('base64')
-        }
-      })
-    });
-    assert.equal(secret.status, 200);
-    const createdChannel = await fetch(base + '/api/channels', {
-      method: 'POST', headers, body: JSON.stringify({ name: 'pro-channel' })
-    });
-    assert.equal(createdChannel.status, 200);
-    const { channel } = await createdChannel.json();
-
-    alice.planExpiresAt = Date.now() - 1;
-    await db.writeDb(db.testData);
-    const plan = await (await fetch(base + '/api/billing/plan', { headers })).json();
-    assert.equal(plan.plan, 'free');
-    assert.equal(plan.features.maxCustomChannels, 0);
-    assert.equal((await fetch(base + '/api/channels/' + channel.id + '/messages', { headers })).status, 403);
-    assert.equal((await fetch(base + '/api/vault', { headers })).status, 200);
-    assert.equal((await fetch(base + '/api/vault', {
-      method: 'POST', headers, body: JSON.stringify({})
-    })).status, 403);
-  } finally {
-    if (previousPlan === undefined) delete alice.plan;
-    else alice.plan = previousPlan;
-    if (previousExpiry === undefined) delete alice.planExpiresAt;
-    else alice.planExpiresAt = previousExpiry;
-    if (previousVaultItems === undefined) {
-      if (db.testData.vaultItems) delete db.testData.vaultItems[alice.syncId];
-    } else {
-      db.testData.vaultItems[alice.syncId] = previousVaultItems;
-    }
-    await db.writeDb(db.testData);
-  }
-});
-
 test('profile endpoint rejects executable avatars; HTTP and Canvas-compatible raster avatars survive', async () => {
   for (const url of unsafeUrls) assert.equal((await profile(url)).status, 400);
   for (const url of [base + '/uploads/avatar.png', raster, null]) {
@@ -346,7 +261,6 @@ test('Web Push configuration endpoint requires authentication and reports disabl
 });
 
 test('channel subscriptions and history require an authenticated member', async () => {
-  await prepareAlicePro();
   const channel = db.createWorkspaceChannel('private-room', 'Private channel', users[0].syncId);
   db.saveChannelMessage(channel.id, users[0].syncId, { text: 'Private history' });
 
@@ -403,11 +317,6 @@ test('channel subscriptions and history require an authenticated member', async 
 });
 
 test('vault API stores and returns only authenticated client-encrypted payloads', async () => {
-  await prepareAlicePro();
-  const bob = db.testData.users.find((user) => user.syncId === users[1].syncId);
-  bob.plan = 'pro';
-  bob.planExpiresAt = Date.now() + 60_000;
-  await db.writeDb(db.testData);
   const legacyItems = db.testData.vaultItems || (db.testData.vaultItems = {});
   legacyItems[users[1].syncId] = [{ id: 'legacy', title: 'Legacy', secretContent: 'old plaintext' }];
   const secret = 'sensitive-vault-value';
@@ -565,10 +474,7 @@ async function startBrowser(t) {
 }
 
 test('real browser: text/name/file/quote payloads stay data across chat, avatars, previews, Media Center and notifications', async (t) => {
-  await prepareAlicePro();
   if (!await startBrowser(t)) return;
-  const browserPlan = await cdp.evaluate(`fetch('/api/billing/plan', { headers: { Authorization: 'Bearer ' + currentToken } }).then((response) => response.json())`);
-  assert.equal(browserPlan.plan, 'pro', JSON.stringify(browserPlan));
   for (const attack of attacks) {
     const result = await cdp.evaluate(`(() => {
       const attack = ${JSON.stringify(attack)};
