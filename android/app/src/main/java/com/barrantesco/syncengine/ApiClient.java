@@ -94,6 +94,20 @@ final class ApiClient {
         return summary;
     }
 
+    /** Registra el token FCM de este teléfono en la cuenta autenticada. */
+    static void registerFcmToken(String origin, String authToken, String fcmToken)
+            throws IOException, JSONException {
+        JSONObject body = new JSONObject().put("token", fcmToken);
+        request("POST", origin + "/api/mobile/push-token", authToken, body.toString());
+    }
+
+    /** Retira el token FCM de este teléfono de la cuenta autenticada. */
+    static void removeFcmToken(String origin, String authToken, String fcmToken)
+            throws IOException, JSONException {
+        JSONObject body = new JSONObject().put("token", fcmToken);
+        request("DELETE", origin + "/api/mobile/push-token", authToken, body.toString());
+    }
+
     private static JSONObject request(String method, String address, String token, String body)
             throws IOException, JSONException {
         HttpURLConnection connection = (HttpURLConnection) new URL(address).openConnection();

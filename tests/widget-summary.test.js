@@ -21,7 +21,10 @@ before(() => {
   db = isolatedDb(root, tempDir, users);
 });
 
-after(() => fs.rmSync(tempDir, { recursive: true, force: true }));
+after(async () => {
+  await db.writeDb(db.testData);
+  await fs.promises.rm(tempDir, { recursive: true, force: true });
+});
 
 test('el resumen cuenta mensajes sin leer del destinatario', () => {
   db.saveTextMessage('SYNC-0001', 'SYNC-0002', 'hola');
@@ -44,4 +47,15 @@ test('solo las llamadas no contestadas cuentan como perdidas', () => {
   assert.equal(db.getWidgetSummary('SYNC-0002', 0).missedCalls, 2);
   assert.equal(db.getWidgetSummary('SYNC-0002', Date.now() + 1000).missedCalls, 0);
   assert.equal(db.getWidgetSummary('SYNC-0001', 0).missedCalls, 0);
+});
+
+test('los tokens FCM se registran, deduplican y eliminan por usuario', () => {
+  const token = 'fcm-registration-token-for-android-device';
+  assert.equal(db.saveMobilePushToken('SYNC-0002', token), true);
+  assert.equal(db.saveMobilePushToken('SYNC-0002', token), true);
+  assert.equal(db.getMobilePushTokens('SYNC-0002').length, 1);
+  assert.equal(db.getMobilePushTokens('SYNC-0001').length, 0);
+  assert.equal(db.saveMobilePushToken('SYNC-0002', 'short'), false);
+  assert.equal(db.removeMobilePushToken('SYNC-0002', token), true);
+  assert.equal(db.removeMobilePushToken('SYNC-0002', token), false);
 });

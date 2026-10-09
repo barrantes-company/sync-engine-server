@@ -2,6 +2,8 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 // ==== Web Push Setup ====
 const webPush = require('web-push');
+const { cert, getApps, initializeApp } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@syncengine.local';
@@ -44,6 +46,60 @@ async function sendPushNotification(syncId, payload) {
 }
 
 // ==== End of Web Push Additions ====
+
+// ==== Firebase Cloud Messaging for native Android ====
+let firebaseMessaging = null;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+    const app = getApps().length
+      ? getApps()[0]
+      : initializeApp({ credential: cert(serviceAccount) });
+    firebaseMessaging = getMessaging(app);
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn("[FCM] Notificaciones Android deshabilitadas: falta FIREBASE_SERVICE_ACCOUNT.");
+  }
+} catch (err) {
+  console.error("[FCM] No se pudo configurar Firebase Admin:", err.message);
+}
+
+/**
+ * Envía una notificación push a los dispositivos Android del usuario.
+ * No incluye tokens de acceso ni ofertas WebRTC en el payload.
+ * @param {string} syncId Usuario destinatario.
+ * @param {{title:string,body:string,type:string}} payload Notificación visible y tipo.
+ */
+async function sendMobilePushNotification(syncId, payload) {
+  if (!firebaseMessaging) return;
+  const tokens = db.getMobilePushTokens(syncId);
+  if (!tokens.length) return;
+  const stale = [];
+  await Promise.all(tokens.map(async ({ token }) => {
+    try {
+      await firebaseMessaging.send({
+        token,
+        data: {
+          title: String(payload.title || "SYNC ENGINE").slice(0, 120),
+          body: String(payload.body || "").slice(0, 240),
+          type: String(payload.type || "message"),
+          syncId: String(syncId)
+        },
+        android: { priority: "high" }
+      });
+    } catch (err) {
+      if (err.code === "messaging/registration-token-not-registered" ||
+          err.code === "messaging/invalid-registration-token") {
+        stale.push(token);
+      } else {
+        console.warn("[FCM] Falló el envío a un dispositivo:", err.message);
+      }
+    }
+  }));
+  for (const token of stale) db.removeMobilePushToken(syncId, token);
+}
+
+// ==== End of Firebase Cloud Messaging ====
 const fs = require("fs");
 const http = require("http");
 const https = require("https");
@@ -413,6 +469,28 @@ app.post("/api/save-subscription", requireAuth, async (req, res) => {
     console.error("[Push] Error al guardar suscripción:", err);
     return res.status(500).json({ ok: false, error: "Error interno al guardar la suscripción" });
   }
+});
+
+/** Registra un token FCM Android en la cuenta autenticada. */
+app.post("/api/mobile/push-token", requireAuth, (req, res) => {
+  const token = req.body?.token;
+  if (typeof token !== "string" || token.length < 20 || token.length > 4096) {
+    return res.status(400).json({ ok: false, error: "Token FCM inválido" });
+  }
+  if (!db.saveMobilePushToken(req.user.syncId, token)) {
+    return res.status(400).json({ ok: false, error: "No se pudo registrar el dispositivo" });
+  }
+  return res.status(201).json({ ok: true });
+});
+
+/** Retira el token FCM de la cuenta autenticada (p. ej. al cerrar sesión). */
+app.delete("/api/mobile/push-token", requireAuth, (req, res) => {
+  const token = req.body?.token;
+  if (typeof token !== "string" || !token) {
+    return res.status(400).json({ ok: false, error: "Token FCM requerido" });
+  }
+  db.removeMobilePushToken(req.user.syncId, token);
+  return res.json({ ok: true });
 });
 
 // Rutas de Usuario y Perfil
@@ -952,6 +1030,11 @@ io.on("connection", function (socket) {
         data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
       };
       sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
+      sendMobilePushNotification(targetSyncId, {
+        title: `Nuevo mensaje de ${sender.formattedName}`,
+        body: (text && text.length > 100) ? text.slice(0, 97) + "..." : (text || "Tienes un mensaje nuevo"),
+        type: "message"
+      }).catch(e => console.warn("[FCM] Falló el aviso de mensaje:", e.message));
     }
 
     if (sender) {
@@ -1186,6 +1269,11 @@ io.on("connection", function (socket) {
         });
       });
     } else {
+      sendMobilePushNotification(targetSyncId, {
+        title: "Llamada entrante",
+        body: `Llamada de ${sender.formattedName || sender.syncId}`,
+        type: "call"
+      }).catch(e => console.warn("[FCM] Falló el aviso de llamada:", e.message));
       socket.emit("call-unavailable", {
         toSyncId: targetSyncId,
         message: "El contacto no se encuentra en línea para recibir llamadas"

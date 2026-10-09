@@ -12,6 +12,7 @@ final class AppSettings {
     private static final String FILE = "sync_state";
 
     private static final String TOKEN = "token";
+    private static final String FCM_TOKEN = "fcm_token";
     private static final String USER_NAME = "user_name";
     private static final String USE_24H = "use_24h";
     private static final String TIME_ZONE = "time_zone";
@@ -61,6 +62,14 @@ final class AppSettings {
                 .putInt(UNREAD, 0)
                 .putInt(MISSED, 0)
                 .apply();
+    }
+
+    static String fcmToken(Context context) {
+        return prefs(context).getString(FCM_TOKEN, "");
+    }
+
+    static void saveFcmToken(Context context, String token) {
+        prefs(context).edit().putString(FCM_TOKEN, token).apply();
     }
 
     static boolean use24h(Context context) {
