@@ -7,7 +7,6 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.RemoteViews;
@@ -18,6 +17,9 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
     private static final int[] FRAME_IDS = {
             R.id.widget_frame_0, R.id.widget_frame_1, R.id.widget_frame_2,
             R.id.widget_frame_3, R.id.widget_frame_4, R.id.widget_frame_5};
+    private static final int[] FRAME_DRAWABLES = {
+            R.drawable.widget_trails_0, R.drawable.widget_trails_1, R.drawable.widget_trails_2,
+            R.drawable.widget_trails_3, R.drawable.widget_trails_4, R.drawable.widget_trails_5};
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -81,12 +83,12 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
             views.setViewVisibility(R.id.widget_flipper, View.VISIBLE);
             views.setViewVisibility(R.id.widget_static, View.GONE);
             for (int i = 0; i < FRAME_IDS.length; i++) {
-                views.setImageViewBitmap(FRAME_IDS[i], WidgetRenderer.background(context, w, h, unit, i));
+                views.setImageViewResource(FRAME_IDS[i], FRAME_DRAWABLES[i]);
             }
         } else {
             views.setViewVisibility(R.id.widget_flipper, View.GONE);
             views.setViewVisibility(R.id.widget_static, View.VISIBLE);
-            views.setImageViewBitmap(R.id.widget_static, WidgetRenderer.background(context, w, h, unit, 0));
+            views.setImageViewResource(R.id.widget_static, FRAME_DRAWABLES[0]);
         }
 
         String[] status = new String[0];
@@ -103,7 +105,7 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
                 status = new String[] {"", context.getString(R.string.widget_sign_in)};
             }
         }
-        Bitmap text = WidgetRenderer.text(context, w, h, AppSettings.timeZone(context),
+        android.graphics.Bitmap text = WidgetRenderer.text(context, w, h, AppSettings.timeZone(context),
                 AppSettings.use24h(context), status, dim);
         views.setImageViewBitmap(R.id.widget_text, text);
 

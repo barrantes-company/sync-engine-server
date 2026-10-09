@@ -31,7 +31,9 @@ final class WidgetRenderer {
             0xFF3ECFFF, 0xFFE7F8FF, 0xFF79B7FF, 0xFFFFFFFF, 0xFFFF4FD8,
             0xFFFF9AD4, 0xFFFF3D78, 0xFFFF3B42, 0xFFFFC4A0};
     private static final int TRAIL_COUNT = 16;
-    private static final int MAX_WIDTH_PX = 640;
+    // Keep the single bitmap sent through RemoteViews below Binder's transaction limit.
+    private static final int MAX_WIDTH_PX = 480;
+    private static final int MAX_HEIGHT_PX = 240;
     private static final float CORNER_DP = 28f;
 
     private static Typeface display;
@@ -44,7 +46,7 @@ final class WidgetRenderer {
         float density = context.getResources().getDisplayMetrics().density;
         float w = Math.max(widthDp, 110) * density;
         float h = Math.max(heightDp, 110) * density;
-        float scale = Math.min(1f, MAX_WIDTH_PX / w);
+        float scale = Math.min(1f, Math.min(MAX_WIDTH_PX / w, MAX_HEIGHT_PX / h));
         return new int[] {Math.round(w * scale), Math.round(h * scale), Math.round(density * scale * 100)};
     }
 
