@@ -1990,3 +1990,161 @@ header.sticky {
     padding-right: 9px !important;
   }
 }
+
+
+/* ==========================================================================
+   SYNC ENGINE — MOBILE UX PASS 02
+   Functional readability and touch ergonomics; no auth or behavior changes.
+   ========================================================================== */
+@media (max-width: 767px) {
+  /* Give the active conversation and composer a predictable, keyboard-safe layout. */
+  #chat-panel-container,
+  #chat-panel,
+  #workspace-split-container {
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+
+  #chat-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  #chat-header-bar {
+    gap: 8px !important;
+    min-height: 58px !important;
+  }
+
+  #active-chat-info-trigger {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  #active-chat-name {
+    max-width: min(54vw, 250px) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+  }
+
+  #active-chat-id,
+  #chat-header-id {
+    max-width: 48vw !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Increase message readability and avoid overly wide bubbles on phones. */
+  #chat-messages {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    padding: 14px 12px 18px !important;
+    scroll-padding-bottom: 20px;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chat-bubble-inner {
+    max-width: min(84vw, 520px) !important;
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .chat-bubble-inner img,
+  #chat-messages img {
+    max-width: 100% !important;
+    height: auto;
+  }
+
+  /* Keep the composer accessible without crowding the message area. */
+  #chat-form,
+  #input-container {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+  }
+
+  #input-container {
+    margin: 6px 8px max(8px, env(safe-area-inset-bottom, 0px)) !important;
+    padding: 7px !important;
+    gap: 6px !important;
+  }
+
+  #chat-textarea {
+    min-width: 0 !important;
+    padding: 10px 11px !important;
+    line-height: 1.4 !important;
+    scroll-margin-bottom: 16px;
+  }
+
+  #input-container button,
+  #chat-header-bar button.icon-btn,
+  #back-to-contacts-btn {
+    min-width: 42px !important;
+    min-height: 42px !important;
+    touch-action: manipulation;
+  }
+
+  /* Search and contact rows should be easy to target with a thumb. */
+  #contact-search-input {
+    min-height: 44px !important;
+    padding-inline: 13px !important;
+  }
+
+  #contacts-list .contact-item,
+  #channels-list .channel-item {
+    min-height: 64px !important;
+    margin-block: 5px !important;
+    padding: 12px !important;
+    touch-action: manipulation;
+  }
+
+  #chat-search-bar {
+    gap: 6px !important;
+    padding: 8px 10px !important;
+  }
+
+  #chat-search-input {
+    min-width: 0 !important;
+    font-size: 16px !important;
+  }
+
+  /* Respect accessibility preferences and avoid decorative motion overload. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@media (max-width: 380px) {
+  #chat-header-bar {
+    padding-inline: 8px !important;
+  }
+
+  #active-chat-name {
+    max-width: 46vw !important;
+    font-size: 13px !important;
+  }
+
+  .chat-bubble-inner {
+    max-width: 88vw !important;
+    font-size: 13px !important;
+  }
+
+  #input-container {
+    margin-inline: 5px !important;
+    gap: 4px !important;
+  }
+}
