@@ -1673,3 +1673,320 @@ header.sticky {
   border-left: 3px solid #C5A059;
   font-weight: 700;
 }
+
+
+/* ==========================================================================
+   SYNC ENGINE ANDROID — VISUAL PASS 01
+   Ajustes de presentación móvil aprobados como primera iteración.
+   No cambia contratos, autenticación ni lógica de mensajes.
+   ========================================================================== */
+@media (max-width: 767px) {
+  :root {
+    --accent-gold: #2F7BFF;
+    --accent-gold-hover: #4A8CFF;
+    --accent-gold-dark: #1559D6;
+    --accent-gold-glow: rgba(47, 123, 255, 0.20);
+    --accent-tech: #00C7F2;
+    --border-subtle: rgba(17, 39, 76, 0.10);
+    --border-medium: rgba(47, 123, 255, 0.25);
+    --border-active: #2F7BFF;
+    --bg-main: #F5F8FD;
+    --bg-card: #FFFFFF;
+    --bg-card-hover: #EEF4FC;
+    --bg-chat: #F5F8FD;
+    --bg-bubble-self: #1266F1;
+    --bg-bubble-other: #FFFFFF;
+  }
+
+  html, body {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    background: #F5F8FD !important;
+    overscroll-behavior: none;
+  }
+
+  #app-container {
+    width: 100% !important;
+    max-width: none !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    box-shadow: none !important;
+    background: #F5F8FD !important;
+  }
+
+  #app-container > header.sticky {
+    flex: 0 0 auto;
+    padding: max(8px, env(safe-area-inset-top, 0px)) 14px 9px !important;
+    background: linear-gradient(135deg, #06152D 0%, #0A2850 100%) !important;
+    color: #FFFFFF !important;
+    border: 0 !important;
+    box-shadow: 0 4px 18px rgba(5, 20, 44, 0.18) !important;
+  }
+
+  #app-container > header.sticky > div {
+    padding: 0 !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  #app-container > header.sticky .font-title {
+    color: #FFFFFF !important;
+    font-size: 14px !important;
+    letter-spacing: .035em !important;
+  }
+
+  #app-container > header.sticky img {
+    filter: drop-shadow(0 0 5px rgba(0, 199, 242, .25));
+  }
+
+  #app-container > header.sticky #header-plan-badge-btn,
+  #app-container > header.sticky #open-vault-btn,
+  #app-container > header.sticky > div > div:nth-child(2) {
+    display: none !important;
+  }
+
+  #app-container > header.sticky #user-identity-badge {
+    color: #EAF5FF !important;
+    max-width: 112px !important;
+    font-size: 10px !important;
+  }
+
+  #app-container > header.sticky #header-user-sync-id {
+    color: #6BE7FF !important;
+  }
+
+  #app-container > header.sticky #header-user-clean-name {
+    color: #FFFFFF !important;
+  }
+
+  #app-container > header.sticky #logout-btn {
+    padding: 7px 9px !important;
+    border-radius: 10px !important;
+    color: #DCEBFF !important;
+    background: rgba(255,255,255,.08) !important;
+    border: 1px solid rgba(255,255,255,.14) !important;
+    white-space: nowrap;
+  }
+
+  #main-layout {
+    padding: 0 !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    background: #F5F8FD !important;
+  }
+
+  #sidebar-panel {
+    background: #F5F8FD !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #sidebar-panel > div:first-child {
+    padding: 10px 12px !important;
+    background: #FFFFFF !important;
+    border-bottom: 1px solid rgba(17,39,76,.08) !important;
+  }
+
+  .workspace-segmented-tab {
+    min-height: 38px;
+    padding: 9px 10px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+    color: #65748B !important;
+  }
+
+  .workspace-segmented-tab.is-active {
+    color: #FFFFFF !important;
+    background: linear-gradient(135deg, #1674FF, #2457E6) !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 10px rgba(22,116,255,.20) !important;
+  }
+
+  #sidebar-dms-view > div:first-child,
+  #sidebar-channels-view > div:first-child {
+    padding: 12px 14px !important;
+    background: #FFFFFF !important;
+    border-bottom: 1px solid rgba(17,39,76,.07) !important;
+  }
+
+  #contact-search-input {
+    min-height: 42px !important;
+    border: 1px solid rgba(17,39,76,.08) !important;
+    border-radius: 14px !important;
+    background: #F1F5FA !important;
+    color: #0A1A3A !important;
+    font-family: var(--font-body) !important;
+    font-size: 13px !important;
+    text-transform: none !important;
+    box-shadow: none !important;
+  }
+
+  #contact-search-input:focus {
+    background: #FFFFFF !important;
+    border-color: #2F7BFF !important;
+    box-shadow: 0 0 0 3px rgba(47,123,255,.12) !important;
+  }
+
+  #add-contact-btn,
+  #open-create-channel-btn {
+    min-height: 40px;
+    border-radius: 12px !important;
+    background: #1266F1 !important;
+    box-shadow: none !important;
+  }
+
+  #contacts-list,
+  #channels-list {
+    padding: 8px 10px max(18px, env(safe-area-inset-bottom, 0px)) !important;
+    background: #F5F8FD !important;
+  }
+
+  #sidebar-pro-card {
+    display: none !important;
+  }
+
+  #sidebar-panel > div:last-child {
+    display: none !important;
+  }
+
+  #sidebar-panel .channel-item {
+    margin: 3px 0;
+    padding: 12px !important;
+    border: 1px solid rgba(17,39,76,.06);
+    border-radius: 15px !important;
+    background: #FFFFFF !important;
+  }
+
+  #chat-panel-container {
+    background: #F5F8FD !important;
+  }
+
+  #chat-panel {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background-color: #F5F8FD !important;
+    background-image: none !important;
+  }
+
+  #chat-header-bar {
+    min-height: 62px !important;
+    padding: 8px 12px !important;
+    background: #FFFFFF !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(17,39,76,.08) !important;
+    box-shadow: 0 2px 8px rgba(17,39,76,.04);
+  }
+
+  #chat-header-bar button.icon-btn {
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 12px !important;
+    color: #16375F !important;
+    background: #F1F5FA !important;
+    box-shadow: none !important;
+  }
+
+  .chat-canvas {
+    background-color: #F5F8FD !important;
+    background-image: none !important;
+  }
+
+  .chat-bubble-inner {
+    border-radius: 18px !important;
+    box-shadow: 0 2px 7px rgba(17,39,76,.05) !important;
+  }
+
+  .chat-bubble-sent {
+    background: linear-gradient(135deg, #1674FF 0%, #1559E8 100%) !important;
+    color: #FFFFFF !important;
+    border: 0 !important;
+    border-top-right-radius: 5px !important;
+  }
+
+  .chat-bubble-received {
+    background: #FFFFFF !important;
+    color: #132746 !important;
+    border: 1px solid rgba(17,39,76,.05) !important;
+    border-top-left-radius: 5px !important;
+  }
+
+  .msg-status-check,
+  .msg-status-check:not(.read) {
+    color: #D6E9FF !important;
+  }
+
+  .msg-status-check.read {
+    color: #69E5FF !important;
+  }
+
+  #input-container {
+    margin: 8px 10px max(8px, env(safe-area-inset-bottom, 0px)) !important;
+    padding: 8px !important;
+    gap: 7px !important;
+    border: 1px solid rgba(17,39,76,.08) !important;
+    border-radius: 20px !important;
+    background: #FFFFFF !important;
+    box-shadow: 0 5px 18px rgba(17,39,76,.08) !important;
+  }
+
+  #chat-textarea {
+    min-height: 40px !important;
+    max-height: 120px !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: #F4F7FC !important;
+    font-size: 14px !important;
+  }
+
+  #input-container button {
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 13px !important;
+  }
+
+  #back-to-contacts-btn {
+    color: #1C5BD6 !important;
+    background: #EDF4FF !important;
+  }
+
+  #info-drawer-panel {
+    background: #FFFFFF !important;
+    border: 0 !important;
+    border-radius: 22px 0 0 22px !important;
+    box-shadow: -12px 0 35px rgba(5,20,44,.18) !important;
+  }
+
+  #edit-profile-modal.profile-settings-popover {
+    bottom: max(80px, calc(70px + env(safe-area-inset-bottom, 0px))) !important;
+    border-radius: 18px !important;
+  }
+
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible {
+    outline-color: #2F7BFF !important;
+  }
+}
+
+@media (max-width: 380px) {
+  #app-container > header.sticky #user-identity-badge {
+    max-width: 82px !important;
+  }
+
+  #contact-search-input {
+    font-size: 12px !important;
+  }
+
+  #add-contact-btn {
+    padding-left: 9px !important;
+    padding-right: 9px !important;
+  }
+}
