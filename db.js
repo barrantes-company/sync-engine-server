@@ -1040,7 +1040,14 @@ function isChannelMember(channelId, userSyncId) {
     item.name.toLowerCase() === clean
   );
   if (!channel) return false;
-  if (channel.isDefault) return true;
+  if (channel.orgId) {
+    const organization = (db.organizations || []).find((org) => org.id === channel.orgId);
+    if (!organization) return false;
+    const member = Array.isArray(organization.memberSyncIds) &&
+      organization.memberSyncIds.some((id) => String(id).trim().toUpperCase() === normalizedUserId);
+    if (!member) return false;
+  }
+  if (channel.isDefault && !channel.orgId) return true;
   if (String(channel.creatorSyncId || "").trim().toUpperCase() === normalizedUserId) return true;
   return Array.isArray(channel.memberSyncIds) &&
     channel.memberSyncIds.some((memberId) => String(memberId).trim().toUpperCase() === normalizedUserId);
