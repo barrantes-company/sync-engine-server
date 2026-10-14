@@ -119,6 +119,7 @@
     }
   }
 </style>
+<link rel="stylesheet" href="/theme-effects.css">
 </head>
 <body class="font-sans text-[#0A1A3A] antialiased selection:bg-[#C5A059]/30 selection:text-[#0A1A3A] bg-white">
 
@@ -5896,14 +5897,22 @@
   const split = document.getElementById('workspace-split-container');
   const callsHome = document.getElementById('se-calls-home');
   const themeButton = document.getElementById('se-theme-toggle');
+  const themeOrder = ['sync-blue', 'energy', 'orbit', 'nexus'];
+  const themeLabels = {
+    'sync-blue': 'Sync Blue',
+    energy: 'Energy',
+    orbit: 'Orbit',
+    nexus: 'Nexus'
+  };
   const applyTheme = (theme) => {
-    const selected = theme === 'energy' ? 'energy' : 'sync-blue';
+    const selected = themeOrder.includes(theme) ? theme : 'sync-blue';
     app.dataset.seTheme = selected;
     document.documentElement.dataset.seTheme = selected;
     if (themeButton) {
-      const label = selected === 'energy' ? 'Tema Sync Blue' : 'Tema Energy';
+      const nextTheme = themeOrder[(themeOrder.indexOf(selected) + 1) % themeOrder.length];
+      const label = 'Cambiar a ' + themeLabels[nextTheme];
       const span = themeButton.querySelector('span');
-      if (span) span.textContent = label;
+      if (span) span.textContent = 'Tema: ' + themeLabels[selected];
       themeButton.setAttribute('aria-label', label);
       themeButton.title = label;
     }
@@ -5989,8 +5998,16 @@
       if (view === 'contacts') document.getElementById('contact-search-input')?.focus();
     }
   });
+  const chatFormForMotion = document.getElementById('chat-form');
+  chatFormForMotion?.addEventListener('submit', () => {
+    app.classList.remove('se-syncing');
+    void app.offsetWidth;
+    app.classList.add('se-syncing');
+    window.setTimeout(() => app.classList.remove('se-syncing'), 950);
+  });
   themeButton?.addEventListener('click', () => {
-    applyTheme(app.dataset.seTheme === 'energy' ? 'sync-blue' : 'energy');
+    const currentIndex = themeOrder.indexOf(app.dataset.seTheme || 'sync-blue');
+    applyTheme(themeOrder[(currentIndex + 1) % themeOrder.length]);
   });
   document.getElementById('se-return-to-chats')?.addEventListener('click', () => {
     showWorkspace();
