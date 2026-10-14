@@ -28,11 +28,15 @@ public final class SyncEngineMessagingService extends FirebaseMessagingService {
         String title = message.getData().get("title");
         String body = message.getData().get("body");
         String type = message.getData().get("type");
-        showNotification(
-                title == null || title.isEmpty() ? getString(R.string.app_name) : title,
-                body == null ? getString(R.string.realtime_notification_body) : body,
-                "call".equals(type));
-        SyncRefresher.refresh(getApplicationContext());
+        // FCM es la vía inmediata; respetar el ajuste del usuario y refrescar contadores
+        // sin generar una segunda notificación por el mismo evento.
+        if (AppSettings.notifications(this)) {
+            showNotification(
+                    title == null || title.isEmpty() ? getString(R.string.app_name) : title,
+                    body == null ? getString(R.string.realtime_notification_body) : body,
+                    "call".equals(type));
+        }
+        SyncRefresher.refresh(getApplicationContext(), false);
     }
 
     private void showNotification(String title, String body, boolean call) {
