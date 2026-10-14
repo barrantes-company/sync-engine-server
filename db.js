@@ -1084,7 +1084,14 @@ function createWorkspaceChannel(name, description, creatorSyncId) {
 
 function updateWorkspaceChannel(channelId, actorSyncId, updates = {}) {
   const db = readDb();
-  const channel = findChannel(channelId);
+  const rawChannelId = String(channelId || "").trim();
+  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
+  const channel = (db.channels || []).find((item) =>
+    item.id === rawChannelId ||
+    item.id === cleanChannelId ||
+    item.id === ("chan-" + cleanChannelId) ||
+    String(item.name || "").toLowerCase() === cleanChannelId
+  );
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("Los canales predeterminados no se pueden editar");
   if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
@@ -1108,7 +1115,14 @@ function updateWorkspaceChannel(channelId, actorSyncId, updates = {}) {
 
 function addWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
   const db = readDb();
-  const channel = findChannel(channelId);
+  const rawChannelId = String(channelId || "").trim();
+  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
+  const channel = (db.channels || []).find((item) =>
+    item.id === rawChannelId ||
+    item.id === cleanChannelId ||
+    item.id === ("chan-" + cleanChannelId) ||
+    String(item.name || "").toLowerCase() === cleanChannelId
+  );
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("La membresía de canales predeterminados no se puede modificar aquí");
   if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
@@ -1127,7 +1141,14 @@ function addWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
 
 function removeWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
   const db = readDb();
-  const channel = findChannel(channelId);
+  const rawChannelId = String(channelId || "").trim();
+  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
+  const channel = (db.channels || []).find((item) =>
+    item.id === rawChannelId ||
+    item.id === cleanChannelId ||
+    item.id === ("chan-" + cleanChannelId) ||
+    String(item.name || "").toLowerCase() === cleanChannelId
+  );
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("La membresía de canales predeterminados no se puede modificar aquí");
   if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
@@ -1145,7 +1166,14 @@ function removeWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
 
 function deleteWorkspaceChannel(channelId, actorSyncId) {
   const db = readDb();
-  const channel = findChannel(channelId);
+  const rawChannelId = String(channelId || "").trim();
+  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
+  const channel = (db.channels || []).find((item) =>
+    item.id === rawChannelId ||
+    item.id === cleanChannelId ||
+    item.id === ("chan-" + cleanChannelId) ||
+    String(item.name || "").toLowerCase() === cleanChannelId
+  );
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("Los canales predeterminados no se pueden eliminar");
   if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
