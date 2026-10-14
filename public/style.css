@@ -2400,3 +2400,61 @@ header.sticky {
   #desktop-left-rail { width:72px !important; flex-basis:72px !important; }
   #sidebar-panel { width:320px !important; flex:0 0 320px !important; }
 }
+
+
+/* UX correction requested: one primary navigation rail; no duplicate filter/navigation/footer blocks. */
+#sidebar-panel > div:first-child:not(#sidebar-dms-view),
+#sidebar-panel > .flex.items-center.gap-1\.5.overflow-x-auto,
+#sidebar-pro-card,
+#sidebar-panel > div.flex.flex-shrink-0.items-center.justify-between.border-t,
+#sidebar-panel > div.flex.flex-shrink-0.items-center.justify-center.border-t {
+  display:none !important;
+}
+#sidebar-panel { width:320px !important; flex:0 0 320px !important; min-width:285px !important; }
+#sidebar-dms-view { min-height:0 !important; }
+#sidebar-dms-view > div:first-child {
+  padding:18px 14px 14px !important;
+  background:#0A1A3A !important;
+  border-bottom:1px solid rgba(255,255,255,.08) !important;
+}
+#contact-search-input {
+  border-radius:12px !important;
+  background:#152B52 !important;
+  color:#fff !important;
+  text-transform:none !important;
+  font-family:Inter,sans-serif !important;
+  letter-spacing:normal !important;
+}
+#contact-search-input::placeholder { color:#AAB8CF !important; }
+#add-contact-btn {
+  width:42px !important; min-width:42px !important; height:42px !important;
+  border-radius:12px !important; padding:0 !important;
+  font-size:0 !important; background:#152B52 !important;
+  border:1px solid rgba(0,229,255,.28) !important; box-shadow:none !important;
+}
+#add-contact-btn::after { content:"+"; font-size:24px; line-height:1; font-weight:400; }
+#contacts-list { background:#0A1A3A !important; padding:6px 8px 16px !important; }
+#contacts-list .contact-item {
+  border:0 !important; border-bottom:1px solid rgba(255,255,255,.06) !important;
+  border-radius:10px !important; min-height:72px !important;
+  background:transparent !important;
+}
+#contacts-list .contact-item:hover { background:rgba(255,255,255,.06) !important; }
+#contacts-list .contact-item.is-active {
+  background:#152B52 !important; border-left:3px solid #00E5FF !important;
+}
+#contacts-list .contact-item p, #contacts-list .contact-item span { color:#DCE6F3; }
+#chat-header-bar { display:none !important; }
+body.has-active-chat #chat-header-bar { display:flex !important; }
+body:not(.has-active-chat) #chat-welcome { display:none !important; }
+body:not(.has-active-chat) #chat-messages { background:#090E17 !important; }
+body.has-active-chat #chat-welcome { display:none !important; }
+@media (min-width:1024px) {
+  #desktop-left-rail { width:84px !important; flex:0 0 84px !important; }
+  #sidebar-panel { width:320px !important; flex-basis:320px !important; }
+}
+@media (max-width:767px) {
+  #sidebar-panel { width:100% !important; min-width:0 !important; flex-basis:100% !important; }
+  #chat-header-bar { display:none !important; }
+  body.has-active-chat #chat-header-bar { display:flex !important; }
+}
