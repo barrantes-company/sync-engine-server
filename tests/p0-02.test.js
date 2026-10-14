@@ -313,27 +313,49 @@ test('TEST 10: real WAV and generated WebM video load/play through authorized st
   assert.equal(audioResult.duration, 1);
   assert.ok(audioResult.state >= 1);
   const video = await alicePage.evaluate(`(async () => {
-    const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
-    // Use a real frame rate instead of captureStream(0): some headless Chromium
-    // builds produce only a tiny WebM header when requestFrame() is used this way.
+    const canvas = document.createElement('canvas'); canvas.width = 32; canvas.height = 32;
+    // Generate changing image content as well as real-time frames so VP8 has
+    // decodable frame payload, not just a tiny container/header.
     const stream = canvas.captureStream(10);
     const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
     const chunks = [];
     recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
     const stopped = new Promise(resolve => { recorder.onstop = resolve; });
     const context = canvas.getContext('2d');
+    let seed = 123456789;
     recorder.start(250);
-    for (let frame = 0; frame < 12; frame++) {
-      context.fillStyle = frame % 2 ? '#fff' : '#000';
-      context.fillRect(0, 0, 64, 64);
+    for (let frame = 0; frame < 16; frame++) {
+      const pixels = context.createImageData(32, 32);
+      for (let i = 0; i < pixels.data.length; i += 4) {
+        seed = (1664525 * seed + 1013904223) >>> 0;
+        pixels.data[i] = (seed >>> 16) & 255;
+        pixels.data[i + 1] = (seed >>> 8) & 255;
+        pixels.data[i + 2] = seed & 255;
+        pixels.data[i + 3] = 255;
+      }
+      context.putImageData(pixels, 0, 0);
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    // Let the encoder flush a decodable frame before finalizing the container.
+    // Let the encoder flush before finalizing the container.
     await new Promise(resolve => setTimeout(resolve, 300));
     recorder.stop(); await stopped;
     stream.getTracks().forEach(track => track.stop());
     const webmBlob = new Blob(chunks, { type: 'video/webm' });
-    if (webmBlob.size < 1000) throw new Error('Generated WebM is unexpectedly small: ' + webmBlob.size + ' bytes');
+    if (webmBlob.size < 100) throw new Error('Generated WebM has no meaningful payload: ' + webmBlob.size + ' bytes');
+    // Validate the synthetic artifact locally before involving upload/streaming.
+    const localUrl = URL.createObjectURL(webmBlob);
+    try {
+      await new Promise((resolve, reject) => {
+        const localVideo = document.createElement('video');
+        localVideo.muted = true;
+        localVideo.onloadeddata = () => localVideo.videoWidth === 32 && localVideo.videoHeight === 32
+          ? resolve() : reject(new Error('Local WebM decoded with unexpected dimensions: ' + localVideo.videoWidth + 'x' + localVideo.videoHeight));
+        localVideo.onerror = () => reject(new Error('Generated WebM cannot be decoded locally (' + webmBlob.size + ' bytes)'));
+        localVideo.src = localUrl;
+      });
+    } finally {
+      URL.revokeObjectURL(localUrl);
+    }
     const body = new FormData(); body.append('file', webmBlob, 'sample.webm');
     const response = await fetch('/api/upload', { method: 'POST', headers: { Authorization: 'Bearer test-alice' }, body });
     const file = (await response.json()).file;
