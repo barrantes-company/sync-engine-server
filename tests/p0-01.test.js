@@ -312,6 +312,62 @@ test('channel subscriptions and history require an authenticated member', async 
   assert.equal(db.isChannelMember(channel.id, users[1].syncId), false);
 });
 
+test('channel creator can delegate and revoke channel administration securely', async () => {
+  const channel = db.createWorkspaceChannel('admin-delegation', 'Delegated admin test', users[0].syncId);
+  const aliceHeaders = { Authorization: 'Bearer test-alice', 'Content-Type': 'application/json' };
+  const bobHeaders = { Authorization: 'Bearer test-bob', 'Content-Type': 'application/json' };
+
+  // Only the creator can delegate administrative privileges.
+  const grant = await fetch(base + '/api/channels/' + channel.id + '/admins/' + users[1].syncId, {
+    method: 'POST', headers: aliceHeaders
+  });
+  assert.equal(grant.status, 200);
+  assert.equal((await grant.json()).channel.adminSyncIds.includes(users[1].syncId), true);
+  assert.equal(db.isChannelMember(channel.id, users[1].syncId), true);
+
+  // Delegated administrators can edit channels and manage membership.
+  const edit = await fetch(base + '/api/channels/' + channel.id, {
+    method: 'PUT', headers: bobHeaders, body: JSON.stringify({ name: 'admin-delegation-edited', description: 'Edited by delegate' })
+  });
+  assert.equal(edit.status, 200);
+  assert.equal((await edit.json()).channel.description, 'Edited by delegate');
+
+  const addMember = await fetch(base + '/api/channels/' + channel.id + '/members', {
+    method: 'POST', headers: bobHeaders, body: JSON.stringify({ syncId: users[0].syncId })
+  });
+  assert.equal(addMember.status, 200);
+
+  const removeMember = await fetch(base + '/api/channels/' + channel.id + '/members/' + encodeURIComponent(users[0].syncId), {
+    method: 'DELETE', headers: bobHeaders
+  });
+  // The creator cannot be removed from their own channel.
+  assert.equal(removeMember.status, 400);
+
+  // A delegated administrator cannot grant or revoke administrative privileges.
+  const delegateGrant = await fetch(base + '/api/channels/' + channel.id + '/admins/' + users[0].syncId, {
+    method: 'POST', headers: bobHeaders
+  });
+  assert.equal(delegateGrant.status, 400);
+
+  // Creator revokes the delegated role; the former admin can no longer edit.
+  const revoke = await fetch(base + '/api/channels/' + channel.id + '/admins/' + users[1].syncId, {
+    method: 'DELETE', headers: aliceHeaders
+  });
+  assert.equal(revoke.status, 200);
+  const deniedEdit = await fetch(base + '/api/channels/' + channel.id, {
+    method: 'PUT', headers: bobHeaders, body: JSON.stringify({ description: 'Should be denied' })
+  });
+  assert.equal(deniedEdit.status, 400);
+
+  // System/default channels remain protected from user administration.
+  const defaultChannel = db.getWorkspaceChannels(users[0].syncId).find((item) => item.isDefault);
+  assert.ok(defaultChannel);
+  const deniedDefaultEdit = await fetch(base + '/api/channels/' + defaultChannel.id, {
+    method: 'PUT', headers: aliceHeaders, body: JSON.stringify({ description: 'Should be denied' })
+  });
+  assert.equal(deniedDefaultEdit.status, 400);
+});
+
 test('vault API stores and returns only authenticated client-encrypted payloads', async () => {
   const legacyItems = db.testData.vaultItems || (db.testData.vaultItems = {});
   legacyItems[users[1].syncId] = [{ id: 'legacy', title: 'Legacy', secretContent: 'old plaintext' }];
