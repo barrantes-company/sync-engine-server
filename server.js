@@ -742,43 +742,49 @@ app.get("/api/messages/:contactSyncId/export", requireAuth, (req, res) => {
   }
 });
 
-// Configuración de Certificados SSL Autofirmados para soporte HTTPS (Requerido para iOS WebRTC y Micrófono)
-const SSL_DIR = path.join(__dirname, "data", "ssl");
-if (!fs.existsSync(SSL_DIR)) {
-  fs.mkdirSync(SSL_DIR, { recursive: true });
-}
-const CERT_FILE = path.join(SSL_DIR, "cert.pem");
-const KEY_FILE = path.join(SSL_DIR, "key.pem");
-
+// Los certificados autofirmados solo se inicializan para el servidor local.
+// Vercel termina TLS delante de la Function y su filesystem desplegado no es persistente.
+const isServerlessRuntime = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_VERSION);
 let sslOptions = null;
-try {
-  if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
-    sslOptions = {
-      cert: fs.readFileSync(CERT_FILE),
-      key: fs.readFileSync(KEY_FILE)
-    };
-  } else {
-    const pemsOrPromise = selfsigned.generate(
-      [{ name: "commonName", value: "sync-engine-server" }],
-      { days: 365, keySize: 2048 }
-    );
-    if (pemsOrPromise && typeof pemsOrPromise.then === "function") {
-      pemsOrPromise.then((pems) => {
-        if (pems && pems.cert && pems.private) {
-          try {
-            fs.writeFileSync(CERT_FILE, pems.cert, "utf8");
-            fs.writeFileSync(KEY_FILE, pems.private, "utf8");
-          } catch (_) {}
-        }
-      }).catch(() => {});
-    } else if (pemsOrPromise && pemsOrPromise.cert && pemsOrPromise.private) {
-      fs.writeFileSync(CERT_FILE, pemsOrPromise.cert, "utf8");
-      fs.writeFileSync(KEY_FILE, pemsOrPromise.private, "utf8");
-      sslOptions = { cert: pemsOrPromise.cert, key: pemsOrPromise.private };
+
+if (!isServerlessRuntime) {
+  const SSL_DIR = path.join(__dirname, "data", "ssl");
+  const CERT_FILE = path.join(SSL_DIR, "cert.pem");
+  const KEY_FILE = path.join(SSL_DIR, "key.pem");
+
+  try {
+    if (!fs.existsSync(SSL_DIR)) {
+      fs.mkdirSync(SSL_DIR, { recursive: true });
     }
+
+    if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
+      sslOptions = {
+        cert: fs.readFileSync(CERT_FILE),
+        key: fs.readFileSync(KEY_FILE)
+      };
+    } else {
+      const pemsOrPromise = selfsigned.generate(
+        [{ name: "commonName", value: "sync-engine-server" }],
+        { days: 365, keySize: 2048 }
+      );
+      if (pemsOrPromise && typeof pemsOrPromise.then === "function") {
+        pemsOrPromise.then((pems) => {
+          if (pems && pems.cert && pems.private) {
+            try {
+              fs.writeFileSync(CERT_FILE, pems.cert, "utf8");
+              fs.writeFileSync(KEY_FILE, pems.private, "utf8");
+            } catch (_) {}
+          }
+        }).catch(() => {});
+      } else if (pemsOrPromise && pemsOrPromise.cert && pemsOrPromise.private) {
+        fs.writeFileSync(CERT_FILE, pemsOrPromise.cert, "utf8");
+        fs.writeFileSync(KEY_FILE, pemsOrPromise.private, "utf8");
+        sslOptions = { cert: pemsOrPromise.cert, key: pemsOrPromise.private };
+      }
+    }
+  } catch (sslErr) {
+    console.warn("[SSL] No se pudo inicializar certificado SSL:", sslErr.message);
   }
-} catch (sslErr) {
-  console.warn("[SSL] No se pudo inicializar certificado SSL:", sslErr.message);
 }
 
 const server = http.createServer(app);
@@ -1480,7 +1486,8 @@ function broadcastUserStatus(syncId, isOnline) {
   });
 }
 
-server.listen(PORT, HOST, function () {
+if (typeof module !== "undefined" && require.main === module) {
+  server.listen(PORT, HOST, function () {
   const localIps = getLocalIPv4Addresses();
   console.log("\n==================================================");
   console.log("SYNC ENGINE Server Activo en http://" + HOST + ":" + PORT);
@@ -1510,7 +1517,15 @@ server.listen(PORT, HOST, function () {
   } catch (err) {
     console.error("[Pub/Sub] No se pudo iniciar la suscripción; HTTP seguirá disponible:", err.message);
   }
-});
+  });
+}
+
+if (typeof module !== "undefined") {
+  module.exports = app;
+  module.exports.app = app;
+  module.exports.server = server;
+  module.exports.io = io;
+}
 
 if (process.env.RENDER_EXTERNAL_URL) {
   const keepAliveUrl = new URL("/api/status", process.env.RENDER_EXTERNAL_URL);
