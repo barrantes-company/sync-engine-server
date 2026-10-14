@@ -5568,10 +5568,80 @@
           </div>
         </div>
         ${chan.isDefault ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono">Equipo</span>' : ''}
+        ${!chan.isDefault && currentUser && String(chan.creatorSyncId || '').toUpperCase() === String(currentUser.syncId || '').toUpperCase() ? '<button type="button" class="channel-manage-btn rounded-lg px-2 py-1 text-xs text-[#64748B] hover:bg-[#F1F5F9]" aria-label="Administrar canal" title="Administrar canal">⋯</button>' : ''}
       `;
       item.addEventListener('click', () => selectChannel(chan));
+      const manageBtn = item.querySelector('.channel-manage-btn');
+      if (manageBtn) manageBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        manageWorkspaceChannel(chan);
+      });
       channelsList.appendChild(item);
     });
+  }
+
+  async function manageWorkspaceChannel(chan) {
+    const action = window.prompt(
+      `Administrar #${chan.name}\n1. Editar nombre/descripción\n2. Agregar participante por ID SYNC\n3. Retirar participante por ID SYNC\n4. Eliminar canal\n\nEscribe 1, 2, 3 o 4:`
+    );
+    if (!action) return;
+
+    const request = async (url, options = {}) => {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          ...(options.headers || {})
+        }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo completar la operación');
+      return data;
+    };
+
+    try {
+      if (action.trim() === '1') {
+        const name = window.prompt('Nuevo nombre del canal:', chan.name);
+        if (name === null) return;
+        const description = window.prompt('Nueva descripción:', chan.description || '');
+        if (description === null) return;
+        await request(`/api/channels/${encodeURIComponent(chan.id)}`, {
+          method: 'PUT',
+          body: JSON.stringify({ name, description })
+        });
+      } else if (action.trim() === '2') {
+        const syncId = window.prompt('ID SYNC exacto del participante que deseas agregar:');
+        if (!syncId || !syncId.trim()) return;
+        await request(`/api/channels/${encodeURIComponent(chan.id)}/members`, {
+          method: 'POST',
+          body: JSON.stringify({ syncId: syncId.trim() })
+        });
+      } else if (action.trim() === '3') {
+        const syncId = window.prompt('ID SYNC exacto del participante que deseas retirar:');
+        if (!syncId || !syncId.trim()) return;
+        await request(`/api/channels/${encodeURIComponent(chan.id)}/members/${encodeURIComponent(syncId.trim())}`, {
+          method: 'DELETE'
+        });
+      } else if (action.trim() === '4') {
+        if (!window.confirm(`Eliminar #${chan.name} y su historial de mensajes? Esta acción no se puede deshacer.`)) return;
+        await request(`/api/channels/${encodeURIComponent(chan.id)}`, { method: 'DELETE' });
+        if (activeChannelId === chan.id) {
+          activeChannelId = null;
+          document.getElementById('app-container').dataset.hasActiveConversation = 'false';
+          document.getElementById('chat-header-bar')?.classList.add('hidden');
+          document.getElementById('input-container')?.classList.add('hidden');
+          chatMessages.replaceChildren(chatWelcome);
+          chatWelcome.classList.remove('hidden');
+        }
+      } else {
+        return;
+      }
+      await loadChannels();
+      triggerPopupNotification('Canales', 'Los cambios se guardaron correctamente.', '✓');
+    } catch (error) {
+      window.alert('No se pudo administrar el canal: ' + error.message);
+    }
   }
 
   async function selectChannel(chan) {
