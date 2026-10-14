@@ -340,7 +340,35 @@ test('TEST 10: real WAV and generated WebM video load/play through authorized st
     });
     const video = document.createElement('video'); video.muted = true; video.src = file.url;
     document.body.appendChild(video);
-    await new Promise((resolve, reject) => { video.onloadeddata = resolve; video.onerror = () => reject(new Error('Video failed')); });
+    await new Promise((resolve, reject) => {
+      video.onloadeddata = resolve;
+      video.onerror = async () => {
+        let responseInfo = { fetchError: null };
+        try {
+          const response = await fetch(file.url);
+          const bytes = await response.clone().arrayBuffer();
+          responseInfo = {
+            status: response.status,
+            contentType: response.headers.get('content-type'),
+            contentLength: response.headers.get('content-length'),
+            contentRange: response.headers.get('content-range'),
+            acceptRanges: response.headers.get('accept-ranges'),
+            cacheControl: response.headers.get('cache-control'),
+            bytesReceived: bytes.byteLength
+          };
+        } catch (error) {
+          responseInfo.fetchError = String(error && error.message || error);
+        }
+        reject(new Error('Video failed: ' + JSON.stringify({
+          mediaError: video.error ? { code: video.error.code, message: video.error.message } : null,
+          networkState: video.networkState,
+          readyState: video.readyState,
+          currentSrc: video.currentSrc,
+          generatedBlobSize: chunks.reduce((total, chunk) => total + chunk.size, 0),
+          response: responseInfo
+        })));
+      };
+    });
     await video.play(); video.pause();
     return { file, width: video.videoWidth, height: video.videoHeight };
   })()`);
