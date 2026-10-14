@@ -5,21 +5,24 @@
    ========================================================================== */
 
 :root {
-  --bg-main: #FFFFFF;
-  --bg-card: #F8FAFC;
-  --bg-card-hover: #F1F5F9;
-  --bg-chat: #FFFFFF;
+  --bg-rail: #040A17;
+  --bg-sidebar: #0A1A3A;
+  --bg-search: #152B52;
+  --bg-chat: #090E17;
+  --bg-card-dark: #111B21;
   --bg-bubble-self: #2563EB;
   --text-bubble-self: #FFFFFF;
-  --bg-bubble-other: #F1F5F9;
+  --bg-bubble-other: #182229;
+  --text-bubble-other: #E9EDEF;
   --accent-blue: #2563EB;
   --accent-blue-hover: #1D4ED8;
   --accent-cyan: #00E5FF;
   --accent-gold: #C5A059;
-  --text-primary: #0F172A;
-  --text-secondary: #64748B;
-  --border-subtle: #E2E8F0;
-  --border-medium: #CBD5E1;
+  --accent-green: #10B981;
+  --text-primary: #E9EDEF;
+  --text-secondary: #8696A0;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.15);
   --font-title: 'Montserrat', sans-serif;
   --font-body: 'Inter', sans-serif;
 }
@@ -898,19 +901,56 @@ header.sticky {
 }
 
 /* ==========================================================================
-   DESKTOP 3-COLUMN LAYOUT & LEFT RAIL (SCREEN 6 REFERENCE)
+   DESKTOP 3-COLUMN LAYOUT & LEFT RAIL (WHATSAPP WEB STRUCTURE REFERENCE)
    ========================================================================== */
 
 #desktop-left-rail {
-  width: 240px;
+  width: 72px;
   flex-shrink: 0;
-  background-color: #070B10;
+  background-color: var(--bg-rail, #040A17);
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 0.75rem;
+  padding: 1.25rem 0;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rail-btn {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 0.85rem;
+  color: #8696A0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.rail-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #E9EDEF;
+}
+
+.rail-btn.active {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #00E5FF;
+}
+
+.rail-btn.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 28px;
+  background-color: #00E5FF;
+  border-radius: 0 4px 4px 0;
 }
 
 .rail-item {

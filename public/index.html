@@ -190,51 +190,47 @@
     <!-- CUERPO PRINCIPAL (DISTRIBUCIÓN EN 3 COLUMNAS) -->
     <main id="main-layout" class="flex-1 min-h-0 w-full max-w-[1600px] mx-auto p-0 flex flex-row overflow-hidden relative bg-white">
       
-      <!-- COLUMNA 1 DESKTOP: RIEL LATERAL DE NAVEGACIÓN (REFERENCIA PANTALLA 6) -->
-      <aside id="desktop-left-rail" class="hidden lg:flex flex-col justify-between w-[240px] flex-shrink-0 bg-[#070B10] text-white p-4 border-r border-slate-800/60 z-10 select-none">
-        <div class="flex flex-col gap-6">
-          <div class="flex items-center gap-2.5 px-2">
+      <!-- COLUMNA 1 DESKTOP: RIEL VERTICAL ESTRECHO (72px - ESTRUCTURA WHATSAPP WEB) -->
+      <aside id="desktop-left-rail" class="hidden lg:flex flex-col justify-between w-[72px] flex-shrink-0 bg-[#040A17] text-white py-5 border-r border-white/5 z-20 select-none items-center">
+        <!-- Iconos Superiores -->
+        <div class="flex flex-col gap-4 w-full items-center">
+          <!-- Logo Isologo SO -->
+          <div class="w-10 h-10 mb-2 flex items-center justify-center">
             <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="SO" class="w-8 h-8 object-contain">
-            <span class="font-title font-extrabold text-base tracking-tight text-white">SYNC ENGINE</span>
           </div>
 
-          <nav class="flex flex-col gap-1">
-            <button id="rail-btn-chats" type="button" class="rail-item active w-full text-left">
-              <span>💬</span> <span>Chats</span>
-            </button>
-            <button id="rail-btn-calls" type="button" class="rail-item w-full text-left">
-              <span>📞</span> <span>Llamadas</span>
-            </button>
-            <button id="rail-btn-contacts" type="button" class="rail-item w-full text-left">
-              <span>👥</span> <span>Contactos</span>
-            </button>
-            <button id="rail-btn-channels" type="button" class="rail-item w-full text-left">
-              <span>📢</span> <span>Canales</span>
-            </button>
-            <button id="rail-btn-files" type="button" class="rail-item w-full text-left">
-              <span>📁</span> <span>Archivos</span>
-            </button>
-            <button id="rail-btn-settings" type="button" class="rail-item w-full text-left">
-              <span>⚙️</span> <span>Configuración</span>
-            </button>
-          </nav>
+          <button id="rail-btn-chats" type="button" title="Chats" class="rail-btn active relative">
+            <span>💬</span>
+            <span id="rail-unread-badge" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#2563EB] text-white text-[9px] font-bold flex items-center justify-center">11</span>
+          </button>
+
+          <button id="rail-btn-calls" type="button" title="Llamadas" class="rail-btn">
+            <span>📞</span>
+          </button>
+
+          <button id="rail-btn-channels" type="button" title="Canales &amp; Espacios" class="rail-btn">
+            <span>👥</span>
+          </button>
+
+          <button id="rail-btn-contacts" type="button" title="Contactos" class="rail-btn">
+            <span>📇</span>
+          </button>
+
+          <button id="rail-btn-vault" type="button" title="Bóveda Cifrada" class="rail-btn">
+            <span>🔒</span>
+          </button>
         </div>
 
-        <!-- Tarjeta de Usuario en Barra Lateral Izquierda (Escritorio) -->
-        <div class="pt-4 border-t border-slate-800/80 flex items-center justify-between px-1">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <div class="relative flex-shrink-0">
-              <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#2563EB] to-[#00E5FF] text-white font-bold text-xs flex items-center justify-center font-mono">
-                JR
-              </div>
-              <span class="w-2.5 h-2.5 rounded-full bg-[#10B981] absolute -bottom-0.5 -right-0.5 border-2 border-[#070B10]"></span>
-            </div>
-            <div class="flex flex-col min-w-0">
-              <span class="font-bold text-xs text-white truncate">Jose Ramirez</span>
-              <span class="text-[10px] text-[#10B981] font-semibold">En línea</span>
-            </div>
-          </div>
-          <button id="rail-user-menu-btn" type="button" title="Opciones" class="text-slate-400 hover:text-white p-1 text-xs cursor-pointer">•••</button>
+        <!-- Iconos Inferiores & Perfil -->
+        <div class="flex flex-col gap-4 w-full items-center">
+          <button id="rail-btn-settings" type="button" title="Ajustes" class="rail-btn">
+            <span>⚙️</span>
+          </button>
+
+          <!-- Perfil de Usuario -->
+          <button id="rail-user-profile-btn" type="button" title="Mi Perfil" class="w-10 h-10 rounded-full bg-[#152B52] hover:ring-2 ring-[#00E5FF] text-white font-bold text-xs flex items-center justify-center transition-all cursor-pointer">
+            J
+          </button>
         </div>
       </aside>
 
