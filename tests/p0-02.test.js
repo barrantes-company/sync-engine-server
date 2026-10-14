@@ -364,7 +364,7 @@ test('TEST 10: real WAV and generated WebM video load/play through authorized st
           networkState: video.networkState,
           readyState: video.readyState,
           currentSrc: video.currentSrc,
-          generatedBlobSize: chunks.reduce((total, chunk) => total + chunk.size, 0),
+          fixtureBytes: webmBytes.length,
           response: responseInfo
         })));
       };
