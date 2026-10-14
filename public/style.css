@@ -2243,3 +2243,35 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
   #sync-engine-nav-rail .se-nav-theme { display: none; }
   #app-container > header.sticky > div { padding-left: 10px !important; padding-right: 10px !important; }
 }
+
+
+/* Ajuste cromático: sustituye el dorado de la interfaz operativa por azul funcional.
+   El logotipo original y los recursos de marca no se alteran. */
+#app-container {
+  --accent-gold: #0877F9;
+  --accent-gold-hover: #0065DD;
+  --accent-gold-dark: #0757B8;
+  --accent-gold-glow: rgba(8,119,249,.18);
+  --border-medium: rgba(8,119,249,.24);
+  --border-active: #0877F9;
+}
+#app-container [class*="text-[#C5A059]"],
+#app-container [class*="text-[#99793D]"],
+#app-container [class*="hover:text-[#C5A059]"] { color: #0877F9 !important; }
+#app-container [class*="border-[rgba(197,160,89"],
+#app-container [class*="border-[#C5A059]"] { border-color: rgba(8,119,249,.20) !important; }
+#app-container [class*="bg-[#FFFDF7]"],
+#app-container [class*="from-[#FFFDF7]"],
+#app-container [class*="to-[#FEF3C7]"] { background-color: #F4F8FF !important; }
+#app-container [class*="bg-gradient-to-r"][class*="from-[#C5A059]"] {
+  background-image: linear-gradient(90deg,#0877F9,#0757B8) !important;
+}
+#app-container [class*="shadow"][class*="rgba(197,160,89"] { --tw-shadow-color: rgba(8,119,249,.12) !important; }
+#app-container[data-se-theme="energy"] {
+  --accent-gold: #18BFFF;
+  --accent-gold-hover: #68D7FF;
+  --accent-gold-dark: #0877F9;
+  --border-medium: rgba(24,191,255,.30);
+}
+#app-container[data-se-theme="energy"] [class*="text-[#C5A059]"],
+#app-container[data-se-theme="energy"] [class*="text-[#99793D]"] { color: #0877F9 !important; }
