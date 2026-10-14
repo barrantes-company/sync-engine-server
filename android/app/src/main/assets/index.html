@@ -354,70 +354,63 @@
 
       </aside>
 
-      <!-- COLUMNA 2: VENTANA DE CONVERSACIÓN ACTIVA (FLEX-GROW: 1, FONDO ADAPTADO 768 × 1024px O SUPERIOR) -->
-      <div id="chat-panel-container" class="flex-1 min-h-0 flex flex-col h-full min-w-0 relative">
-        <div id="workspace-split-container" class="flex flex-1 min-h-0 flex-col md:flex-row gap-0 lg:gap-3 overflow-hidden h-full min-w-0 transition-all duration-300">
+      <!-- COLUMNA 3: VENTANA DE CONVERSACIÓN ACTIVA & ONBOARDING (ESTRUCTURA WHATSAPP WEB) -->
+      <div id="chat-panel-container" class="flex-1 min-h-0 flex flex-col h-full min-w-0 relative bg-[#090E17]">
+        <div id="workspace-split-container" class="flex flex-1 min-h-0 flex-col md:flex-row gap-0 overflow-hidden h-full min-w-0 transition-all duration-300">
 
           <!-- ÁREA CENTRAL DE CONVERSACIÓN (CHAT PANEL) -->
-          <section id="chat-panel" class="flex flex-1 min-h-0 bg-white lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full overflow-hidden shadow-sm relative min-w-0 transition-all">
+          <section id="chat-panel" class="flex flex-1 min-h-0 bg-[#090E17] flex flex-col h-full overflow-hidden relative min-w-0 transition-all">
             
-            <!-- Header del Chat Activo -->
-            <div id="chat-header-bar" class="chat-header-bar px-3 sm:px-4 py-2.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-3 flex-shrink-0 z-10">
-              <div class="flex items-center gap-2.5 min-w-0">
+            <!-- Header del Chat Activo (WhatsApp Web Dark Style) -->
+            <div id="chat-header-bar" class="chat-header-bar px-4 py-3 border-b border-white/5 bg-[#111B21] flex items-center justify-between gap-3 flex-shrink-0 z-10 text-white">
+              <div class="flex items-center gap-3 min-w-0">
                 
                 <button id="back-to-contacts-btn" type="button" title="Volver a la lista de chats"
-                  class="icon-btn lg:hidden p-1.5 -ml-1 rounded-xl text-[#C5A059] hover:bg-[#F8FAFC] transition-colors flex items-center justify-center cursor-pointer">
+                  class="icon-btn lg:hidden p-1.5 -ml-1 rounded-xl text-gray-300 hover:bg-white/10 transition-colors flex items-center justify-center cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
 
-                <div id="active-chat-info-trigger" class="flex items-center gap-3 min-w-0 cursor-pointer group" title="Ver detalles y medios del contacto">
-                  <div id="active-chat-avatar" class="chat-header-avatar w-11 h-11 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm font-mono avatar-circle overflow-hidden">
-                    💬
+                <!-- Avatar Activo con Indicador en Línea -->
+                <div class="relative flex-shrink-0">
+                  <img id="active-chat-avatar" class="w-10 h-10 rounded-full object-cover hidden" alt="Avatar">
+                  <div id="active-chat-avatar-fallback" class="w-10 h-10 rounded-full bg-[#152B52] text-white font-bold text-sm flex items-center justify-center font-mono">
+                    0000
                   </div>
+                  <span id="active-chat-online-dot" class="w-2.5 h-2.5 rounded-full bg-[#10B981] absolute -bottom-0.5 -right-0.5 border-2 border-[#111B21] hidden"></span>
+                </div>
 
-                  <div class="min-w-0">
-                    <h2 id="active-chat-name" class="font-bold text-sm sm:text-[15px] leading-tight text-[#0A1A3A] group-hover:text-[#C5A059] transition-colors truncate font-title">Selecciona un contacto</h2>
-                    <div class="flex items-center gap-2 mt-0.5">
-                      <span id="active-chat-id" class="chat-header-id text-[11px] text-[#64748B] font-mono truncate">ID: —</span>
-                      <span id="active-chat-status" class="chat-header-status text-[11px] font-semibold is-offline"><span class="status-dot"></span><span>Desconectado</span></span>
-                    </div>
+                <!-- Datos de Identidad -->
+                <div class="flex flex-col min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <h2 id="active-chat-name" class="font-bold text-sm text-white font-title truncate">Selecciona un contacto</h2>
+                    <span id="active-chat-id" class="text-xs text-[#00E5FF] font-mono font-bold hidden">SYNC-XXXX</span>
                   </div>
+                  <span id="active-chat-status" class="text-xs text-[#8696A0] truncate">en línea</span>
                 </div>
               </div>
 
-              <div class="flex items-center gap-1.5 sm:gap-2">
-                <!-- Botón Drawer / Información y Medios (Columna 3) -->
-                <button id="toggle-drawer-btn" type="button" title="Información del Contacto y Medios (Columna 3)" aria-label="Información y Centro de Medios"
-                  class="icon-btn h-9 px-3 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center gap-1.5 text-xs font-bold shadow-xs transition-all cursor-pointer">
-                  <span>ℹ️</span>
-                  <span class="hidden xl:inline">Info &amp; Medios</span>
+              <!-- Acciones del Header: Llamada, Videollamada, Búsqueda y Opciones -->
+              <div class="flex items-center gap-1 sm:gap-2 text-[#8696A0]">
+                <button id="start-call-btn" type="button" title="Llamada de voz WebRTC" class="p-2 rounded-full hover:bg-white/5 hover:text-[#00E5FF] transition-colors cursor-pointer">
+                  📞
                 </button>
-
-                <!-- Botón Centro de Medios Compartidos -->
-                <button id="open-media-hub-btn" type="button" title="Archivos y medios compartidos" aria-label="Archivos y medios compartidos"
-                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
-                  📁
+                <button id="start-video-call-btn" type="button" title="Videollamada WebRTC" class="p-2 rounded-full hover:bg-white/5 hover:text-[#00E5FF] transition-colors cursor-pointer">
+                  📹
                 </button>
-
-                <!-- Botón Exportar Transcripción / Auditoría -->
-                <button id="export-chat-btn" type="button" title="Exportar Transcripción y Certificado de Seguridad" aria-label="Exportar conversación"
-                  class="icon-btn h-9 px-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] hover:text-[#C5A059] border border-[rgba(197,160,89,0.25)] flex items-center gap-1.5 text-xs font-semibold shadow-xs transition-all cursor-pointer">
-                  <span>📜</span>
-                  <span class="hidden xl:inline">Exportar</span>
-                </button>
-
-                <!-- Botón Búsqueda Interna -->
-                <button id="toggle-chat-search-btn" type="button" title="Buscar en la conversación" aria-label="Buscar en la conversación"
-                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
+                <div class="w-[1px] h-5 bg-white/10 mx-1"></div>
+                <button id="toggle-chat-search-btn" type="button" title="Buscar en esta conversación" class="p-2 rounded-full hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
                   🔍
                 </button>
-
-                <!-- Botón Llamada de Voz WebRTC -->
-                <button id="start-call-btn" type="button" title="Iniciar llamada de voz WebRTC" aria-label="Iniciar llamada de voz"
-                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
-                  📞
+                <button id="open-media-hub-btn" type="button" title="Archivos y medios compartidos" class="p-2 rounded-full hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
+                  📁
+                </button>
+                <button id="export-chat-btn" type="button" title="Exportar Transcripción" class="p-2 rounded-full hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
+                  📜
+                </button>
+                <button id="toggle-drawer-btn" type="button" title="Ver Info y Medios" class="p-2 rounded-full hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
+                  ℹ️
                 </button>
               </div>
             </div>
