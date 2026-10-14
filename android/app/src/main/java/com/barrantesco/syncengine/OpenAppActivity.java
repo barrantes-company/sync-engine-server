@@ -15,11 +15,13 @@ public final class OpenAppActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AppSettings.markCallsSeen(this);
-        SyncWidgetProvider.refreshAll(this);
+        String widgetView = getIntent() == null ? null : getIntent().getStringExtra(EXTRA_WIDGET_VIEW);
+        if ("calls".equals(widgetView)) {
+            AppSettings.markCallsSeen(this);
+            SyncWidgetProvider.refreshAll(this);
+        }
 
         String url = WidgetUrls.defaultUrl(this);
-        String widgetView = getIntent() == null ? null : getIntent().getStringExtra(EXTRA_WIDGET_VIEW);
         Intent target;
         if (WidgetUrls.isWidgetUrl(url)) {
             Uri.Builder destination = Uri.parse(WidgetUrls.appUrl(url)).buildUpon();
