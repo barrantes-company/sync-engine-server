@@ -47,7 +47,7 @@ class DevTools {
   close() { this.socket.close(); }
 }
 
-const STARTUP_TIMEOUT_MS = 20000;
+const STARTUP_TIMEOUT_MS = 45000;
 const EXIT_TIMEOUT_MS = 5000;
 const STDERR_TAIL_CHARS = 2000;
 
@@ -91,9 +91,18 @@ async function startChromium(tempDir, { startupTimeoutMs = STARTUP_TIMEOUT_MS } 
   if (!executable) return null;
   const profile = fs.mkdtempSync(path.join(tempDir, 'browser-profile-'));
   const sandboxArgs = (process.env.CI || process.env.CHROMIUM_SANDBOX_DISABLED) ? ['--no-sandbox'] : [];
-  const child = spawn(executable, [...sandboxArgs, '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
-    '--disable-background-networking', '--remote-debugging-port=0', '--user-data-dir=' + profile,
-    '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+  // GitHub-hosted Linux runners can expose a malformed D-Bus session address; Chromium
+  // treats it as non-fatal in most cases, but removing it avoids a broken inherited session.
+  const browserEnv = { ...process.env };
+  delete browserEnv.DBUS_SESSION_BUS_ADDRESS;
+  delete browserEnv.DBUS_SESSION_BUS_PID;
+  const child = spawn(executable, [...sandboxArgs, '--headless=new', '--disable-gpu', '--disable-dev-shm-usage',
+    '--no-first-run', '--no-default-browser-check', '--disable-background-networking',
+    '--remote-debugging-port=0', '--user-data-dir=' + profile,
+    '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1', 'about:blank'], {
+      stdio: ['ignore', 'ignore', 'pipe'],
+      env: browserEnv
+    });
   let stderr = '';
   let browserUrl;
   try {
