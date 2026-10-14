@@ -2031,8 +2031,7 @@ header.sticky {
     line-height: 1.25 !important;
   }
 
-  #active-chat-id,
-  #chat-header-id {
+  #active-chat-id {
     max-width: 48vw !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
