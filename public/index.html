@@ -19,6 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/theme-effects.css">
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
@@ -5896,14 +5897,22 @@
   const split = document.getElementById('workspace-split-container');
   const callsHome = document.getElementById('se-calls-home');
   const themeButton = document.getElementById('se-theme-toggle');
+  const themeOrder = ['sync-blue', 'energy', 'orbit', 'nexus'];
+  const themeLabels = {
+    'sync-blue': 'Sync Blue',
+    energy: 'Energy',
+    orbit: 'Orbit',
+    nexus: 'Nexus'
+  };
   const applyTheme = (theme) => {
-    const selected = theme === 'energy' ? 'energy' : 'sync-blue';
+    const selected = themeOrder.includes(theme) ? theme : 'sync-blue';
     app.dataset.seTheme = selected;
     document.documentElement.dataset.seTheme = selected;
     if (themeButton) {
-      const label = selected === 'energy' ? 'Tema Sync Blue' : 'Tema Energy';
+      const nextTheme = themeOrder[(themeOrder.indexOf(selected) + 1) % themeOrder.length];
+      const label = 'Cambiar a ' + themeLabels[nextTheme];
       const span = themeButton.querySelector('span');
-      if (span) span.textContent = label;
+      if (span) span.textContent = 'Tema: ' + themeLabels[selected];
       themeButton.setAttribute('aria-label', label);
       themeButton.title = label;
     }
@@ -5990,7 +5999,8 @@
     }
   });
   themeButton?.addEventListener('click', () => {
-    applyTheme(app.dataset.seTheme === 'energy' ? 'sync-blue' : 'energy');
+    const currentIndex = themeOrder.indexOf(app.dataset.seTheme || 'sync-blue');
+    applyTheme(themeOrder[(currentIndex + 1) % themeOrder.length]);
   });
   document.getElementById('se-return-to-chats')?.addEventListener('click', () => {
     showWorkspace();
