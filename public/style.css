@@ -2309,3 +2309,94 @@ header.sticky {
     min-height: 38px;
   }
 }
+
+
+/* Final shell refinement: remove legacy workspace switcher and make the search/list hierarchy match the approved reference. */
+#sidebar-panel > div:first-child:not(#sidebar-dms-view) {
+  display:none !important;
+}
+#sidebar-panel {
+  border-radius:0 !important;
+  border-top:0 !important;
+  border-bottom:0 !important;
+  box-shadow:none !important;
+}
+#sidebar-dms-view > div:first-child {
+  background:var(--bg-sidebar, #0A1A3A) !important;
+  border:0 !important;
+  padding:14px 14px 10px !important;
+}
+#contact-search-input {
+  max-width:none !important;
+  min-height:42px !important;
+  border-radius:999px !important;
+  background:var(--bg-search, #152B52) !important;
+  border:1px solid rgba(255,255,255,.06) !important;
+  color:#E9EDEF !important;
+  font-family:Inter,sans-serif !important;
+  font-size:13px !important;
+  text-transform:none !important;
+  letter-spacing:normal !important;
+}
+#contact-search-input::placeholder { color:#A9B8C2 !important; }
+#add-contact-btn {
+  min-width:42px !important;
+  width:42px !important;
+  padding:0 !important;
+  border-radius:50% !important;
+  background:#152B52 !important;
+  color:#E9EDEF !important;
+  border:1px solid rgba(0,229,255,.28) !important;
+  box-shadow:none !important;
+  font-size:0 !important;
+}
+#add-contact-btn::after {
+  content:"+";
+  font-size:23px;
+  line-height:1;
+  font-weight:400;
+}
+#contacts-list {
+  background:var(--bg-sidebar, #0A1A3A) !important;
+  padding:4px 8px 12px !important;
+}
+#contacts-list .contact-item {
+  border-radius:12px !important;
+  border:0 !important;
+  border-bottom:1px solid rgba(255,255,255,.055) !important;
+  background:transparent !important;
+  min-height:76px !important;
+}
+#contacts-list .contact-item:hover { background:rgba(255,255,255,.055) !important; }
+#contacts-list .contact-item.is-active {
+  background:rgba(255,255,255,.09) !important;
+  border-left:3px solid var(--accent-cyan, #00E5FF) !important;
+}
+#sidebar-pro-card {
+  margin:8px !important;
+  padding:10px !important;
+  border-radius:14px !important;
+  background:#111B21 !important;
+  border:1px solid rgba(197,160,89,.28) !important;
+  box-shadow:none !important;
+}
+#sidebar-pro-card p { color:#A9B8C2 !important; }
+#sidebar-pro-card button {
+  background:linear-gradient(90deg,#C5A059,#99793D) !important;
+  box-shadow:none !important;
+}
+#chat-panel, #chat-panel-container, #workspace-split-container {
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+#chat-welcome .empty-state-title { color:#E9EDEF !important; }
+#chat-welcome .empty-state-text { color:#A9B8C2 !important; }
+#chat-welcome .empty-state-hint {
+  background:#111B21 !important;
+  border-color:rgba(0,229,255,.22) !important;
+  color:#B9F7FF !important;
+}
+@media (min-width:1024px) {
+  #desktop-left-rail { width:72px !important; flex-basis:72px !important; }
+  #sidebar-panel { width:320px !important; flex:0 0 320px !important; }
+}
