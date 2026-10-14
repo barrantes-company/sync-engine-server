@@ -1082,6 +1082,49 @@ function createWorkspaceChannel(name, description, creatorSyncId) {
   return newChannel;
 }
 
+function canAdministerChannel(channel, actorSyncId) {
+  const actor = String(actorSyncId || "").trim().toUpperCase();
+  if (!actor || channel.isDefault) return false;
+  if (String(channel.creatorSyncId || "").trim().toUpperCase() === actor) return true;
+  return Array.isArray(channel.adminSyncIds) &&
+    channel.adminSyncIds.some((id) => String(id).trim().toUpperCase() === actor);
+}
+
+function grantWorkspaceChannelAdmin(channelId, actorSyncId, targetSyncId) {
+  const db = readDb();
+  const channel = findChannel(channelId);
+  if (!channel) throw new Error("Canal no encontrado");
+  if (channel.isDefault) throw new Error("Los canales predeterminados son administrados por el sistema");
+  if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
+    throw new Error("Solo el creador puede otorgar o retirar permisos de administrador");
+  }
+  const target = String(targetSyncId || "").trim().toUpperCase();
+  if (!db.users.some((user) => String(user.syncId || "").trim().toUpperCase() === target)) {
+    throw new Error("No existe un usuario con ese ID SYNC");
+  }
+  if (target === String(channel.creatorSyncId || "").trim().toUpperCase()) throw new Error("El creador ya es administrador del canal");
+  if (!Array.isArray(channel.memberSyncIds)) channel.memberSyncIds = [];
+  if (!channel.memberSyncIds.some((id) => String(id).trim().toUpperCase() === target)) channel.memberSyncIds.push(target);
+  if (!Array.isArray(channel.adminSyncIds)) channel.adminSyncIds = [];
+  if (!channel.adminSyncIds.some((id) => String(id).trim().toUpperCase() === target)) channel.adminSyncIds.push(target);
+  writeDb(db);
+  return channel;
+}
+
+function revokeWorkspaceChannelAdmin(channelId, actorSyncId, targetSyncId) {
+  const db = readDb();
+  const channel = findChannel(channelId);
+  if (!channel) throw new Error("Canal no encontrado");
+  if (channel.isDefault) throw new Error("Los canales predeterminados son administrados por el sistema");
+  if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
+    throw new Error("Solo el creador puede otorgar o retirar permisos de administrador");
+  }
+  const target = String(targetSyncId || "").trim().toUpperCase();
+  channel.adminSyncIds = (channel.adminSyncIds || []).filter((id) => String(id).trim().toUpperCase() !== target);
+  writeDb(db);
+  return channel;
+}
+
 function updateWorkspaceChannel(channelId, actorSyncId, updates = {}) {
   const db = readDb();
   const rawChannelId = String(channelId || "").trim();
@@ -1094,8 +1137,8 @@ function updateWorkspaceChannel(channelId, actorSyncId, updates = {}) {
   );
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("Los canales predeterminados no se pueden editar");
-  if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
-    throw new Error("Solo el creador puede administrar este canal");
+  if (!canAdministerChannel(channel, actorSyncId)) {
+    throw new Error("No tienes permisos de administrador para este canal");
   }
 
   if (updates.name !== undefined) {
@@ -1125,8 +1168,8 @@ function addWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
   );
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("La membresía de canales predeterminados no se puede modificar aquí");
-  if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
-    throw new Error("Solo el creador puede administrar participantes");
+  if (!canAdministerChannel(channel, actorSyncId)) {
+    throw new Error("No tienes permisos para administrar participantes");
   }
   const target = String(targetSyncId || "").trim().toUpperCase();
   const user = db.users.find((item) => String(item.syncId || "").trim().toUpperCase() === target);
@@ -1151,8 +1194,8 @@ function removeWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
   );
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("La membresía de canales predeterminados no se puede modificar aquí");
-  if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
-    throw new Error("Solo el creador puede administrar participantes");
+  if (!canAdministerChannel(channel, actorSyncId)) {
+    throw new Error("No tienes permisos para administrar participantes");
   }
   const target = String(targetSyncId || "").trim().toUpperCase();
   if (target === String(channel.creatorSyncId || "").trim().toUpperCase()) {
@@ -1176,8 +1219,8 @@ function deleteWorkspaceChannel(channelId, actorSyncId) {
   );
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("Los canales predeterminados no se pueden eliminar");
-  if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
-    throw new Error("Solo el creador puede eliminar este canal");
+  if (!canAdministerChannel(channel, actorSyncId)) {
+    throw new Error("No tienes permisos para eliminar este canal");
   }
   db.channels = (db.channels || []).filter((item) => item.id !== channel.id);
   db.channelMessages = (db.channelMessages || []).filter((message) => message.channelId !== channel.id);
@@ -1317,6 +1360,8 @@ module.exports = {
   isChannelMember,
   createWorkspaceChannel,
   updateWorkspaceChannel,
+  grantWorkspaceChannelAdmin,
+  revokeWorkspaceChannelAdmin,
   addWorkspaceChannelMember,
   removeWorkspaceChannelMember,
   deleteWorkspaceChannel,
