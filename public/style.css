@@ -1996,7 +1996,7 @@ header.sticky {
    SYNC ENGINE — MOBILE UX PASS 02
    Functional readability and touch ergonomics; no auth or behavior changes.
    ========================================================================== */
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   /* Give the active conversation and composer a predictable, keyboard-safe layout. */
   #chat-panel-container,
   #chat-panel,
