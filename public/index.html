@@ -2801,7 +2801,6 @@
     activeContactSyncId = syncId;
     document.getElementById('chat-header-bar')?.classList.remove('hidden');
     document.getElementById('input-container')?.classList.remove('hidden');
-    setActiveNav('chats');
     activeChannelId = null;
     renderedMessageIds.clear();
     cancelReply();
@@ -5036,6 +5035,18 @@
   const openVaultBtn = document.getElementById('open-vault-btn');
   const exportChatBtn = document.getElementById('export-chat-btn');
 
+  window.addEventListener('sync-engine-view-change', (event) => {
+    const view = event.detail && event.detail.view;
+    if (view !== 'contacts' && view !== 'channels') return;
+    activeContactSyncId = null;
+    activeChannelId = view === 'channels' ? null : activeChannelId;
+    renderedMessageIds.clear();
+    activeConversationMessages = [];
+    cancelReply();
+    closeChatSearch();
+    if (exportChatBtn) exportChatBtn.classList.add('hidden');
+  });
+
   const tabSidebarDms = document.getElementById('tab-sidebar-dms');
   const tabSidebarChannels = document.getElementById('tab-sidebar-channels');
   const sidebarDmsView = document.getElementById('sidebar-dms-view');
@@ -5851,8 +5862,7 @@
       channelsView?.classList.remove('hidden');
       if (chatHeader) chatHeader.classList.add('hidden');
       if (messageComposer) messageComposer.classList.add('hidden');
-      activeContactSyncId = null;
-      activeChannelId = null;
+      window.dispatchEvent(new CustomEvent('sync-engine-view-change', { detail: { view } }));
       if (chatMessages && chatWelcome) {
         chatMessages.replaceChildren(chatWelcome);
         chatWelcome.classList.remove('hidden');
@@ -5867,9 +5877,7 @@
       dmsView?.classList.remove('hidden');
       channelsView?.classList.add('hidden');
       if (view === 'contacts') {
-        activeContactSyncId = null;
-        activeChannelId = null;
-        renderedMessageIds.clear();
+        window.dispatchEvent(new CustomEvent('sync-engine-view-change', { detail: { view } }));
         if (chatHeader) chatHeader.classList.add('hidden');
         if (messageComposer) messageComposer.classList.add('hidden');
         if (chatMessages && chatWelcome) {
