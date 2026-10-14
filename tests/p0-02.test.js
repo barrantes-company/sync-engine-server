@@ -314,14 +314,21 @@ test('TEST 10: real WAV and generated WebM video load/play through authorized st
   assert.ok(audioResult.state >= 1);
   const video = await alicePage.evaluate(`(async () => {
     const canvas = document.createElement('canvas'); canvas.width = 32; canvas.height = 32;
-    const stream = canvas.captureStream(10);
+    const stream = canvas.captureStream(0);
+    const track = stream.getVideoTracks()[0];
     const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
     const chunks = [];
     recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
     const stopped = new Promise(resolve => { recorder.onstop = resolve; });
     recorder.start();
-    canvas.getContext('2d').fillRect(0, 0, 32, 32);
-    await new Promise(resolve => setTimeout(resolve, 300)); recorder.stop(); await stopped;
+    const context = canvas.getContext('2d');
+    for (let frame = 0; frame < 3; frame++) {
+      context.fillStyle = frame % 2 ? '#fff' : '#000';
+      context.fillRect(0, 0, 32, 32);
+      track.requestFrame();
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    recorder.stop(); await stopped;
     stream.getTracks().forEach(track => track.stop());
     const body = new FormData(); body.append('file', new Blob(chunks, { type: 'video/webm' }), 'sample.webm');
     const response = await fetch('/api/upload', { method: 'POST', headers: { Authorization: 'Bearer test-alice' }, body });
