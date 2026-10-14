@@ -741,6 +741,24 @@ app.post("/api/channels/:channelId/members", requireAuth, (req, res) => {
   }
 });
 
+app.post("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) => {
+  try {
+    const channel = db.grantWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
+    res.json({ ok: true, channel });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) => {
+  try {
+    const channel = db.revokeWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
+    res.json({ ok: true, channel });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
 app.delete("/api/channels/:channelId/members/:syncId", requireAuth, (req, res) => {
   try {
     const channel = db.removeWorkspaceChannelMember(req.params.channelId, req.user.syncId, req.params.syncId);
