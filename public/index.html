@@ -328,10 +328,10 @@
                 <!-- Datos de Identidad -->
                 <div class="flex flex-col min-w-0">
                   <div class="flex items-center gap-1.5">
-                    <h2 id="active-chat-name" class="font-bold text-sm text-white font-title truncate">Selecciona un contacto</h2>
+                    <h2 id="active-chat-name" class="font-bold text-sm text-white font-title truncate"></h2>
                     <span id="active-chat-id" class="text-xs text-[#00E5FF] font-mono font-bold hidden">SYNC-XXXX</span>
                   </div>
-                  <span id="active-chat-status" class="text-xs text-[#8696A0] truncate">en línea</span>
+                  <span id="active-chat-status" class="text-xs text-[#8696A0] truncate"></span>
                 </div>
               </div>
 
@@ -2571,6 +2571,7 @@
   async function selectContact(syncId) {
     if (syncId === currentUser.syncId) return;
     activeContactSyncId = syncId;
+    document.body.classList.add('has-active-chat');
     activeChannelId = null;
     renderedMessageIds.clear();
     cancelReply();
