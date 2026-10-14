@@ -313,44 +313,18 @@ test('TEST 10: real WAV and generated WebM video load/play through authorized st
   assert.equal(audioResult.duration, 1);
   assert.ok(audioResult.state >= 1);
   const video = await alicePage.evaluate(`(async () => {
-    const canvas = document.createElement('canvas'); canvas.width = 32; canvas.height = 32;
-    // Generate changing image content as well as real-time frames so VP8 has
-    // decodable frame payload, not just a tiny container/header.
-    const stream = canvas.captureStream(10);
-    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
-    const chunks = [];
-    recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
-    const stopped = new Promise(resolve => { recorder.onstop = resolve; });
-    const context = canvas.getContext('2d');
-    let seed = 123456789;
-    recorder.start(250);
-    for (let frame = 0; frame < 16; frame++) {
-      const pixels = context.createImageData(32, 32);
-      for (let i = 0; i < pixels.data.length; i += 4) {
-        seed = (1664525 * seed + 1013904223) >>> 0;
-        pixels.data[i] = (seed >>> 16) & 255;
-        pixels.data[i + 1] = (seed >>> 8) & 255;
-        pixels.data[i + 2] = seed & 255;
-        pixels.data[i + 3] = 255;
-      }
-      context.putImageData(pixels, 0, 0);
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    // Let the encoder flush before finalizing the container.
-    await new Promise(resolve => setTimeout(resolve, 300));
-    recorder.stop(); await stopped;
-    stream.getTracks().forEach(track => track.stop());
-    const webmBlob = new Blob(chunks, { type: 'video/webm' });
-    if (webmBlob.size < 100) throw new Error('Generated WebM has no meaningful payload: ' + webmBlob.size + ' bytes');
-    // Validate the synthetic artifact locally before involving upload/streaming.
+    // Deterministic, pre-encoded VP8/WebM fixture (32x32, 1 second).
+    // Avoids MediaRecorder/real-time encoding differences across CI Chromium builds.
+    const webmBytes = Buffer.from('GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAIDEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHWTbuMU6uEElTDZ1OsggEjTbuMU6uEHFO7a1OsggHt7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsCrXsYMPQkBNgIxMYXZmNjEuNy4xMDNXQYxMYXZmNjEuNy4xMDNEiYhAj0AAAAAAABZUrmvIrgEAAAAAAAA/14EBc8WIXUYetILvUC6cgQAitZyDdW5kiIEAhoVWX1ZQOIOBASPjg4QdzWUA4JCwgSC6gSCagQJVsIRVuYEBElTDZ/tzc59jwIBnyJlFo4dFTkNPREVSRIeMTGF2ZjYxLjcuMTAzc3PWY8CLY8WIXUYetILvUC5nyKFFo4dFTkNPREVSRIeUTGF2YzYxLjE5LjEwMSBsaWJ2cHhnyKFFo4hEVVJBVElPTkSHkzAwOjAwOjAxLjAwMDAwMDAwMAAfQ7Z1xeeBAKOkgQAAgDACAJ0BKiAAIAAARwiFhYiZhIgCAgAHkPPJwP7/q1CAo5qBAfQA0QEAARAQABgAHlf0DAAPmAD+/6tQgBxTu2uRu4+zgQC3iveBAfGCAaPwgQM=', 'base64');
+    const webmBlob = new Blob([webmBytes], { type: 'video/webm' });
     const localUrl = URL.createObjectURL(webmBlob);
     try {
       await new Promise((resolve, reject) => {
         const localVideo = document.createElement('video');
         localVideo.muted = true;
         localVideo.onloadeddata = () => localVideo.videoWidth === 32 && localVideo.videoHeight === 32
-          ? resolve() : reject(new Error('Local WebM decoded with unexpected dimensions: ' + localVideo.videoWidth + 'x' + localVideo.videoHeight));
-        localVideo.onerror = () => reject(new Error('Generated WebM cannot be decoded locally (' + webmBlob.size + ' bytes)'));
+          ? resolve() : reject(new Error('Fixture WebM decoded with unexpected dimensions: ' + localVideo.videoWidth + 'x' + localVideo.videoHeight));
+        localVideo.onerror = () => reject(new Error('Known WebM fixture failed local decoding (' + webmBytes.length + ' bytes)'));
         localVideo.src = localUrl;
       });
     } finally {
