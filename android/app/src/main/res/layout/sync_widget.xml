@@ -88,4 +88,33 @@
         android:padding="13dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_widget_settings" />
+    <!-- Zonas de acción transparentes; las etiquetas y el halo se dibujan en WidgetRenderer. -->
+    <LinearLayout
+        android:id="@+id/widget_action_row"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:orientation="horizontal"
+        android:visibility="gone">
+        <View
+            android:id="@+id/widget_messages_action"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:clickable="true"
+            android:contentDescription="Abrir mensajes"
+            android:focusable="true" />
+        <View
+            android:id="@+id/widget_calls_action"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:clickable="true"
+            android:contentDescription="Abrir llamadas"
+            android:focusable="true" />
+    </LinearLayout>
 </FrameLayout>
