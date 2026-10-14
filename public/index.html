@@ -5562,5 +5562,24 @@
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
   </button>
 
+
+<script>
+/* Header belongs to a selected conversation, not to the empty workspace. */
+(function () {
+  const header = document.getElementById('chat-header-bar');
+  const name = document.getElementById('active-chat-name');
+  const syncVisibility = () => {
+    const selected = !!(typeof activeContactSyncId !== 'undefined' && activeContactSyncId);
+    document.body.classList.toggle('has-active-chat', selected);
+    if (!selected && header) header.setAttribute('aria-hidden', 'true');
+    else if (header) header.removeAttribute('aria-hidden');
+  };
+  if (name && header) {
+    new MutationObserver(syncVisibility).observe(name, {childList:true, characterData:true, subtree:true});
+    syncVisibility();
+  }
+})();
+</script>
+
 </body>
 </html>
