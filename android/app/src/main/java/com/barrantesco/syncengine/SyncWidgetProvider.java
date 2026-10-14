@@ -123,7 +123,7 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
 
         // El dock de acciones solo aparece en formatos panorámicos con altura suficiente.
-        boolean showActions = widthDp >= 220 && heightDp >= 100;
+        boolean showActions = widthDp >= 220 && heightDp >= 55;
         views.setViewVisibility(R.id.widget_action_row, showActions ? View.VISIBLE : View.GONE);
         Intent messages = new Intent(context, OpenAppActivity.class)
                 .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "chats")
