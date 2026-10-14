@@ -91,10 +91,9 @@
     <!-- Zonas de acción transparentes; las etiquetas y el halo se dibujan en WidgetRenderer. -->
     <LinearLayout
         android:id="@+id/widget_action_row"
-        android:layout_width="match_parent"
-        android:layout_height="34dp"
-        android:layout_gravity="bottom"
-        android:layout_marginStart="8dp"
+        android:layout_width="200dp"
+        android:layout_height="22dp"
+        android:layout_gravity="end|bottom"
         android:layout_marginEnd="8dp"
         android:orientation="horizontal"
         android:visibility="gone">
