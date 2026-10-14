@@ -746,43 +746,44 @@ app.get("/api/messages/:contactSyncId/export", requireAuth, (req, res) => {
 // Vercel termina TLS delante de la Function y su filesystem desplegado no es persistente.
 const isServerlessRuntime = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_VERSION);
 let sslOptions = null;
+
 if (!isServerlessRuntime) {
   const SSL_DIR = path.join(__dirname, "data", "ssl");
-  if (!fs.existsSync(SSL_DIR)) {
-    fs.mkdirSync(SSL_DIR, { recursive: true });
-  }
-const CERT_FILE = path.join(SSL_DIR, "cert.pem");
-const KEY_FILE = path.join(SSL_DIR, "key.pem");
+  const CERT_FILE = path.join(SSL_DIR, "cert.pem");
+  const KEY_FILE = path.join(SSL_DIR, "key.pem");
 
-let sslOptions = null;
-try {
-  if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
-    sslOptions = {
-      cert: fs.readFileSync(CERT_FILE),
-      key: fs.readFileSync(KEY_FILE)
-    };
-  } else {
-    const pemsOrPromise = selfsigned.generate(
-      [{ name: "commonName", value: "sync-engine-server" }],
-      { days: 365, keySize: 2048 }
-    );
-    if (pemsOrPromise && typeof pemsOrPromise.then === "function") {
-      pemsOrPromise.then((pems) => {
-        if (pems && pems.cert && pems.private) {
-          try {
-            fs.writeFileSync(CERT_FILE, pems.cert, "utf8");
-            fs.writeFileSync(KEY_FILE, pems.private, "utf8");
-          } catch (_) {}
-        }
-      }).catch(() => {});
-    } else if (pemsOrPromise && pemsOrPromise.cert && pemsOrPromise.private) {
-      fs.writeFileSync(CERT_FILE, pemsOrPromise.cert, "utf8");
-      fs.writeFileSync(KEY_FILE, pemsOrPromise.private, "utf8");
-      sslOptions = { cert: pemsOrPromise.cert, key: pemsOrPromise.private };
+  try {
+    if (!fs.existsSync(SSL_DIR)) {
+      fs.mkdirSync(SSL_DIR, { recursive: true });
     }
-  }
-} catch (sslErr) {
-  console.warn("[SSL] No se pudo inicializar certificado SSL:", sslErr.message);
+
+    if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
+      sslOptions = {
+        cert: fs.readFileSync(CERT_FILE),
+        key: fs.readFileSync(KEY_FILE)
+      };
+    } else {
+      const pemsOrPromise = selfsigned.generate(
+        [{ name: "commonName", value: "sync-engine-server" }],
+        { days: 365, keySize: 2048 }
+      );
+      if (pemsOrPromise && typeof pemsOrPromise.then === "function") {
+        pemsOrPromise.then((pems) => {
+          if (pems && pems.cert && pems.private) {
+            try {
+              fs.writeFileSync(CERT_FILE, pems.cert, "utf8");
+              fs.writeFileSync(KEY_FILE, pems.private, "utf8");
+            } catch (_) {}
+          }
+        }).catch(() => {});
+      } else if (pemsOrPromise && pemsOrPromise.cert && pemsOrPromise.private) {
+        fs.writeFileSync(CERT_FILE, pemsOrPromise.cert, "utf8");
+        fs.writeFileSync(KEY_FILE, pemsOrPromise.private, "utf8");
+        sslOptions = { cert: pemsOrPromise.cert, key: pemsOrPromise.private };
+      }
+    }
+  } catch (sslErr) {
+    console.warn("[SSL] No se pudo inicializar certificado SSL:", sslErr.message);
   }
 }
 
