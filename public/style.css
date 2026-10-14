@@ -2275,3 +2275,24 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
 }
 #app-container[data-se-theme="energy"] [class*="text-[#C5A059]"],
 #app-container[data-se-theme="energy"] [class*="text-[#99793D]"] { color: #0877F9 !important; }
+
+
+/* SYNC ENGINE — retirar accesos duplicados de la vista principal.
+   Los módulos y sus capacidades se conservan; solo se ocultan sus duplicados visuales. */
+#app-container #sidebar-pro-card,
+#app-container #header-plan-badge-btn,
+#app-container #open-vault-btn,
+#app-container #info-drawer-panel,
+#app-container #toggle-drawer-btn {
+  display: none !important;
+}
+
+/* La fila de perfil/preferencias se gestiona desde el apartado dedicado. */
+#app-container #sidebar-panel > div.flex.flex-shrink-0.items-center.justify-between.border-t {
+  display: none !important;
+}
+
+/* Al retirar el panel lateral de información, el chat conserva todo el ancho disponible. */
+#app-container #workspace-split-container {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
