@@ -2799,6 +2799,8 @@
   async function selectContact(syncId) {
     if (syncId === currentUser.syncId) return;
     activeContactSyncId = syncId;
+    document.getElementById('app-container').dataset.hasActiveConversation = 'true';
+    window.dispatchEvent(new Event('sync-engine-chat-opened'));
     document.getElementById('chat-header-bar')?.classList.remove('hidden');
     document.getElementById('input-container')?.classList.remove('hidden');
     activeChannelId = null;
@@ -5038,6 +5040,7 @@
   window.addEventListener('sync-engine-view-change', (event) => {
     const view = event.detail && event.detail.view;
     if (view !== 'contacts' && view !== 'channels') return;
+    document.getElementById('app-container').dataset.hasActiveConversation = 'false';
     activeContactSyncId = null;
     activeChannelId = view === 'channels' ? null : activeChannelId;
     renderedMessageIds.clear();
@@ -5846,6 +5849,10 @@
     document.getElementById('sidebar-dms-view')?.classList.remove('hidden');
     document.getElementById('sidebar-channels-view')?.classList.add('hidden');
   };
+  window.addEventListener('sync-engine-chat-opened', () => {
+    showWorkspace();
+    setActiveNav('chats');
+  });
   nav?.addEventListener('click', event => {
     const button = event.target.closest('[data-se-view]');
     if (!button) return;
@@ -5890,7 +5897,7 @@
         document.body.classList.remove('mobile-view-chat');
         if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
       } else {
-        const hasConversation = Boolean(activeContactSyncId);
+        const hasConversation = app.dataset.hasActiveConversation === 'true';
         if (chatHeader) chatHeader.classList.toggle('hidden', !hasConversation);
         if (messageComposer) messageComposer.classList.toggle('hidden', !hasConversation);
       }
