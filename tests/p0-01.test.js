@@ -9,13 +9,13 @@ const os = require('node:os');
 const vm = require('node:vm');
 const http = require('node:http');
 const { webcrypto } = require('node:crypto');
-const { spawn } = require('node:child_process');
 const { createRequire } = require('node:module');
 const { once } = require('node:events');
 const WebSocket = require('ws');
 const { io: connect } = require('socket.io-client');
 const { safeUrl } = require('../public/safe-content');
 const isolatedDb = require('./helpers/isolated-db');
+const { startChromium } = require('./helpers/browser');
 
 const root = path.resolve(__dirname, '..');
 const realRequire = createRequire(path.join(root, 'server.js'));
@@ -26,7 +26,7 @@ const unsafeUrls = ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'java\nscript:
   'blob:https://example.test/untrusted',
   'vbscript:msgbox(1)', 'data:text/html,<script>alert(1)</script>',
   'data:image/svg+xml;base64,' + Buffer.from('<svg onload="alert(1)"/>').toString('base64')];
-let tempDir, server, socketServer, base, browserProcess, cdp;
+let tempDir, server, socketServer, base, chromium, cdp;
 const sockets = [];
 const users = [
   { syncId: 'SYNC-1001', username: 'alice', formattedName: 'SYNC-1001 - Alice', cleanDisplayName: 'Alice', avatarUrl: raster },
@@ -84,11 +84,7 @@ before(async () => {
 after(async () => {
   for (const socket of sockets) socket.disconnect();
   if (cdp) cdp.close();
-  if (browserProcess && browserProcess.exitCode === null) {
-    const exited = once(browserProcess, 'exit');
-    browserProcess.kill();
-    await exited;
-  }
+  if (chromium) await chromium.stop();
   if (socketServer) await new Promise((resolve) => socketServer.close(resolve));
   if (server && server.listening) await new Promise((resolve) => server.close(resolve));
   if (db) await db.writeDb(db.testData);
@@ -420,30 +416,21 @@ class DevTools {
 
 async function startBrowser(t) {
   if (cdp) return true;
-  const executable = [process.env.CHROME_PATH,
-    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    '/usr/bin/chromium', '/usr/bin/google-chrome'].find((file) => file && fs.existsSync(file));
-  if (!executable) { t.skip('Set CHROME_PATH to run real-browser assertions'); return false; }
-  const sandboxArgs = (process.env.CI || process.env.CHROMIUM_SANDBOX_DISABLED) ? ['--no-sandbox'] : [];
-  browserProcess = spawn(executable, [...sandboxArgs, '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
-    '--disable-background-networking', '--remote-debugging-port=0', '--user-data-dir=' + path.join(tempDir, 'browser'),
-    '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
-  const browserUrl = await new Promise((resolve, reject) => {
-    let stderr = '';
-    const timer = setTimeout(() => reject(new Error('Chromium startup timeout: ' + stderr)), 20000);
-    browserProcess.once('error', (error) => { clearTimeout(timer); reject(error); });
-    browserProcess.stderr.on('data', (chunk) => {
-      stderr += chunk;
-      const match = stderr.match(/DevTools listening on (ws:\/\/[^\s]+)/);
-      if (match) { clearTimeout(timer); resolve(match[1]); }
-    });
-  });
+  const started = await startChromium(tempDir);
+  if (!started) { t.skip('Set CHROME_PATH to run real-browser assertions'); return false; }
+  chromium = started;
+  const browserUrl = started.browserUrl;
   const debuggerBase = browserUrl.replace(/^ws:/, 'http:').replace(/\/devtools\/browser\/.+$/, '');
-  const target = await (await fetch(debuggerBase + '/json/new?about:blank', { method: 'PUT' })).json();
-  const ws = new WebSocket(target.webSocketDebuggerUrl);
-  await once(ws, 'open');
-  cdp = new DevTools(ws);
+  try {
+    const target = await (await fetch(debuggerBase + '/json/new?about:blank', { method: 'PUT' })).json();
+    const ws = new WebSocket(target.webSocketDebuggerUrl);
+    await once(ws, 'open');
+    cdp = new DevTools(ws);
+  } catch (error) {
+    await started.stop();
+    chromium = null;
+    throw error;
+  }
   await cdp.send('Page.enable');
   await cdp.send('Runtime.enable');
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });

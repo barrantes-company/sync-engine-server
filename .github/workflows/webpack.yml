@@ -30,6 +30,23 @@ jobs:
     - name: Compilar proyecto
       run: npm run build --if-present
 
+    - name: Diagnóstico del entorno de navegador
+      continue-on-error: true
+      run: |
+        # Solo informa; no cambia el entorno. Deja en el log qué ejecutable resuelve tests/helpers/browser.js.
+        for f in /usr/bin/chromium /usr/bin/google-chrome; do
+          if [ -e "$f" ]; then
+            echo "$f -> $(readlink -f "$f")"
+            timeout 20 "$f" --version || echo "$f --version falló (código $?)"
+          else
+            echo "$f: no existe"
+          fi
+        done
+        echo "CHROME_PATH=${CHROME_PATH:-<sin definir>}"
+        df -h /dev/shm
+        nproc
+        free -m | sed -n 2p
+
     - name: Ejecutar pruebas
       timeout-minutes: 10
       run: npm test --if-present
