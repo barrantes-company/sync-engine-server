@@ -149,7 +149,7 @@ final class WidgetRenderer {
         dateFormat.setTimeZone(timeZone);
         String date = dateFormat.format(now).replace(".", "").toLowerCase(es);
         boolean wide = w >= h * 1.55f;
-        boolean compact = h < 92f;
+        boolean compact = h < 140f;
 
         Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
         text.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
@@ -229,36 +229,41 @@ final class WidgetRenderer {
             String unreadLabel = status[1];
             String missed = status[2];
             String missedLabel = status[3];
-            float pillY = wide ? h * (compact ? 0.80f : 0.82f) : h * 0.84f;
-            float pillH = Math.max(12f, h * (compact ? 0.25f : 0.19f));
-            float gap = Math.max(4f, w * 0.012f);
-            float pillW = wide ? Math.min(w * 0.29f, h * (compact ? 2.6f : 2.15f)) : w * 0.40f;
-            float leftX = wide ? contentLeft : (w - pillW * 2 - gap) / 2f;
-            float rightX = wide ? contentLeft + pillW + gap : leftX + pillW + gap;
-            Paint pill = new Paint(Paint.ANTI_ALIAS_FLAG);
-            pill.setColor(0x4A07111D);
-            canvas.drawRoundRect(new RectF(leftX, pillY - pillH, leftX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
-            canvas.drawRoundRect(new RectF(rightX, pillY - pillH, rightX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
-            pill.setStyle(Paint.Style.STROKE);
-            pill.setStrokeWidth(Math.max(0.7f, h * 0.006f));
-            pill.setColor(0x8CE4B866);
-            canvas.drawRoundRect(new RectF(leftX, pillY - pillH, leftX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
-            canvas.drawRoundRect(new RectF(rightX, pillY - pillH, rightX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
-            pill.setStyle(Paint.Style.FILL);
-            Paint metric = new Paint(Paint.ANTI_ALIAS_FLAG);
-            metric.setTypeface(display(context));
-            metric.setColor(dim ? 0xFFB4C2CF : 0xFFFFD88A);
-            metric.setTextSize(Math.max(8f, Math.min(14f, pillH * 0.48f)));
-            text.setTextSize(Math.max(6f, Math.min(10f, pillH * 0.30f)));
-            text.setColor(0xFFE1E8EF);
-            String first = unread + "  " + unreadLabel;
-            String second = missed + "  " + missedLabel;
-            canvas.drawText(first, leftX + pillH * 0.28f, pillY - pillH * 0.32f, metric);
-            canvas.drawText(second, rightX + pillH * 0.28f, pillY - pillH * 0.32f, metric);
+            if (wide && compact) {
+                text.setTextSize(Math.max(6f, Math.min(9f, h * 0.075f)));
+                text.setColor(dim ? 0xFFB4C2CF : 0xFFFFD88A);
+                canvas.drawText(unread + " MENSAJES  ·  " + missed + " LLAMADAS",
+                        contentLeft, h * 0.87f, text);
+            } else {
+                float pillY = wide ? h * 0.82f : h * 0.84f;
+                float pillH = Math.max(12f, h * 0.19f);
+                float gap = Math.max(4f, w * 0.012f);
+                float pillW = wide ? Math.min(w * 0.29f, h * 2.15f) : w * 0.40f;
+                float leftX = wide ? contentLeft : (w - pillW * 2 - gap) / 2f;
+                float rightX = wide ? contentLeft + pillW + gap : leftX + pillW + gap;
+                Paint pill = new Paint(Paint.ANTI_ALIAS_FLAG);
+                pill.setColor(0x4A07111D);
+                canvas.drawRoundRect(new RectF(leftX, pillY - pillH, leftX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
+                canvas.drawRoundRect(new RectF(rightX, pillY - pillH, rightX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
+                pill.setStyle(Paint.Style.STROKE);
+                pill.setStrokeWidth(Math.max(0.7f, h * 0.006f));
+                pill.setColor(0x8CE4B866);
+                canvas.drawRoundRect(new RectF(leftX, pillY - pillH, leftX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
+                canvas.drawRoundRect(new RectF(rightX, pillY - pillH, rightX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
+                pill.setStyle(Paint.Style.FILL);
+                Paint metric = new Paint(Paint.ANTI_ALIAS_FLAG);
+                metric.setTypeface(display(context));
+                metric.setColor(dim ? 0xFFB4C2CF : 0xFFFFD88A);
+                metric.setTextSize(Math.max(8f, Math.min(14f, pillH * 0.48f)));
+                String first = unread + "  " + unreadLabel;
+                String second = missed + "  " + missedLabel;
+                canvas.drawText(first, leftX + pillH * 0.28f, pillY - pillH * 0.32f, metric);
+                canvas.drawText(second, rightX + pillH * 0.28f, pillY - pillH * 0.32f, metric);
+            }
         }
 
-        if (wide && !compact) {
-            text.setTextSize(labelSize);
+        if (wide) {
+            text.setTextSize(Math.max(6f, Math.min(10f, labelSize)));
             text.setColor(0xFFFFD78A);
             float actionY = h - pad - labelSize * 0.15f;
             canvas.drawText("MENSAJES  ›", w * 0.48f, actionY, text);
