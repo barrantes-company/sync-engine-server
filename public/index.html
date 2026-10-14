@@ -5568,7 +5568,7 @@
           </div>
         </div>
         ${chan.isDefault ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono">Equipo</span>' : ''}
-        ${!chan.isDefault && currentUser && String(chan.creatorSyncId || '').toUpperCase() === String(currentUser.syncId || '').toUpperCase() ? '<button type="button" class="channel-manage-btn rounded-lg px-2 py-1 text-xs text-[#64748B] hover:bg-[#F1F5F9]" aria-label="Administrar canal" title="Administrar canal">⋯</button>' : ''}
+        ${!chan.isDefault && currentUser && (String(chan.creatorSyncId || '').toUpperCase() === String(currentUser.syncId || '').toUpperCase() || (Array.isArray(chan.adminSyncIds) && chan.adminSyncIds.some(id => String(id).toUpperCase() === String(currentUser.syncId || '').toUpperCase()))) ? '<button type="button" class="channel-manage-btn rounded-lg px-2 py-1 text-xs text-[#64748B] hover:bg-[#F1F5F9]" aria-label="Administrar canal" title="Administrar canal">⋯</button>' : ''}
       `;
       item.addEventListener('click', () => selectChannel(chan));
       const manageBtn = item.querySelector('.channel-manage-btn');
@@ -5582,7 +5582,7 @@
 
   async function manageWorkspaceChannel(chan) {
     const action = window.prompt(
-      `Administrar #${chan.name}\n1. Editar nombre/descripción\n2. Agregar participante por ID SYNC\n3. Retirar participante por ID SYNC\n4. Eliminar canal\n\nEscribe 1, 2, 3 o 4:`
+      `Administrar #${chan.name}\n1. Editar nombre/descripción\n2. Agregar participante por ID SYNC\n3. Retirar participante por ID SYNC\n4. Eliminar canal\n5. Otorgar administrador (solo creador)\n6. Retirar administrador (solo creador)\n\nEscribe del 1 al 6:`
     );
     if (!action) return;
 
@@ -5622,6 +5622,14 @@
         if (!syncId || !syncId.trim()) return;
         await request(`/api/channels/${encodeURIComponent(chan.id)}/members/${encodeURIComponent(syncId.trim())}`, {
           method: 'DELETE'
+        });
+      } else if (action.trim() === '5' || action.trim() === '6') {
+        const syncId = window.prompt(action.trim() === '5'
+          ? 'ID SYNC del usuario al que otorgarás administración:'
+          : 'ID SYNC del administrador al que retirarás permisos:');
+        if (!syncId || !syncId.trim()) return;
+        await request(`/api/channels/${encodeURIComponent(chan.id)}/admins/${encodeURIComponent(syncId.trim())}`, {
+          method: action.trim() === '5' ? 'POST' : 'DELETE'
         });
       } else if (action.trim() === '4') {
         if (!window.confirm(`Eliminar #${chan.name} y su historial de mensajes? Esta acción no se puede deshacer.`)) return;
