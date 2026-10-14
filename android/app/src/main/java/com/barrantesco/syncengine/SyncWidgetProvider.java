@@ -121,6 +121,20 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
                 1,
                 new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+
+        // El dock de acciones solo aparece en formatos panorámicos con altura suficiente.
+        boolean showActions = widthDp >= 220 && heightDp >= 100;
+        views.setViewVisibility(R.id.widget_action_row, showActions ? View.VISIBLE : View.GONE);
+        Intent messages = new Intent(context, OpenAppActivity.class)
+                .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "chats")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent calls = new Intent(context, OpenAppActivity.class)
+                .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "calls")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        views.setOnClickPendingIntent(R.id.widget_messages_action, PendingIntent.getActivity(
+                context, 21, messages, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        views.setOnClickPendingIntent(R.id.widget_calls_action, PendingIntent.getActivity(
+                context, 22, calls, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         manager.updateAppWidget(widgetId, views);
         scheduleTick(context);
     }
