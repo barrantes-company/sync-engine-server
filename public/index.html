@@ -124,6 +124,29 @@
 
   <!-- APLICACIÓN PRINCIPAL -->
   <div id="app-container" class="h-screen min-h-0 flex flex-col overflow-hidden hidden bg-white w-full max-w-[1600px] mx-auto shadow-sm">
+    <!-- NAVEGACIÓN GLOBAL SYNC ENGINE -->
+    <nav id="sync-engine-nav-rail" aria-label="Navegación principal">
+      <button class="se-nav-item is-active" data-se-view="chats" aria-label="Chats" title="Chats">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v12H8l-4 3v-15Z"/><path d="M8 9h8M8 13h6"/></svg><span>Chats</span>
+      </button>
+      <button class="se-nav-item" data-se-view="calls" aria-label="Llamadas" title="Llamadas">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H4.5A1.5 1.5 0 0 0 3 4.5C3 13.6 10.4 21 19.5 21a1.5 1.5 0 0 0 1.5-1.5V17l-5-2-2 2a15 15 0 0 1-4.5-4.5l2-2-2-5H7Z"/></svg><span>Llamadas</span>
+      </button>
+      <button class="se-nav-item" data-se-view="channels" aria-label="Canales" title="Canales">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 12h8M8 15h5"/></svg><span>Canales</span>
+      </button>
+      <button class="se-nav-item" data-se-view="contacts" aria-label="Contactos" title="Contactos">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.5-3.2 2.3-5 5.5-5s5 1.8 5.5 5"/><circle cx="17" cy="9" r="2.2"/><path d="M16 14.5c2.5-.2 4.1 1.2 4.5 3.5"/></svg><span>Contactos</span>
+      </button>
+      <div class="se-nav-divider"></div>
+      <button class="se-nav-item se-nav-profile" data-se-view="profile" aria-label="Perfil y ajustes" title="Perfil y ajustes">
+        <span class="se-nav-avatar">SE</span><span>Perfil</span>
+      </button>
+      <button class="se-nav-item se-nav-theme" id="se-theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2M12 19v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="4"/></svg><span>Tema Energy</span>
+      </button>
+    </nav>
+
     
     <!-- ENCABEZADO SUPERIOR -->
     <header class="sticky top-0 z-40 bg-white border-b border-[rgba(197,160,89,0.22)] text-[#0A1A3A] shadow-sm">
@@ -306,6 +329,20 @@
 
       <!-- COLUMNA 2: VENTANA DE CONVERSACIÓN ACTIVA (FLEX-GROW: 1, FONDO ADAPTADO 768 × 1024px O SUPERIOR) -->
       <div id="chat-panel-container" class="flex-1 min-h-0 flex flex-col h-full min-w-0 relative">
+
+        <section id="se-calls-home" class="hidden" aria-label="Llamadas y videollamadas">
+          <div class="se-calls-content">
+            <div class="se-calls-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H4.5A1.5 1.5 0 0 0 3 4.5C3 13.6 10.4 21 19.5 21a1.5 1.5 0 0 0 1.5-1.5V17l-5-2-2 2a15 15 0 0 1-4.5-4.5l2-2-2-5H7Z"/></svg></div>
+            <h1>Llamadas y videollamadas</h1>
+            <p>Comunícate con tus contactos desde SYNC ENGINE.</p>
+            <div class="se-calls-actions">
+              <button type="button" id="se-start-call-from-home" class="se-primary-action"><span>＋</span> Iniciar llamada</button>
+              <button type="button" id="se-return-to-chats" class="se-secondary-action">Volver a conversaciones</button>
+            </div>
+            <p class="se-calls-hint">Selecciona un contacto para iniciar una llamada de voz o video.</p>
+          </div>
+        </section>
+
         <div id="workspace-split-container" class="flex flex-1 min-h-0 flex-col md:flex-row gap-0 lg:gap-3 overflow-hidden h-full min-w-0 transition-all duration-300">
 
           <!-- ÁREA CENTRAL DE CONVERSACIÓN (CHAT PANEL) -->
@@ -5771,6 +5808,86 @@
 
   // INICIO
   checkExistingAuth();
+</script>
+
+
+<script data-se-shell-script>
+(() => {
+  const app = document.getElementById('app-container');
+  if (!app || app.dataset.seShellReady === '1') return;
+  app.dataset.seShellReady = '1';
+  const nav = document.getElementById('sync-engine-nav-rail');
+  const split = document.getElementById('workspace-split-container');
+  const callsHome = document.getElementById('se-calls-home');
+  const themeButton = document.getElementById('se-theme-toggle');
+  const applyTheme = (theme) => {
+    const selected = theme === 'energy' ? 'energy' : 'sync-blue';
+    app.dataset.seTheme = selected;
+    document.documentElement.dataset.seTheme = selected;
+    if (themeButton) {
+      const label = selected === 'energy' ? 'Tema Sync Blue' : 'Tema Energy';
+      const span = themeButton.querySelector('span');
+      if (span) span.textContent = label;
+      themeButton.setAttribute('aria-label', label);
+      themeButton.title = label;
+    }
+    try { localStorage.setItem('sync-engine-theme', selected); } catch (_) {}
+  };
+  let initialTheme = 'sync-blue';
+  try { initialTheme = localStorage.getItem('sync-engine-theme') || 'sync-blue'; } catch (_) {}
+  applyTheme(initialTheme);
+  const setActiveNav = (view) => {
+    nav?.querySelectorAll('[data-se-view]').forEach(button => {
+      const active = button.dataset.seView === view;
+      button.classList.toggle('is-active', active);
+      if (active) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+  };
+  const showCalls = () => {
+    if (split) split.classList.add('hidden');
+    if (callsHome) callsHome.classList.remove('hidden');
+    setActiveNav('calls');
+  };
+  const showWorkspace = () => {
+    if (callsHome) callsHome.classList.add('hidden');
+    if (split) split.classList.remove('hidden');
+  };
+  nav?.addEventListener('click', event => {
+    const button = event.target.closest('[data-se-view]');
+    if (!button) return;
+    const view = button.dataset.seView;
+    if (view === 'calls') { showCalls(); return; }
+    showWorkspace();
+    if (view === 'channels') {
+      document.getElementById('tab-sidebar-channels')?.click();
+      setActiveNav('channels');
+    } else if (view === 'profile') {
+      document.getElementById('open-edit-profile-btn')?.click();
+      setActiveNav('profile');
+    } else {
+      document.getElementById('tab-sidebar-dms')?.click();
+      setActiveNav(view === 'contacts' ? 'contacts' : 'chats');
+      if (view === 'contacts') document.getElementById('contact-search-input')?.focus();
+    }
+  });
+  themeButton?.addEventListener('click', () => {
+    applyTheme(app.dataset.seTheme === 'energy' ? 'sync-blue' : 'energy');
+  });
+  document.getElementById('se-return-to-chats')?.addEventListener('click', () => {
+    showWorkspace();
+    document.getElementById('tab-sidebar-dms')?.click();
+    setActiveNav('chats');
+  });
+  document.getElementById('se-start-call-from-home')?.addEventListener('click', () => {
+    showWorkspace();
+    document.getElementById('tab-sidebar-dms')?.click();
+    setActiveNav('chats');
+    const start = document.getElementById('start-call-btn');
+    if (start) start.click();
+    else document.getElementById('contact-search-input')?.focus();
+  });
+})();
 </script>
 
 </body>
