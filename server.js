@@ -186,6 +186,9 @@ app.get(["/widget", "/widget.html", "/public/widget.html"], (req, res) => {
   res.sendFile(path.join(__dirname, "public", "widget.html"));
 });
 
+// Serve Vercel Speed Insights module
+app.use("/@vercel/speed-insights", express.static(path.join(__dirname, "node_modules/@vercel/speed-insights")));
+
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/public", express.static(path.join(__dirname, "public")));
 app.use("/src/assets/images", express.static(path.join(__dirname, "src/assets/images")));
