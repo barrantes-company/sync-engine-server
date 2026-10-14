@@ -1,0 +1,44 @@
+/* SYNC ENGINE — restrained event-driven microinteractions */
+:root {
+  --se-energy-cyan: #42c9ff;
+  --se-energy-blue: #0072ce;
+  --se-energy-amber: #c5a059;
+}
+@keyframes se-send-streak {
+  0% { opacity: 0; transform: translateX(-12px) scaleX(.35); }
+  20% { opacity: .9; }
+  100% { opacity: 0; transform: translateX(14px) scaleX(1); }
+}
+@keyframes se-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(197,160,89,0); }
+  45% { box-shadow: 0 0 0 4px rgba(197,160,89,.16), 0 0 12px rgba(197,160,89,.22); }
+}
+@keyframes se-shimmer {
+  0% { transform: translateX(-130%) skewX(-18deg); }
+  100% { transform: translateX(230%) skewX(-18deg); }
+}
+.se-send-energy { position: relative; isolation: isolate; }
+.se-send-energy::after {
+  content: ""; position: absolute; z-index: 2; pointer-events: none;
+  left: 12%; right: 12%; top: 0; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--se-energy-cyan), var(--se-energy-amber), transparent);
+  filter: drop-shadow(0 0 4px rgba(66,201,255,.35));
+  animation: se-send-streak .65s ease-out both;
+}
+.se-notification-pulse { animation: se-badge-pulse 2.2s ease-out 1; }
+.se-shimmer-target { position: relative; overflow: hidden; }
+.se-shimmer-target::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 35%;
+  pointer-events: none; opacity: 0;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.18), transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .se-shimmer-target:hover::before { opacity: 1; animation: se-shimmer 1.2s ease-out 1; }
+}
+:focus-visible { outline: 2px solid var(--se-energy-cyan); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .se-send-energy::after, .se-notification-pulse,
+  .se-shimmer-target:hover::before { animation: none !important; }
+  .se-send-energy::after { display: none; }
+  * { scroll-behavior: auto !important; }
+}
