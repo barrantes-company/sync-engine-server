@@ -5843,6 +5843,8 @@
   const showWorkspace = () => {
     if (callsHome) callsHome.classList.add('hidden');
     if (split) split.classList.remove('hidden');
+    document.getElementById('sidebar-dms-view')?.classList.remove('hidden');
+    document.getElementById('sidebar-channels-view')?.classList.add('hidden');
   };
   nav?.addEventListener('click', event => {
     const button = event.target.closest('[data-se-view]');
