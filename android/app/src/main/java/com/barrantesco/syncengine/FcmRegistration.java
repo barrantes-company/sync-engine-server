@@ -17,6 +17,11 @@ final class FcmRegistration {
     private FcmRegistration() {
     }
 
+    /** Indica si esta instalación fue compilada con los datos públicos necesarios para FCM. */
+    static boolean isConfigured(Context context) {
+        return !FirebaseApp.getApps(context.getApplicationContext()).isEmpty();
+    }
+
     /** Solicita el token si Firebase está configurado y lo registra cuando hay sesión. */
     static void registerCurrentDevice(Context context) {
         Context app = context.getApplicationContext();

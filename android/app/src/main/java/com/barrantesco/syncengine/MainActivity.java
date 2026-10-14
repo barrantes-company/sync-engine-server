@@ -29,6 +29,7 @@ public final class MainActivity extends Activity {
 
     private EditText urlField;
     private LinearLayout sessionBox;
+    private TextView pushStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,8 +81,14 @@ public final class MainActivity extends Activity {
             AppSettings.setNotifications(this, value);
             if (value) {
                 requestNotificationPermission();
+                FcmRegistration.registerCurrentDevice(this);
             }
         }), matchWrap());
+
+        pushStatus = text("", 13, R.color.text_secondary);
+        pushStatus.setPadding(0, dp(2), 0, dp(8));
+        refreshPushStatus();
+        content.addView(pushStatus, matchWrap());
 
         content.addView(text(getString(R.string.opt_timezone), 15, R.color.text_primary), matchWrap());
         Spinner zones = new Spinner(this);
@@ -110,6 +117,19 @@ public final class MainActivity extends Activity {
         ScrollView scroll = new ScrollView(this);
         scroll.addView(content);
         setContentView(scroll);
+    }
+
+    private void refreshPushStatus() {
+        if (pushStatus == null) return;
+        boolean configured = FcmRegistration.isConfigured(this);
+        pushStatus.setText(configured ? R.string.fcm_configured : R.string.fcm_missing);
+        pushStatus.setTextColor(getColor(configured ? R.color.text_secondary : R.color.widget_border));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshPushStatus();
     }
 
     private interface OnToggle {

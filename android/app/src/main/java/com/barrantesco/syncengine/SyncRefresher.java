@@ -28,6 +28,11 @@ final class SyncRefresher {
      * @return true si la consulta tuvo éxito (o no había sesión que consultar).
      */
     static boolean refresh(Context context) {
+        return refresh(context, true);
+    }
+
+    /** Refresca caché sin emitir avisos; el llamador ya está mostrando una notificación FCM. */
+    static boolean refresh(Context context, boolean emitNotifications) {
         Context app = context.getApplicationContext();
         String token = AppSettings.token(app);
         String url = WidgetUrls.defaultUrl(app);
@@ -38,7 +43,7 @@ final class SyncRefresher {
             ApiClient.Summary summary = ApiClient.summary(
                     WidgetUrls.origin(url), token, AppSettings.callsSeenAt(app));
             AppSettings.saveCounts(app, summary.unreadMessages, summary.missedCalls);
-            if (AppSettings.notifications(app)) {
+            if (emitNotifications && AppSettings.notifications(app)) {
                 notifyNew(app, summary);
             }
             SyncWidgetProvider.refreshAll(app);

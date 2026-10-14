@@ -22,6 +22,8 @@
     <string name="opt_animations">Animación de estelas</string>
     <string name="opt_notifications">Notificaciones de mensajes y llamadas perdidas</string>
     <string name="opt_timezone">Zona horaria del reloj</string>
+    <string name="fcm_configured">Firebase está configurado en esta instalación. Para recibir avisos, inicia sesión aquí y permite las notificaciones del sistema.</string>
+    <string name="fcm_missing">FCM no está configurado en este APK. Las notificaciones push no funcionarán hasta recompilar con la configuración Firebase Android.</string>
     <string name="sync_note">Con FCM configurado, mensajes y llamadas entrantes avisan en tiempo real. Los contadores se sincronizan aproximadamente cada 15 minutos. Las llamadas requieren abrir la interfaz web para establecer audio.</string>
     <string name="signed_in_as">Sesión iniciada como %1$s</string>
     <string name="sign_out">Cerrar sesión</string>
