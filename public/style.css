@@ -2458,3 +2458,27 @@ body.has-active-chat #chat-welcome { display:none !important; }
   #chat-header-bar { display:none !important; }
   body.has-active-chat #chat-header-bar { display:flex !important; }
 }
+
+/* Acceptance layout: WhatsApp-like 3-column shell with Sync Engine palette. */
+#sidebar-panel > div:has(#chip-filter-all) { display:none !important; }
+#sidebar-pro-card,
+#sidebar-panel > div.flex.flex-shrink-0.items-center.justify-between.border-t,
+#sidebar-panel > div.flex.flex-shrink-0.items-center.justify-center.border-t { display:none !important; }
+#sidebar-panel { background:#0A1A3A !important; border-right:1px solid rgba(255,255,255,.09) !important; }
+#sidebar-dms-view > div:first-child { background:#0A1A3A !important; border-bottom:1px solid rgba(255,255,255,.08) !important; padding:16px 12px !important; }
+#contact-search-input { border-radius:12px !important; background:#152B52 !important; color:#F3F7FC !important; border:1px solid rgba(255,255,255,.1) !important; text-transform:none !important; letter-spacing:normal !important; }
+#contact-search-input::placeholder { color:#AAB8CF !important; }
+#add-contact-btn { width:42px !important; min-width:42px !important; height:42px !important; padding:0 !important; border-radius:12px !important; font-size:0 !important; background:#152B52 !important; border:1px solid rgba(0,229,255,.3) !important; box-shadow:none !important; }
+#add-contact-btn::after { content:"+"; font-size:24px; line-height:1; }
+#contacts-list { background:#0A1A3A !important; padding:6px 8px 14px !important; }
+#contacts-list .contact-item { min-height:72px !important; border:0 !important; border-bottom:1px solid rgba(255,255,255,.06) !important; border-radius:10px !important; background:transparent !important; }
+#contacts-list .contact-item:hover { background:rgba(255,255,255,.06) !important; }
+#contacts-list .contact-item.is-active { background:#152B52 !important; border-left:3px solid #00E5FF !important; }
+#chat-header-bar { display:none !important; }
+body.has-active-chat #chat-header-bar { display:flex !important; }
+body:not(.has-active-chat) #chat-welcome { display:flex !important; }
+body:not(.has-active-chat) #chat-messages { background:#090E17 !important; }
+#chat-welcome .empty-state-title { color:#F3F7FC !important; }
+#chat-welcome .empty-state-text { color:#AAB8CF !important; }
+#input-container { background:#111B21 !important; border-color:rgba(255,255,255,.08) !important; }
+@media(min-width:1024px){#desktop-left-rail{width:84px!important;flex:0 0 84px!important}#sidebar-panel{width:320px!important;flex:0 0 320px!important}}
