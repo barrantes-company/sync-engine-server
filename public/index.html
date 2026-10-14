@@ -124,7 +124,13 @@
 
   <!-- APLICACIÓN PRINCIPAL -->
   <div id="app-container" class="h-screen min-h-0 flex flex-row overflow-hidden hidden bg-[#040A17] w-full max-w-full mx-auto">
-    
+    <!-- Elementos DOM para perfil de usuario e identidad -->
+    <span id="header-user-sync-id" class="hidden"></span>
+    <span id="header-user-clean-name" class="hidden"></span>
+    <img id="header-user-avatar" class="hidden" alt="Avatar">
+    <button id="logout-btn" class="hidden">Salir</button>
+    <button id="open-vault-btn" class="hidden">Bóveda</button>
+
     <!-- CUERPO PRINCIPAL (DISTRIBUCIÓN EN 3 COLUMNAS MODO OSCURO CANÓNICO) -->
     <main id="main-layout" class="flex-1 min-h-0 w-full mx-auto p-0 flex flex-row overflow-hidden relative bg-[#090E17]">
       
@@ -1220,7 +1226,10 @@
   const headerUserSyncId = document.getElementById('header-user-sync-id');
   const headerUserCleanName = document.getElementById('header-user-clean-name');
   const openEditProfileBtn = document.getElementById('open-edit-profile-btn');
-  const logoutBtn = document.getElementById('logout-btn');
+  window.logoutBtn = document.getElementById('logout-btn');
+  const logoutBtn = window.logoutBtn;
+  window.openVaultBtn = document.getElementById('open-vault-btn');
+  const openVaultBtn = window.openVaultBtn;
 
   const sidebarPanel = document.getElementById('sidebar-panel');
   const chatPanel = document.getElementById('chat-panel');
@@ -1614,12 +1623,14 @@
 
     if (currentUser && currentUser.syncId === user.syncId) {
       currentUser = { ...currentUser, ...user };
-      headerUserCleanName.textContent = currentUser.cleanDisplayName;
-      if (setSafeUrl(headerUserAvatar, 'src', currentUser.avatarUrl, 'avatar')) {
-        headerUserAvatar.classList.remove('hidden');
-      } else {
-        headerUserAvatar.removeAttribute('src');
-        headerUserAvatar.classList.add('hidden');
+      if (headerUserCleanName) headerUserCleanName.textContent = currentUser.cleanDisplayName;
+      if (headerUserAvatar) {
+        if (setSafeUrl(headerUserAvatar, 'src', currentUser.avatarUrl, 'avatar')) {
+          headerUserAvatar.classList.remove('hidden');
+        } else {
+          headerUserAvatar.removeAttribute('src');
+          headerUserAvatar.classList.add('hidden');
+        }
       }
     }
 
@@ -1643,13 +1654,15 @@
     initWebNotifications();
     showNetworkLoading();
 
-    headerUserSyncId.textContent = currentUser.syncId;
-    headerUserCleanName.textContent = purgeEmojis(currentUser.cleanDisplayName);
+    if (headerUserSyncId) headerUserSyncId.textContent = currentUser.syncId;
+    if (headerUserCleanName) headerUserCleanName.textContent = purgeEmojis(currentUser.cleanDisplayName);
 
-    if (setSafeUrl(headerUserAvatar, 'src', currentUser.avatarUrl, 'avatar')) {
-      headerUserAvatar.classList.remove('hidden');
-    } else {
-      headerUserAvatar.classList.add('hidden');
+    if (headerUserAvatar) {
+      if (setSafeUrl(headerUserAvatar, 'src', currentUser.avatarUrl, 'avatar')) {
+        headerUserAvatar.classList.remove('hidden');
+      } else {
+        headerUserAvatar.classList.add('hidden');
+      }
     }
 
     initSocket();
@@ -1664,17 +1677,19 @@
     }
   }
 
-  logoutBtn.addEventListener('click', () => {
-    endCall(true);
-    clearVaultSession();
-    localStorage.removeItem(TOKEN_KEY);
-    SyncPrivateFiles.clear().catch(() => {});
-    currentToken = null;
-    currentUser = null;
-    activeContactSyncId = null;
-    renderedMessageIds.clear();
-    showAuth();
-  });
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      endCall(true);
+      clearVaultSession();
+      localStorage.removeItem(TOKEN_KEY);
+      SyncPrivateFiles.clear().catch(() => {});
+      currentToken = null;
+      currentUser = null;
+      activeContactSyncId = null;
+      renderedMessageIds.clear();
+      showAuth();
+    });
+  }
 
   // Procesamiento Automático de Foto de Perfil: Recorte Circular 1:1 (1080 × 1080 px)
   function processProfileAvatar(file) {
@@ -4740,7 +4755,6 @@
   const headerPlanBadgeBtn = document.getElementById('header-plan-badge-btn');
   const headerPlanIcon = document.getElementById('header-plan-icon');
   const headerPlanName = document.getElementById('header-plan-name');
-  const openVaultBtn = document.getElementById('open-vault-btn');
   const exportChatBtn = document.getElementById('export-chat-btn');
 
   const tabSidebarDms = document.getElementById('tab-sidebar-dms');
