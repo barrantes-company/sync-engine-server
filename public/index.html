@@ -5998,6 +5998,13 @@
       if (view === 'contacts') document.getElementById('contact-search-input')?.focus();
     }
   });
+  const chatFormForMotion = document.getElementById('chat-form');
+  chatFormForMotion?.addEventListener('submit', () => {
+    app.classList.remove('se-syncing');
+    void app.offsetWidth;
+    app.classList.add('se-syncing');
+    window.setTimeout(() => app.classList.remove('se-syncing'), 950);
+  });
   themeButton?.addEventListener('click', () => {
     const currentIndex = themeOrder.indexOf(app.dataset.seTheme || 'sync-blue');
     applyTheme(themeOrder[(currentIndex + 1) % themeOrder.length]);
