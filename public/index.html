@@ -5040,6 +5040,7 @@
   window.addEventListener('sync-engine-view-change', (event) => {
     const view = event.detail && event.detail.view;
     if (view !== 'contacts' && view !== 'channels') return;
+    if (view === 'channels') loadChannels();
     document.getElementById('app-container').dataset.hasActiveConversation = 'false';
     activeContactSyncId = null;
     activeChannelId = view === 'channels' ? null : activeChannelId;
@@ -5877,7 +5878,6 @@
         chatWelcome.classList.remove('hidden');
       }
       document.querySelectorAll('#contacts-list .contact-item.is-active').forEach(item => item.classList.remove('is-active'));
-      loadChannels();
       setActiveNav('channels');
     } else if (view === 'profile') {
       document.getElementById('open-edit-profile-btn')?.click();
