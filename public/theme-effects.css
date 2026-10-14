@@ -1,0 +1,249 @@
+/* SYNC ENGINE — temas Orbit/Nexus y microinteracciones de marca.
+   Cargado después de style.css para preservar el diseño base existente. */
+#app-container {
+  --se-motion-duration: 180ms;
+  --se-motion-ease: cubic-bezier(.2,.75,.25,1);
+}
+#app-container button,
+#app-container a,
+#app-container input,
+#app-container textarea,
+#sync-engine-nav-rail .se-nav-item {
+  transition-duration: var(--se-motion-duration);
+  transition-timing-function: var(--se-motion-ease);
+}
+#app-container #sync-engine-nav-rail .se-nav-item.is-active {
+  position: relative;
+  overflow: hidden;
+}
+#app-container #sync-engine-nav-rail .se-nav-item.is-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,.22) 48%, transparent 72%);
+  transform: translateX(-130%);
+  animation: se-brand-sheen 1.1s ease-out 1;
+}
+#app-container > header.sticky {
+  position: relative;
+  overflow: hidden;
+}
+#app-container > header.sticky::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -35%;
+  width: 28%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(40,160,255,.10), rgba(35,220,255,.22), transparent);
+  transform: skewX(-18deg);
+  opacity: 0;
+}
+#app-container.se-syncing > header.sticky::after {
+  opacity: 1;
+  animation: se-energy-sweep 900ms ease-out 1;
+}
+#app-container .se-nav-item:hover,
+#app-container button:hover {
+  transition-duration: 150ms;
+}
+#app-container .chat-bubble-inner {
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+#app-container .chat-bubble-inner:hover {
+  box-shadow: 0 3px 12px rgba(8,119,249,.10);
+}
+#app-container button:active {
+  transform: scale(.985);
+}
+@keyframes se-brand-sheen {
+  from { transform: translateX(-130%); }
+  to { transform: translateX(130%); }
+}
+@keyframes se-energy-sweep {
+  0% { transform: translateX(0) skewX(-18deg); }
+  100% { transform: translateX(560%) skewX(-18deg); }
+}
+
+/* ORBIT — tema claro, ejecutivo, con acento naranja y azul. */
+#app-container[data-se-theme="orbit"] {
+  --se-navy: #26364B;
+  --se-blue: #2676E8;
+  --se-blue-hover: #145DC6;
+  --se-ice: #F5F7FA;
+  --se-line: #E1E6EC;
+  --se-ink: #27364A;
+  --se-orbit-orange: #F28A36;
+  background: #F7F8FA !important;
+  color: #27364A;
+}
+#app-container[data-se-theme="orbit"] #sync-engine-nav-rail {
+  background: #27364A;
+  box-shadow: none;
+}
+#app-container[data-se-theme="orbit"] .se-nav-item.is-active {
+  background: linear-gradient(135deg,#F59A4A,#E9792B);
+  box-shadow: 0 3px 10px rgba(233,121,43,.20);
+}
+#app-container[data-se-theme="orbit"] #sidebar-panel,
+#app-container[data-se-theme="orbit"] #contacts-list,
+#app-container[data-se-theme="orbit"] #channels-list {
+  background: #F7F8FA !important;
+}
+#app-container[data-se-theme="orbit"] #sidebar-panel .border-b,
+#app-container[data-se-theme="orbit"] #chat-header-bar,
+#app-container[data-se-theme="orbit"] #chat-form {
+  border-color: #E1E6EC !important;
+}
+#app-container[data-se-theme="orbit"] #chat-panel,
+#app-container[data-se-theme="orbit"] #chat-header-bar,
+#app-container[data-se-theme="orbit"] #chat-form {
+  background-color: #FFFFFF !important;
+}
+#app-container[data-se-theme="orbit"] #chat-messages {
+  background-color: #FFFFFF !important;
+  background-image: radial-gradient(rgba(38,118,232,.035) .8px, transparent .8px), linear-gradient(#FFFFFF,#FBFCFE) !important;
+}
+#app-container[data-se-theme="orbit"] .se-nav-item.is-active,
+#app-container[data-se-theme="orbit"] .se-primary-action,
+#app-container[data-se-theme="orbit"] #input-container button[type="submit"] {
+  background-color: #2676E8;
+}
+#app-container[data-se-theme="orbit"] #app-container button:focus-visible,
+#app-container[data-se-theme="orbit"] button:focus-visible {
+  outline-color: #F28A36 !important;
+}
+#app-container[data-se-theme="orbit"] .chat-bubble-sent {
+  background: linear-gradient(135deg,#347FEA,#2367D3) !important;
+}
+#app-container[data-se-theme="orbit"] #sync-engine-nav-rail .se-nav-item.is-active::after {
+  background: linear-gradient(110deg,transparent 20%,rgba(255,255,255,.32) 48%,transparent 72%);
+}
+
+/* NEXUS — oscuro graphite con teal/cian, pensado para sesiones largas. */
+#app-container[data-se-theme="nexus"] {
+  --se-navy: #101A22;
+  --se-blue: #19C5D8;
+  --se-blue-hover: #0AAABD;
+  --se-ice: #1A2831;
+  --se-line: #2D424D;
+  --se-ink: #E4EDF2;
+  background: #152129 !important;
+  color: #E4EDF2;
+}
+#app-container[data-se-theme="nexus"] > header.sticky {
+  background: #18262F !important;
+  color: #EAF4F7 !important;
+  border-color: #2D424D !important;
+  box-shadow: 0 1px 0 rgba(36,208,220,.08);
+}
+#app-container[data-se-theme="nexus"] > header.sticky span,
+#app-container[data-se-theme="nexus"] > header.sticky .text-\[\#0A1A3A\],
+#app-container[data-se-theme="nexus"] > header.sticky .text-\[\#64748B\] {
+  color: #C3D3DA !important;
+}
+#app-container[data-se-theme="nexus"] #sync-engine-nav-rail {
+  background: radial-gradient(ellipse at 50% 0%,rgba(25,197,216,.12),transparent 45%),#101A22;
+  border-color: rgba(62,210,220,.16);
+}
+#app-container[data-se-theme="nexus"] .se-nav-item { color: #A5BBC4; }
+#app-container[data-se-theme="nexus"] .se-nav-item.is-active {
+  background: linear-gradient(135deg,#18BFD0,#087D91);
+  color: #F7FEFF;
+  box-shadow: 0 0 0 1px rgba(76,225,232,.25),0 0 16px rgba(25,197,216,.18);
+}
+#app-container[data-se-theme="nexus"] #sidebar-panel,
+#app-container[data-se-theme="nexus"] #sidebar-dms-view,
+#app-container[data-se-theme="nexus"] #sidebar-channels-view,
+#app-container[data-se-theme="nexus"] #contacts-list,
+#app-container[data-se-theme="nexus"] #channels-list {
+  background: #192830 !important;
+  color: #E4EDF2 !important;
+  border-color: #2D424D !important;
+}
+#app-container[data-se-theme="nexus"] #sidebar-panel .border-b,
+#app-container[data-se-theme="nexus"] #chat-header-bar,
+#app-container[data-se-theme="nexus"] #chat-form {
+  background: #1D2D36 !important;
+  border-color: #2D424D !important;
+  color: #E4EDF2 !important;
+}
+#app-container[data-se-theme="nexus"] #chat-panel,
+#app-container[data-se-theme="nexus"] #chat-panel-container,
+#app-container[data-se-theme="nexus"] #workspace-split-container,
+#app-container[data-se-theme="nexus"] #chat-messages {
+  background-color: #152129 !important;
+  color: #E4EDF2 !important;
+}
+#app-container[data-se-theme="nexus"] #chat-messages {
+  background-image: radial-gradient(rgba(25,197,216,.045) .8px,transparent .8px),linear-gradient(#152129,#17262F) !important;
+}
+#app-container[data-se-theme="nexus"] #contacts-list > *,
+#app-container[data-se-theme="nexus"] #channels-list > *,
+#app-container[data-se-theme="nexus"] .contact-item,
+#app-container[data-se-theme="nexus"] .channel-item {
+  color: #DCE8ED !important;
+  border-color: rgba(149,188,202,.12) !important;
+}
+#app-container[data-se-theme="nexus"] #contacts-list > *:hover,
+#app-container[data-se-theme="nexus"] #channels-list > *:hover,
+#app-container[data-se-theme="nexus"] .contact-item:hover,
+#app-container[data-se-theme="nexus"] .channel-item:hover {
+  background: #223741 !important;
+}
+#app-container[data-se-theme="nexus"] #chat-textarea,
+#app-container[data-se-theme="nexus"] #contact-search-input,
+#app-container[data-se-theme="nexus"] #chat-search-input,
+#app-container[data-se-theme="nexus"] #chat-search-bar {
+  background: #122029 !important;
+  color: #EAF4F7 !important;
+  border-color: #35505C !important;
+}
+#app-container[data-se-theme="nexus"] #chat-textarea::placeholder,
+#app-container[data-se-theme="nexus"] #contact-search-input::placeholder {
+  color: #91A8B2 !important;
+}
+#app-container[data-se-theme="nexus"] .chat-bubble-sent {
+  background: linear-gradient(135deg,#087D91,#0D667A) !important;
+  color: #F4FEFF !important;
+  border: 1px solid rgba(66,221,229,.18) !important;
+}
+#app-container[data-se-theme="nexus"] .chat-bubble-received {
+  background: #22343E !important;
+  color: #E4EDF2 !important;
+  border: 1px solid rgba(149,188,202,.12) !important;
+}
+#app-container[data-se-theme="nexus"] #se-calls-home {
+  background: #152129 !important;
+  color: #E4EDF2 !important;
+}
+#app-container[data-se-theme="nexus"] .se-calls-content h1 { color: #EAF4F7; }
+#app-container[data-se-theme="nexus"] .se-calls-content > p { color: #A5BBC4; }
+#app-container[data-se-theme="nexus"] .se-secondary-action {
+  background: #1D2D36;
+  color: #E4EDF2;
+  border-color: #35505C;
+}
+#app-container[data-se-theme="nexus"] #app-container [class*="text-[#0A1A3A]"] {
+  color: #E4EDF2 !important;
+}
+#app-container[data-se-theme="nexus"] button:focus-visible,
+#app-container[data-se-theme="nexus"] input:focus-visible,
+#app-container[data-se-theme="nexus"] textarea:focus-visible {
+  outline-color: #43DCE5 !important;
+}
+
+/* El movimiento es decorativo: nunca debe ocultar información ni bloquear controles. */
+@media (prefers-reduced-motion: reduce) {
+  #app-container *,
+  #app-container *::before,
+  #app-container *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
