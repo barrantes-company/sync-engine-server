@@ -216,16 +216,10 @@
       <!-- COLUMNA 1: LISTA DE CONTACTOS Y CANALES (SIDEBAR) -->
       <aside id="sidebar-panel" class="w-full lg:w-[280px] flex-shrink-0 bg-white border-r lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full min-h-0 overflow-hidden shadow-sm transition-all z-10">
         
-        <!-- Switcher Segmentado de Espacio de Trabajo: DMs vs Canales -->
-        <div class="p-2 border-b border-[rgba(197,160,89,0.18)] bg-[#F8FAFC] flex items-center gap-1 flex-shrink-0">
-          <button id="tab-sidebar-dms" type="button" class="workspace-segmented-tab is-active flex items-center justify-center gap-1.5">
-            <span>💬</span> <span>Directos</span>
-            <span id="contacts-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-[#F1F5F9] text-[#C5A059] font-mono">0</span>
-          </button>
-          <button id="tab-sidebar-channels" type="button" class="workspace-segmented-tab flex items-center justify-center gap-1.5">
-            <span>#</span> <span>Canales</span>
-            <span id="channels-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-[#F1F5F9] text-[#0A1A3A] font-mono">2</span>
-          </button>
+        <!-- Contadores conservados para la lógica de contactos y canales, sin pestañas duplicadas. -->
+        <div class="sr-only" aria-hidden="true">
+          <span id="contacts-count-badge">0</span>
+          <span id="channels-count-badge">0</span>
         </div>
 
         <!-- VISTA DE CHATS DIRECTOS (DMs) -->
@@ -349,7 +343,7 @@
           <section id="chat-panel" class="flex flex-1 min-h-0 bg-white lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full overflow-hidden shadow-sm relative min-w-0 transition-all">
             
             <!-- Header del Chat Activo -->
-            <div id="chat-header-bar" class="chat-header-bar px-3 sm:px-4 py-2.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-3 flex-shrink-0 z-10">
+            <div id="chat-header-bar" class="chat-header-bar hidden px-3 sm:px-4 py-2.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-3 flex-shrink-0 z-10">
               <div class="flex items-center gap-2.5 min-w-0">
                 
                 <button id="back-to-contacts-btn" type="button" title="Volver a la lista de chats"
@@ -460,7 +454,7 @@
           </div>
 
           <!-- BARRA DE ENTRADA INFERIOR -->
-          <div id="input-container" class="mb-0 p-3 bg-white border-t border-[rgba(197,160,89,0.22)] flex flex-col gap-2 relative flex-shrink-0">
+          <div id="input-container" class="hidden mb-0 p-3 bg-white border-t border-[rgba(197,160,89,0.22)] flex flex-col gap-2 relative flex-shrink-0">
 
             <!-- Previsualización de Mensaje Citado (Reply) -->
             <div id="reply-preview-bar" class="hidden items-center justify-between p-2 sm:p-2.5 rounded-xl bg-[#F8FAFC] border-l-4 border-[#C5A059] border border-[rgba(197,160,89,0.25)] shadow-xs">
@@ -2805,6 +2799,9 @@
   async function selectContact(syncId) {
     if (syncId === currentUser.syncId) return;
     activeContactSyncId = syncId;
+    document.getElementById('chat-header-bar')?.classList.remove('hidden');
+    document.getElementById('input-container')?.classList.remove('hidden');
+    setActiveNav('chats');
     activeChannelId = null;
     renderedMessageIds.clear();
     cancelReply();
@@ -5739,24 +5736,7 @@
   if (closeVaultModalBtn) closeVaultModalBtn.addEventListener('click', clearVaultSession);
   if (saveVaultItemBtn) saveVaultItemBtn.addEventListener('click', handleSaveVaultItem);
 
-  // Switcher DMs vs Canales
-  if (tabSidebarDms) {
-    tabSidebarDms.addEventListener('click', () => {
-      tabSidebarDms.classList.add('is-active');
-      tabSidebarChannels.classList.remove('is-active');
-      sidebarDmsView.classList.remove('hidden');
-      sidebarChannelsView.classList.add('hidden');
-    });
-  }
-  if (tabSidebarChannels) {
-    tabSidebarChannels.addEventListener('click', () => {
-      tabSidebarChannels.classList.add('is-active');
-      tabSidebarDms.classList.remove('is-active');
-      sidebarChannelsView.classList.remove('hidden');
-      sidebarDmsView.classList.add('hidden');
-      loadChannels();
-    });
-  }
+  // La navegación lateral principal controla las vistas; se eliminó el selector duplicado.
 
   // Modal Crear Canal
   if (openCreateChannelBtn) openCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.remove('hidden'));
@@ -5859,15 +5839,52 @@
     const view = button.dataset.seView;
     if (view === 'calls') { showCalls(); return; }
     showWorkspace();
+    const dmsView = document.getElementById('sidebar-dms-view');
+    const channelsView = document.getElementById('sidebar-channels-view');
+    const chatHeader = document.getElementById('chat-header-bar');
+    const messageComposer = document.getElementById('input-container');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatWelcome = document.getElementById('chat-welcome');
+
     if (view === 'channels') {
-      document.getElementById('tab-sidebar-channels')?.click();
+      dmsView?.classList.add('hidden');
+      channelsView?.classList.remove('hidden');
+      if (chatHeader) chatHeader.classList.add('hidden');
+      if (messageComposer) messageComposer.classList.add('hidden');
+      activeContactSyncId = null;
+      activeChannelId = null;
+      if (chatMessages && chatWelcome) {
+        chatMessages.replaceChildren(chatWelcome);
+        chatWelcome.classList.remove('hidden');
+      }
+      document.querySelectorAll('#contacts-list .contact-item.is-active').forEach(item => item.classList.remove('is-active'));
+      loadChannels();
       setActiveNav('channels');
     } else if (view === 'profile') {
       document.getElementById('open-edit-profile-btn')?.click();
       setActiveNav('profile');
-    } else {
-      document.getElementById('tab-sidebar-dms')?.click();
-      setActiveNav(view === 'contacts' ? 'contacts' : 'chats');
+    } else if (view === 'contacts' || view === 'chats') {
+      dmsView?.classList.remove('hidden');
+      channelsView?.classList.add('hidden');
+      if (view === 'contacts') {
+        activeContactSyncId = null;
+        activeChannelId = null;
+        renderedMessageIds.clear();
+        if (chatHeader) chatHeader.classList.add('hidden');
+        if (messageComposer) messageComposer.classList.add('hidden');
+        if (chatMessages && chatWelcome) {
+          chatMessages.replaceChildren(chatWelcome);
+          chatWelcome.classList.remove('hidden');
+        }
+        document.querySelectorAll('#contacts-list .contact-item.is-active').forEach(item => item.classList.remove('is-active'));
+        document.body.classList.remove('mobile-view-chat');
+        if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
+      } else {
+        const hasConversation = Boolean(activeContactSyncId);
+        if (chatHeader) chatHeader.classList.toggle('hidden', !hasConversation);
+        if (messageComposer) messageComposer.classList.toggle('hidden', !hasConversation);
+      }
+      setActiveNav(view);
       if (view === 'contacts') document.getElementById('contact-search-input')?.focus();
     }
   });
