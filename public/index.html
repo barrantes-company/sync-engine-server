@@ -5577,6 +5577,9 @@
   async function selectChannel(chan) {
     activeChannelId = chan.id;
     activeContactSyncId = null;
+    document.getElementById('app-container').dataset.hasActiveConversation = 'true';
+    document.getElementById('chat-header-bar')?.classList.remove('hidden');
+    document.getElementById('input-container')?.classList.remove('hidden');
     renderedMessageIds.clear();
     cancelReply();
     closeChatSearch();
@@ -5839,14 +5842,17 @@
       else button.removeAttribute('aria-current');
     });
   };
+  const sidebar = document.getElementById('sidebar-panel');
   const showCalls = () => {
     if (split) split.classList.add('hidden');
+    if (sidebar) sidebar.classList.add('hidden');
     if (callsHome) callsHome.classList.remove('hidden');
     setActiveNav('calls');
   };
   const showWorkspace = () => {
     if (callsHome) callsHome.classList.add('hidden');
     if (split) split.classList.remove('hidden');
+    if (sidebar) sidebar.classList.remove('hidden');
     document.getElementById('sidebar-dms-view')?.classList.remove('hidden');
     document.getElementById('sidebar-channels-view')?.classList.add('hidden');
   };
