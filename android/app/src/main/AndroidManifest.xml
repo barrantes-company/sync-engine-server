@@ -58,8 +58,7 @@
         <receiver
             android:name=".SyncWidgetProvider"
             android:exported="true"
-            android:label="@string/widget_name"
-            android:permission="android.permission.BIND_APPWIDGET">
+            android:label="@string/widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="android.intent.action.TIME_SET" />
