@@ -30,12 +30,12 @@ public final class OpenAppActivity extends Activity {
             }
             target = new Intent(Intent.ACTION_VIEW, destination.build());
         } else {
-            target = new Intent(this, MainActivity.class);
+            target = new Intent(this, WebAppActivity.class);
         }
         try {
             startActivity(target);
         } catch (ActivityNotFoundException exception) {
-            startActivity(new Intent(this, MainActivity.class));
+            startActivity(new Intent(this, WebAppActivity.class));
         }
         finish();
     }
