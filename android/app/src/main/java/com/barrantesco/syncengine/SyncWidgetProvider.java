@@ -78,6 +78,7 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
         float unit = size[2] / 100f;
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sync_widget);
+        views.setViewVisibility(R.id.widget_initial_fallback, View.GONE);
 
         if (AppSettings.animations(context)) {
             views.setViewVisibility(R.id.widget_flipper, View.VISIBLE);

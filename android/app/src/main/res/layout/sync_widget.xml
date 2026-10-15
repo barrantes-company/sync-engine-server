@@ -2,7 +2,19 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#07111D">
+
+    <TextView
+        android:id="@+id/widget_initial_fallback"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:padding="20dp"
+        android:text="SYNC ENGINE\nAbre la aplicación para activar el widget"
+        android:textColor="#F7F8FB"
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
     <ImageView
         android:id="@+id/widget_static"
