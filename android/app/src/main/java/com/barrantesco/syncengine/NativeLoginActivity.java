@@ -13,7 +13,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.json.JSONException;
 
@@ -88,12 +87,12 @@ public final class NativeLoginActivity extends Activity {
 
         username = input("Usuario");
         username.setSingleLine(true);
-        card.addView(username, params(-1, dp(52)));
+        card.addView(username, params(-1, 52));
 
         password = input("Contraseña");
         password.setInputType( android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         password.setSingleLine(true);
-        LinearLayout.LayoutParams passParams = params(-1, dp(52));
+        LinearLayout.LayoutParams passParams = params(-1, 52);
         passParams.topMargin = dp(12);
         card.addView(password, passParams);
 
@@ -108,12 +107,12 @@ public final class NativeLoginActivity extends Activity {
         submit.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         submit.setAllCaps(false);
         submit.setBackground(tint(GOLD, dp(14)));
-        LinearLayout.LayoutParams buttonParams = params(-1, dp(52));
+        LinearLayout.LayoutParams buttonParams = params(-1, 52);
         buttonParams.topMargin = dp(18);
         card.addView(submit, buttonParams);
         progress = new ProgressBar(this);
         progress.setVisibility(View.GONE);
-        LinearLayout.LayoutParams progressParams = params(-2, dp(30));
+        LinearLayout.LayoutParams progressParams = params(-2, 30);
         progressParams.gravity = Gravity.CENTER_HORIZONTAL;
         progressParams.topMargin = dp(10);
         card.addView(progress, progressParams);
