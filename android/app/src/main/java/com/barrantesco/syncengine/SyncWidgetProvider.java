@@ -8,11 +8,13 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
 
 /** Widget de pantalla de inicio: reloj, contadores de mensajes/llamadas y accesos rápidos. */
 public final class SyncWidgetProvider extends AppWidgetProvider {
+    private static final String TAG = "SyncWidgetProvider";
     private static final String ACTION_TICK = "com.barrantesco.syncengine.WIDGET_TICK";
     private static final int[] FRAME_IDS = {
             R.id.widget_frame_0, R.id.widget_frame_1, R.id.widget_frame_2,
@@ -25,6 +27,7 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
         String action = intent.getAction();
+        Log.d(TAG, "onReceive action=" + action);
         if (ACTION_TICK.equals(action)
                 || Intent.ACTION_TIME_CHANGED.equals(action)
                 || Intent.ACTION_TIMEZONE_CHANGED.equals(action)
@@ -35,8 +38,13 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+        Log.i(TAG, "onUpdate ids=" + java.util.Arrays.toString(appWidgetIds));
         for (int appWidgetId : appWidgetIds) {
-            updateWidget(context, appWidgetManager, appWidgetId);
+            try {
+                updateWidget(context, appWidgetManager, appWidgetId);
+            } catch (RuntimeException error) {
+                Log.e(TAG, "Failed to render widget id=" + appWidgetId, error);
+            }
         }
         if (AppSettings.isLoggedIn(context)) {
             SyncJobService.schedule(context);
@@ -69,6 +77,7 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
     }
 
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId) {
+        Log.d(TAG, "updateWidget start id=" + widgetId);
         Bundle options = manager.getAppWidgetOptions(widgetId);
         int widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
         int heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 120);
@@ -137,6 +146,7 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_calls_action, PendingIntent.getActivity(
                 context, 22, calls, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         manager.updateAppWidget(widgetId, views);
+        Log.i(TAG, "updateAppWidget submitted id=" + widgetId + " size=" + widthDp + "x" + heightDp);
         scheduleTick(context);
     }
 
@@ -170,6 +180,7 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
     @Override
     public void onEnabled(Context context) {
         super.onEnabled(context);
+        Log.i(TAG, "onEnabled");
         refreshAll(context);
     }
 
