@@ -11,10 +11,9 @@
         android:layout_height="match_parent"
         android:gravity="center"
         android:padding="20dp"
-        android:text="SYNC ENGINE\nIniciando widget…"
+        android:text="Iniciando…"
         android:textColor="#F7F8FB"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:textSize="14sp" />
 
     <ImageView
         android:id="@+id/widget_static"
@@ -32,41 +31,12 @@
         android:inAnimation="@anim/widget_fade_in"
         android:outAnimation="@anim/widget_fade_out">
 
-        <ImageView
-            android:id="@+id/widget_frame_0"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitXY" />
-
-        <ImageView
-            android:id="@+id/widget_frame_1"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitXY" />
-
-        <ImageView
-            android:id="@+id/widget_frame_2"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitXY" />
-
-        <ImageView
-            android:id="@+id/widget_frame_3"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitXY" />
-
-        <ImageView
-            android:id="@+id/widget_frame_4"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitXY" />
-
-        <ImageView
-            android:id="@+id/widget_frame_5"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitXY" />
+        <ImageView android:id="@+id/widget_frame_0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
+        <ImageView android:id="@+id/widget_frame_1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
+        <ImageView android:id="@+id/widget_frame_2" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
+        <ImageView android:id="@+id/widget_frame_3" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
+        <ImageView android:id="@+id/widget_frame_4" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
+        <ImageView android:id="@+id/widget_frame_5" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
     </ViewFlipper>
 
     <ImageView
@@ -100,7 +70,7 @@
         android:padding="13dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_widget_settings" />
-    <!-- Zonas de acción transparentes; las etiquetas y el halo se dibujan en WidgetRenderer. -->
+
     <LinearLayout
         android:id="@+id/widget_action_row"
         android:layout_width="200dp"
