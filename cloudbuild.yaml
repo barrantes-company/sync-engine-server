@@ -1,0 +1,22 @@
+
+steps:
+  - name: 'node:22'
+    id: 'validate-and-test'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+        node --version
+        npm --version
+        npm ci
+        node --check server.js
+        node --check db.js
+        node --check ws-bridge.js
+        npm test
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1200s'
+  
