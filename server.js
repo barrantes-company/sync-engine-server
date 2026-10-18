@@ -135,21 +135,35 @@ function getLocalIPv4Addresses() {
 }
 
 const app = express();
+app.disable("x-powered-by");
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
 
+const allowedOrigins = new Set(
+  String(process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://") || origin === "null") {
+    if (!origin || origin === "null" || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://")) {
       return callback(null, true);
     }
-    return callback(null, true);
+    if (allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error("Origen no permitido por CORS"));
   },
   credentials: true
 };
 app.use(cors(corsOptions));
 
-// Configuración de body-parser para soporte de transferencias pesadas de hasta 2 GB
-app.use(express.json({ limit: "2gb" }));
-app.use(express.urlencoded({ limit: "2gb", extended: true }));
+// JSON nunca necesita aceptar el tamaño reservado para multipart uploads.
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "1mb", extended: true }));
 app.use(
   "/.well-known",
   express.static(path.join(__dirname, "public", ".well-known"), {
@@ -206,17 +220,25 @@ const storage = multer.diskStorage({
     cb(null, UPLOADS_DIR);
   },
   filename: function (_req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_\-\.]/g, "_");
-    cb(null, `${base}-${uniqueSuffix}${ext}`);
+    const ext = path.extname(file.originalname || "").toLowerCase().slice(0, 20);
+    cb(null, `${crypto.randomUUID()}${ext}`);
   }
 });
 
 const upload = multer({
-  storage: storage,
+  storage,
   limits: {
-    fileSize: 2 * 1024 * 1024 * 1024 // 2 GB
+    fileSize: 2 * 1024 * 1024 * 1024,
+    files: 1,
+    fields: 8,
+    fieldSize: 64 * 1024,
+    parts: 12
+  },
+  fileFilter: (_req, file, cb) => {
+    if (!file.originalname || file.originalname.length > 255) {
+      return cb(new Error("Nombre de archivo inválido"));
+    }
+    cb(null, true);
   }
 });
 
@@ -324,6 +346,14 @@ app.get('/api/notifications/vapid-public-key', requireAuth, (_req, res) => {
   res.json({ ok: true, configured: webPushConfigured, publicKey: webPushConfigured ? VAPID_PUBLIC_KEY : null });
 });
 
+function isBlockedMetadataHost(hostname) {
+  const host = String(hostname || "").toLowerCase().replace(/[\[\]]/g, "");
+  if (host === "localhost" || host.endsWith(".localhost") || host === "metadata.google.internal") return true;
+  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(host)) return true;
+  const match = host.match(/^172\.(\d+)\./);
+  return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
+}
+
 // Extractor de Metadatos OpenGraph y Favicon para Rich Link Cards
 async function fetchUrlMetadata(text) {
   if (!text || typeof text !== "string") return null;
@@ -333,8 +363,9 @@ async function fetchUrlMetadata(text) {
   const targetUrl = match[0];
   try {
     const parsed = new URL(targetUrl);
+    if (!['http:', 'https:'].includes(parsed.protocol) || isBlockedMetadataHost(parsed.hostname)) return null;
     const domain = parsed.hostname;
-    const defaultFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+    const defaultFavicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3500);
@@ -429,6 +460,12 @@ app.post("/api/auth/login", (req, res) => {
   } catch (err) {
     res.status(401).json({ error: err.message || "Error de credenciales" });
   }
+});
+
+app.post("/api/auth/logout", requireAuth, (req, res) => {
+  const token = req.headers.authorization.slice(7).trim();
+  db.revokeSession(token);
+  res.status(204).end();
 });
 
 /**
@@ -844,7 +881,13 @@ if (!isServerlessRuntime) {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: function (origin, callback) {
+      if (!origin || origin === "null" || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://") || allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Origen no permitido por CORS"));
+    },
+    credentials: true,
     methods: ["GET", "POST"]
   },
   maxHttpBufferSize: 50e6
