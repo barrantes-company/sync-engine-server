@@ -31,7 +31,6 @@ final class WidgetRenderer {
             0xFF24D7F2, 0xFFB8F7FF, 0xFF378BFF, 0xFFFFFFFF, 0xFFFFC15A,
             0xFFFFE2A0, 0xFFFFA63D, 0xFFDA8A25, 0xFFFFF0C4};
     private static final int TRAIL_COUNT = 16;
-    // Keep the single bitmap sent through RemoteViews below Binder's transaction limit.
     private static final int MAX_WIDTH_PX = 480;
     private static final int MAX_HEIGHT_PX = 240;
     private static final float CORNER_DP = 28f;
@@ -41,7 +40,6 @@ final class WidgetRenderer {
     private WidgetRenderer() {
     }
 
-    /** Dimensiones en píxeles del bitmap según el tamaño del widget en dp. */
     static int[] size(Context context, int widthDp, int heightDp) {
         float density = context.getResources().getDisplayMetrics().density;
         float w = Math.max(widthDp, 110) * density;
@@ -61,10 +59,6 @@ final class WidgetRenderer {
         return display;
     }
 
-    /**
-     * Fotograma de fondo: negro, estelas con degradado lateral, brillo inferior y borde.
-     * @param frame índice 0..FRAMES-1 dentro del ciclo.
-     */
     static Bitmap background(Context context, int w, int h, float unit, int frame) {
         Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
@@ -81,7 +75,6 @@ final class WidgetRenderer {
                 new float[] {0f, 0.58f, 1f}, Shader.TileMode.CLAMP));
         canvas.drawRect(bounds, glassBase);
 
-        // Las estelas se dibujan en una capa para poder desvanecer sus extremos.
         int layer = canvas.saveLayer(bounds, null);
         double phase = 2 * Math.PI * frame / FRAMES;
         Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -131,8 +124,8 @@ final class WidgetRenderer {
     }
 
     /**
-     * Capa de texto transparente: hora grande, fecha y contadores.
-     * @param status segmentos "número", "etiqueta" alternados; vacío si se ocultan.
+     * Capa de texto: hora como hero, marca S∞ pequeña como luz de estado.
+     * Sin wordmarks de marca.
      */
     static Bitmap text(Context context, int w, int h, String zone, boolean use24h,
                        String[] status, boolean dim) {
@@ -159,7 +152,6 @@ final class WidgetRenderer {
         float pad = Math.max(8f, w * 0.045f);
         float radius = Math.max(8f, h * 0.12f);
 
-        // Paneles de cristal y halo ámbar, inspirados en el paquete de referencia.
         shape.setColor(0x351D3547);
         canvas.drawRoundRect(new RectF(pad, pad, w - pad, h - pad), radius, radius, shape);
         shape.setStyle(Paint.Style.STROKE);
@@ -173,102 +165,59 @@ final class WidgetRenderer {
         canvas.drawRoundRect(new RectF(pad, pad, w - pad, h - pad), radius, radius, shape);
         shape.setShader(null);
 
-        float labelSize = Math.max(7f, Math.min(12f, h * (compact ? 0.12f : 0.075f)));
-        float clockSize = h * (compact ? 0.48f : (wide ? 0.40f : 0.38f));
-        float contentLeft = pad + Math.max(8f, h * 0.12f);
-        float contentRight = w - pad - Math.max(8f, h * 0.12f);
+        float labelSize = Math.max(7f, Math.min(11f, h * (compact ? 0.11f : 0.07f)));
+        float clockSize = h * (compact ? 0.52f : (wide ? 0.48f : 0.46f));
+        float contentLeft = pad + Math.max(6f, h * 0.08f);
 
-        // Marca y estado de conexión.
-        strong.setColor(0xFFFFE4AD);
-        strong.setTextSize(Math.max(8f, Math.min(15f, h * (compact ? 0.17f : 0.105f))));
-        if (wide) {
-            canvas.drawText("SYNC ENGINE", contentLeft, pad + labelSize + 3f, strong);
-            text.setTextSize(labelSize);
-            text.setColor(0xFFB7C8D7);
-            canvas.drawText("BY BARRANTES CO.", contentLeft, pad + labelSize * 2.25f, text);
-            float dotX = contentLeft + 4f;
-            float dotY = Math.min(h * 0.62f, h - pad - labelSize * 2.3f);
-            shape.setColor(0xFF35D6A2);
-            canvas.drawCircle(dotX, dotY - labelSize * 0.25f, Math.max(2f, labelSize * 0.23f), shape);
-            text.setColor(0xFFBFE8D8);
-            text.setTextSize(labelSize);
-            canvas.drawText("ONLINE SYNC", dotX + labelSize * 0.75f, dotY, text);
-        } else {
-            strong.setTextAlign(Paint.Align.CENTER);
-            canvas.drawText("SYNC ENGINE", w / 2f, pad + labelSize + 2f, strong);
-            strong.setTextAlign(Paint.Align.LEFT);
-        }
+        // Marca S∞ pequeña como luz de estado (nunca hero).
+        boolean online = status != null && status.length > 0 && !status[0].isEmpty();
+        float markSize = Math.max(6f, Math.min(10f, h * 0.08f));
+        float markX = contentLeft;
+        float markY = pad + markSize + 2f;
+        shape.setColor(online ? 0xFF35D6A2 : 0xFF8A9BB0);
+        canvas.drawCircle(markX + markSize * 0.4f, markY - markSize * 0.35f, markSize * 0.22f, shape);
+        strong.setColor(0xFFE8F0F8);
+        strong.setTextSize(markSize);
+        canvas.drawText("S∞", markX + markSize * 0.7f, markY, strong);
 
-        // Hora y fecha: panorámica para 4x2/4x1, apilada para 2x2.
+        // Hora como hero.
         Paint clockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         clockPaint.setTypeface(display(context));
         clockPaint.setColor(Color.WHITE);
-        clockPaint.setShadowLayer(Math.max(1f, h * 0.018f), 0, 0, 0x80FFBD52);
+        clockPaint.setShadowLayer(Math.max(1f, h * 0.016f), 0, 0, 0x60FFBD52);
         clockPaint.setTextSize(clockSize);
-        float maxClockWidth = wide ? w * 0.46f : w * 0.84f;
+        float maxClockWidth = wide ? w * 0.55f : w * 0.88f;
         float measured = clockPaint.measureText(clock);
         if (measured > maxClockWidth) clockPaint.setTextSize(clockSize * maxClockWidth / measured);
         if (wide) {
-            float clockX = w - pad - clockPaint.measureText(clock) - h * 0.07f;
-            float baseline = compact ? h * 0.60f : h * 0.59f;
+            float clockX = w - pad - clockPaint.measureText(clock) - h * 0.05f;
+            float baseline = compact ? h * 0.62f : h * 0.58f;
             canvas.drawText(clock, clockX, baseline, clockPaint);
             text.setTextSize(labelSize);
             text.setColor(0xFFD0D9E3);
             float dateWidth = text.measureText(date);
-            canvas.drawText(date, w - pad - dateWidth - h * 0.07f, Math.min(h - pad - 5f, baseline + labelSize * 1.35f), text);
+            canvas.drawText(date, w - pad - dateWidth - h * 0.05f, Math.min(h - pad - 4f, baseline + labelSize * 1.3f), text);
         } else {
-            float baseline = h * 0.55f;
+            float baseline = h * 0.52f;
             canvas.drawText(clock, (w - clockPaint.measureText(clock)) / 2f, baseline, clockPaint);
             text.setTextSize(labelSize);
             text.setColor(0xFFD0D9E3);
-            canvas.drawText(date, (w - text.measureText(date)) / 2f, h * 0.68f, text);
+            canvas.drawText(date, (w - text.measureText(date)) / 2f, h * 0.66f, text);
         }
 
-        if (status.length >= 4) {
+        // Contadores subordinados (si existen).
+        if (status != null && status.length >= 4) {
             String unread = status[0];
             String unreadLabel = status[1];
             String missed = status[2];
             String missedLabel = status[3];
-            if (wide && compact) {
-                text.setTextSize(Math.max(6f, Math.min(9f, h * 0.075f)));
-                text.setColor(dim ? 0xFFB4C2CF : 0xFFFFD88A);
-                canvas.drawText(unread + " MENSAJES  ·  " + missed + " LLAMADAS",
-                        contentLeft, h * 0.87f, text);
-            } else {
-                float pillY = wide ? h * 0.82f : h * 0.84f;
-                float pillH = Math.max(12f, h * 0.19f);
-                float gap = Math.max(4f, w * 0.012f);
-                float pillW = wide ? Math.min(w * 0.29f, h * 2.15f) : w * 0.40f;
-                float leftX = wide ? contentLeft : (w - pillW * 2 - gap) / 2f;
-                float rightX = wide ? contentLeft + pillW + gap : leftX + pillW + gap;
-                Paint pill = new Paint(Paint.ANTI_ALIAS_FLAG);
-                pill.setColor(0x4A07111D);
-                canvas.drawRoundRect(new RectF(leftX, pillY - pillH, leftX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
-                canvas.drawRoundRect(new RectF(rightX, pillY - pillH, rightX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
-                pill.setStyle(Paint.Style.STROKE);
-                pill.setStrokeWidth(Math.max(0.7f, h * 0.006f));
-                pill.setColor(0x8CE4B866);
-                canvas.drawRoundRect(new RectF(leftX, pillY - pillH, leftX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
-                canvas.drawRoundRect(new RectF(rightX, pillY - pillH, rightX + pillW, pillY), pillH / 2f, pillH / 2f, pill);
-                pill.setStyle(Paint.Style.FILL);
-                Paint metric = new Paint(Paint.ANTI_ALIAS_FLAG);
-                metric.setTypeface(display(context));
-                metric.setColor(dim ? 0xFFB4C2CF : 0xFFFFD88A);
-                metric.setTextSize(Math.max(8f, Math.min(14f, pillH * 0.48f)));
-                String first = unread + "  " + unreadLabel;
-                String second = missed + "  " + missedLabel;
-                canvas.drawText(first, leftX + pillH * 0.28f, pillY - pillH * 0.32f, metric);
-                canvas.drawText(second, rightX + pillH * 0.28f, pillY - pillH * 0.32f, metric);
-            }
+            text.setTextSize(Math.max(6f, Math.min(9f, h * 0.07f)));
+            text.setColor(dim ? 0xFFB4C2CF : 0xFFFFD88A);
+            String line = unread + " " + unreadLabel + "  ·  " + missed + " " + missedLabel;
+            float y = wide ? h * 0.86f : h * 0.82f;
+            canvas.drawText(line, contentLeft, y, text);
         }
 
-        if (wide) {
-            text.setTextSize(Math.max(6f, Math.min(10f, labelSize)));
-            text.setColor(0xFFFFD78A);
-            float actionY = h - pad - labelSize * 0.15f;
-            canvas.drawText("MENSAJES  ›", w * 0.48f, actionY, text);
-            canvas.drawText("LLAMADAS  ›", w * 0.70f, actionY, text);
-        }
         return bitmap;
     }
 }
