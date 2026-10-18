@@ -1990,8 +1990,6 @@ header.sticky {
     padding-right: 9px !important;
   }
 }
-
-
 /* ==========================================================================
    SYNC ENGINE — MOBILE UX PASS 02
    Functional readability and touch ergonomics; no auth or behavior changes.
@@ -2148,7 +2146,6 @@ header.sticky {
   }
 }
 
-
 /* ==========================================================================
    SYNC ENGINE — INTERFAZ DE REFERENCIA + TEMAS CONFIGURABLES
    Tema base: fondos claros, azul marino y azul eléctrico. Tema Energy opcional.
@@ -2244,7 +2241,6 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
   #app-container > header.sticky > div { padding-left: 10px !important; padding-right: 10px !important; }
 }
 
-
 /* Ajuste cromático: sustituye el dorado de la interfaz operativa por azul funcional.
    El logotipo original y los recursos de marca no se alteran. */
 #app-container {
@@ -2275,7 +2271,6 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
 }
 #app-container[data-se-theme="energy"] [class*="text-[#C5A059]"],
 #app-container[data-se-theme="energy"] [class*="text-[#99793D]"] { color: #0877F9 !important; }
-
 
 /* SYNC ENGINE — retirar accesos duplicados de la vista principal.
    Los módulos y sus capacidades se conservan; solo se ocultan sus duplicados visuales. */
