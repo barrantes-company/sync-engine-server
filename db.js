@@ -134,9 +134,10 @@ function hashPassword(password, salt) {
 }
 
 function seedDevelopmentAdmin(data) {
-  const isDevelopment = (process.env.NODE_ENV === "development" || !process.env.NODE_ENV) &&
+  const isDevelopment = process.env.NODE_ENV === "development" &&
+    process.env.SEED_DEVELOPMENT_ADMIN === "true" &&
     !process.env.RENDER && !process.env.RENDER_EXTERNAL_URL;
-  if (!isDevelopment) {
+  if (!isDevelopment || typeof process.env.SEED_DEVELOPMENT_ADMIN_PASSWORD !== "string" || process.env.SEED_DEVELOPMENT_ADMIN_PASSWORD.length < 12) {
     return false;
   }
 
@@ -162,7 +163,7 @@ function seedDevelopmentAdmin(data) {
     cleanDisplayName: cleanDisplayName,
     formattedName: formatFullName("SYNC-0000", cleanDisplayName),
     salt: salt,
-    passwordHash: hashPassword("password123", salt),
+    passwordHash: hashPassword(process.env.SEED_DEVELOPMENT_ADMIN_PASSWORD, salt),
     createdAt: Date.now(),
     plan: "pro",
     role: "admin"
@@ -258,7 +259,10 @@ function loginUser(username, password) {
   }
 
   const hash = hashPassword(password, user.salt);
-  if (!crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(user.passwordHash))) {
+  const storedHash = String(user.passwordHash || "");
+  const hashBuffer = Buffer.from(hash, "hex");
+  const storedHashBuffer = Buffer.from(storedHash, "hex");
+  if (hashBuffer.length !== storedHashBuffer.length || !crypto.timingSafeEqual(hashBuffer, storedHashBuffer)) {
     throw new Error("Credenciales inválidas");
   }
 
