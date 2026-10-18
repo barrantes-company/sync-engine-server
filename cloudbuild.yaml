@@ -7,16 +7,23 @@ steps:
       - '-c'
       - |
         set -e
-        node --version
-        npm --version
+
+        echo "=== Instalando dependencias ==="
         npm ci
-        node --check server.js
-        node --check db.js
-        node --check ws-bridge.js
+
+        echo "=== Validando sintaxis ==="
+        npm run lint
+
+        echo "=== Pruebas existentes ==="
         npm test
+
+        echo "=== Pruebas de staging ==="
+        npm run test:staging
+
+        echo "=== Compilacion Webpack ==="
+        npm run build
 
 options:
   logging: CLOUD_LOGGING_ONLY
 
 timeout: '1200s'
-  
