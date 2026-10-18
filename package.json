@@ -1,35 +1,34 @@
 
-steps:
-  - name: 'node:22'
-    id: 'validate-and-test'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        set -e
-
-        echo "=== SYNC ENGINE 2.0 CI ==="
-        node --version
-        npm --version
-
-        echo "=== Instalando dependencias ==="
-        npm ci
-
-        echo "=== Validando sintaxis ==="
-        npm run lint
-
-        echo "=== Pruebas existentes ==="
-        npm test
-
-        echo "=== Seguridad e integracion ==="
-        npm run test:staging
-
-        echo "=== Compilacion Webpack ==="
-        npm run build
-
-        echo "=== Validaciones completadas ==="
-
-options:
-  logging: CLOUD_LOGGING_ONLY
-
-timeout: '1200s'
+{
+  "name": "sync-engine-server",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "webpack --config webpack.config.js",
+    "lint": "node --check server.js && node --check db.js && node --check ws-bridge.js && node --check pubsub-routing.js && node --check bridge-security.js && node --check pubsub-service.js && node --check extension_worker.js",
+    "test:staging": "node --test tests/security-fixes.test.js tests/staging-integration.test.js tests/persistence.test.js",
+    "test": "node tests/browser-lifecycle.test.js && node tests/p0-01.test.js && node tests/p0-02.test.js && node tests/widget.test.js && node --test tests/widget-summary.test.js && node tests/no-speed-insights.test.js",
+    "security-audit": "npm audit"
+  },
+  "dependencies": {
+    "@google-cloud/pubsub": "4.9.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.10.0",
+    "multer": "^2.4.0",
+    "selfsigned": "^5.5.0",
+    "socket.io": "^4.8.4",
+    "web-push": "^3.6.7",
+    "socket.io-client": "^4.8.4",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "webpack": "^5.111.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-node-externals": "^3.0.0"
+  }
+}
