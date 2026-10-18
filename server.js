@@ -220,17 +220,25 @@ const storage = multer.diskStorage({
     cb(null, UPLOADS_DIR);
   },
   filename: function (_req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_\-\.]/g, "_");
-    cb(null, `${base}-${uniqueSuffix}${ext}`);
+    const ext = path.extname(file.originalname || "").toLowerCase().slice(0, 20);
+    cb(null, `${crypto.randomUUID()}${ext}`);
   }
 });
 
 const upload = multer({
-  storage: storage,
+  storage,
   limits: {
-    fileSize: 2 * 1024 * 1024 * 1024 // 2 GB
+    fileSize: 2 * 1024 * 1024 * 1024,
+    files: 1,
+    fields: 8,
+    fieldSize: 64 * 1024,
+    parts: 12
+  },
+  fileFilter: (_req, file, cb) => {
+    if (!file.originalname || file.originalname.length > 255) {
+      return cb(new Error("Nombre de archivo inválido"));
+    }
+    cb(null, true);
   }
 });
 
@@ -452,6 +460,12 @@ app.post("/api/auth/login", (req, res) => {
   } catch (err) {
     res.status(401).json({ error: err.message || "Error de credenciales" });
   }
+});
+
+app.post("/api/auth/logout", requireAuth, (req, res) => {
+  const token = req.headers.authorization.slice(7).trim();
+  db.revokeSession(token);
+  res.status(204).end();
 });
 
 /**

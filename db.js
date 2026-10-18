@@ -282,13 +282,30 @@ function loginUser(username, password) {
 }
 
 function getUserByToken(token) {
-  if (!token) return null;
+  if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token)) return null;
   const db = readDb();
   const session = db.sessions.find((s) => s.token === token);
   if (!session) return null;
 
+  const expiresAt = Number(session.expiresAt || (session.createdAt + 30 * 24 * 60 * 60 * 1000));
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    db.sessions = db.sessions.filter((s) => s.token !== token);
+    writeDb(db);
+    return null;
+  }
+
   const user = db.users.find((u) => u.syncId === session.syncId);
   return user ? toPublicUser(user) : null;
+}
+
+function revokeSession(token) {
+  if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token)) return false;
+  const db = readDb();
+  const originalLength = db.sessions.length;
+  db.sessions = db.sessions.filter((session) => session.token !== token);
+  if (db.sessions.length === originalLength) return false;
+  writeDb(db);
+  return true;
 }
 
 function getUserBySyncId(syncId) {
@@ -1329,6 +1346,7 @@ module.exports = {
   registerUser,
   loginUser,
   getUserByToken,
+  revokeSession,
   getUserBySyncId,
   updateUserProfile,
   addContact,
