@@ -1,105 +1,176 @@
 package com.barrantesco.syncengine;
 
+import android.Manifest;
 import android.app.Activity;
-import android.content.Intent;
-import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
+import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Ajustes locales del widget. La autenticación y creación de usuarios pertenecen
+ * a la aplicación principal web, no a esta pantalla.
+ */
 public final class MainActivity extends Activity {
-    private EditText urlField;
+    private static final int BG = 0xFF07111D;
+    private static final int CARD = 0xFF111F2D;
+    private static final int GOLD = 0xFFFFC15A;
+    private static final int MUTED = 0xFF9AABBD;
+    private static final int WHITE = 0xFFF7F8FB;
+    private static final List<String> ZONES = Arrays.asList(
+            "America/Lima", "America/Bogota", "America/Mexico_City", "America/Santiago",
+            "America/Argentina/Buenos_Aires", "America/New_York", "Europe/Madrid", "UTC");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        buildContent();
+    }
 
-        int padding = dp(24);
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(padding, padding, padding, padding);
+    private void buildContent() {
+        LinearLayout page = new LinearLayout(this);
+        page.setOrientation(LinearLayout.VERTICAL);
+        page.setPadding(dp(22), dp(26), dp(22), dp(28));
+        page.setBackgroundColor(BG);
 
-        TextView title = new TextView(this);
-        title.setText(R.string.app_name);
-        title.setTextSize(26);
-        title.setTextColor(getColor(R.color.brand_navy));
+        TextView eyebrow = text("SYNC ENGINE  /  WIDGET", 12, GOLD);
+        eyebrow.setLetterSpacing(0.12f);
+        page.addView(eyebrow, matchWrap());
+
+        TextView title = text("Configuración", 28, WHITE);
         title.setTypeface(null, 1);
-        content.addView(title, matchWrap());
+        title.setPadding(0, dp(7), 0, dp(4));
+        page.addView(title, matchWrap());
 
-        TextView instructions = new TextView(this);
-        instructions.setText(R.string.setup_instructions);
-        instructions.setTextSize(16);
-        instructions.setTextColor(getColor(R.color.text_primary));
-        instructions.setLineSpacing(dp(4), 1f);
-        instructions.setPadding(0, dp(16), 0, dp(20));
-        content.addView(instructions, matchWrap());
+        TextView intro = text("Personaliza el widget y sus avisos. Tu cuenta se administra desde la aplicación principal.", 14, MUTED);
+        intro.setPadding(0, 0, 0, dp(22));
+        page.addView(intro, matchWrap());
 
-        urlField = new EditText(this);
-        urlField.setSingleLine(true);
-        urlField.setInputType( android.text.InputType.TYPE_CLASS_TEXT
-                | android.text.InputType.TYPE_TEXT_VARIATION_URI);
-        urlField.setHint(R.string.widget_url_hint);
-        urlField.setText(WidgetUrls.defaultUrl(this));
-        content.addView(urlField, matchWrap());
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(8), dp(16), dp(8));
+        card.setBackground(roundRect(CARD, dp(20)));
+        page.addView(card, matchWrap());
 
-        Button saveButton = new Button(this);
-        saveButton.setText(R.string.save_url);
-        saveButton.setOnClickListener(view -> saveDefaultUrl());
-        content.addView(saveButton, matchWrap());
+        card.addView(section("APARIENCIA"), matchWrap());
+        card.addView(toggle("Mostrar contadores", AppSettings.showCounters(this), value ->
+                AppSettings.setShowCounters(this, value)), matchWrap());
+        card.addView(toggle("Formato de 24 horas", AppSettings.use24h(this), value ->
+                AppSettings.setUse24h(this, value)), matchWrap());
+        card.addView(toggle("Estelas animadas", AppSettings.animations(this), value ->
+                AppSettings.setAnimations(this, value)), matchWrap());
 
-        Button openButton = new Button(this);
-        openButton.setText(R.string.open_panel);
-        openButton.setOnClickListener(view -> openPanel());
-        content.addView(openButton, matchWrap());
+        card.addView(section("AVISOS"), matchWrap());
+        card.addView(toggle("Notificaciones", AppSettings.notifications(this), value -> {
+            AppSettings.setNotifications(this, value);
+            if (value) {
+                requestNotificationPermission();
+                FcmRegistration.registerCurrentDevice(this);
+            }
+        }), matchWrap());
 
-        TextView note = new TextView(this);
-        note.setText(R.string.web_sign_in_note);
-        note.setTextSize(14);
-        note.setTextColor(getColor(R.color.text_secondary));
-        note.setPadding(0, dp(12), 0, 0);
-        content.addView(note, matchWrap());
+        card.addView(section("ZONA HORARIA"), matchWrap());
+        Spinner zones = new Spinner(this);
+        zones.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, ZONES) {
+            @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                TextView view = (TextView) super.getView(position, convertView, parent);
+                view.setTextColor(WHITE);
+                return view;
+            }
+        });
+        int current = ZONES.indexOf(AppSettings.timeZone(this));
+        zones.setSelection(Math.max(current, 0));
+        zones.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GOLD));
+        zones.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                String zone = ZONES.get(position);
+                if (!zone.equals(AppSettings.timeZone(MainActivity.this))) {
+                    AppSettings.setTimeZone(MainActivity.this, zone);
+                    SyncWidgetProvider.refreshAll(MainActivity.this);
+                }
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+        });
+        card.addView(zones, matchWrap());
 
-        ScrollView scrollView = new ScrollView(this);
-        scrollView.addView(content);
-        setContentView(scrollView);
+        TextView serverNote = text("Servidor SYNC ENGINE: configurado automáticamente. No requiere ajustes manuales.", 12, MUTED);
+        serverNote.setPadding(0, dp(18), 0, dp(4));
+        page.addView(serverNote, matchWrap());
+
+        TextView footer = text("Los cambios se aplican directamente al widget.", 12, MUTED);
+        footer.setPadding(0, dp(12), 0, 0);
+        page.addView(footer, matchWrap());
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(BG);
+        scroll.addView(page);
+        setContentView(scroll);
     }
 
-    private void saveDefaultUrl() {
-        String url = urlField.getText().toString().trim();
-        if (!WidgetUrls.isWidgetUrl(url)) {
-            urlField.setError(getString(R.string.invalid_widget_url));
-            return;
-        }
-        WidgetUrls.saveDefaultUrl(this, url);
-        Toast.makeText(this, R.string.url_saved, Toast.LENGTH_SHORT).show();
+    private Switch toggle(String label, boolean checked, OnToggle listener) {
+        Switch view = new Switch(this);
+        view.setText(label);
+        view.setTextSize(15);
+        view.setTextColor(WHITE);
+        view.setChecked(checked);
+        view.setPadding(0, dp(10), 0, dp(10));
+        view.setButtonTintList(android.content.res.ColorStateList.valueOf(GOLD));
+        view.setOnCheckedChangeListener((button, value) -> {
+            listener.changed(value);
+            SyncWidgetProvider.refreshAll(this);
+        });
+        return view;
     }
 
-    private void openPanel() {
-        String url = urlField.getText().toString().trim();
-        if (!WidgetUrls.isWidgetUrl(url)) {
-            urlField.setError(getString(R.string.invalid_widget_url));
-            return;
-        }
-        WidgetUrls.saveDefaultUrl(this, url);
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-        } catch (android.content.ActivityNotFoundException exception) {
-            Toast.makeText(this, R.string.no_browser, Toast.LENGTH_LONG).show();
-        }
+    private interface OnToggle { void changed(boolean value); }
+
+    private TextView section(String label) {
+        TextView view = text(label, 11, GOLD);
+        view.setTypeface(null, 1);
+        view.setLetterSpacing(0.1f);
+        view.setPadding(0, dp(16), 0, dp(5));
+        return view;
+    }
+
+    private TextView text(String value, int size, int color) {
+        TextView view = new TextView(this);
+        view.setText(value);
+        view.setTextSize(size);
+        view.setTextColor(color);
+        return view;
+    }
+
+    private android.graphics.drawable.GradientDrawable roundRect(int color, int radius) {
+        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
+        shape.setColor(color);
+        shape.setCornerRadius(radius);
+        shape.setStroke(dp(1), 0xFF26394A);
+        return shape;
     }
 
     private LinearLayout.LayoutParams matchWrap() {
-        return new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
+        return new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, 1);
+        }
     }
 }

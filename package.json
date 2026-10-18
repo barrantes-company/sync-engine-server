@@ -8,13 +8,15 @@
     "start": "node server.js",
     "build": "webpack --config webpack.config.js",
     "lint": "node --check server.js db.js extension_worker.js",
-    "test": "node tests/p0-01.test.js && node tests/p0-02.test.js && node tests/widget.test.js"
+    "test": "node tests/browser-lifecycle.test.js && node tests/p0-01.test.js && node tests/p0-02.test.js && node tests/widget.test.js && node --test tests/widget-summary.test.js && node tests/no-speed-insights.test.js",
+    "security-audit": "npm audit"
   },
   "dependencies": {
     "@google-cloud/pubsub": "4.9.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
+    "firebase-admin": "^13.10.0",
     "multer": "^2.4.0",
     "selfsigned": "^5.5.0",
     "socket.io": "^4.8.4",

@@ -19,6 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/sync-effects.css">
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
@@ -124,6 +125,29 @@
 
   <!-- APLICACIÓN PRINCIPAL -->
   <div id="app-container" class="h-screen min-h-0 flex flex-col overflow-hidden hidden bg-white w-full max-w-[1600px] mx-auto shadow-sm">
+    <!-- NAVEGACIÓN GLOBAL SYNC ENGINE -->
+    <nav id="sync-engine-nav-rail" aria-label="Navegación principal">
+      <button class="se-nav-item is-active" data-se-view="chats" aria-label="Chats" title="Chats">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v12H8l-4 3v-15Z"/><path d="M8 9h8M8 13h6"/></svg><span>Chats</span>
+      </button>
+      <button class="se-nav-item" data-se-view="calls" aria-label="Llamadas" title="Llamadas">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H4.5A1.5 1.5 0 0 0 3 4.5C3 13.6 10.4 21 19.5 21a1.5 1.5 0 0 0 1.5-1.5V17l-5-2-2 2a15 15 0 0 1-4.5-4.5l2-2-2-5H7Z"/></svg><span>Llamadas</span>
+      </button>
+      <button class="se-nav-item" data-se-view="channels" aria-label="Canales" title="Canales">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 12h8M8 15h5"/></svg><span>Canales</span>
+      </button>
+      <button class="se-nav-item" data-se-view="contacts" aria-label="Contactos" title="Contactos">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.5-3.2 2.3-5 5.5-5s5 1.8 5.5 5"/><circle cx="17" cy="9" r="2.2"/><path d="M16 14.5c2.5-.2 4.1 1.2 4.5 3.5"/></svg><span>Contactos</span>
+      </button>
+      <div class="se-nav-divider"></div>
+      <button class="se-nav-item se-nav-profile" data-se-view="profile" aria-label="Perfil y ajustes" title="Perfil y ajustes">
+        <span class="se-nav-avatar">SE</span><span>Perfil</span>
+      </button>
+      <button class="se-nav-item se-nav-theme" id="se-theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2M12 19v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="4"/></svg><span>Tema Energy</span>
+      </button>
+    </nav>
+
     
     <!-- ENCABEZADO SUPERIOR -->
     <header class="sticky top-0 z-40 bg-white border-b border-[rgba(197,160,89,0.22)] text-[#0A1A3A] shadow-sm">
@@ -193,16 +217,10 @@
       <!-- COLUMNA 1: LISTA DE CONTACTOS Y CANALES (SIDEBAR) -->
       <aside id="sidebar-panel" class="w-full lg:w-[280px] flex-shrink-0 bg-white border-r lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full min-h-0 overflow-hidden shadow-sm transition-all z-10">
         
-        <!-- Switcher Segmentado de Espacio de Trabajo: DMs vs Canales -->
-        <div class="p-2 border-b border-[rgba(197,160,89,0.18)] bg-[#F8FAFC] flex items-center gap-1 flex-shrink-0">
-          <button id="tab-sidebar-dms" type="button" class="workspace-segmented-tab is-active flex items-center justify-center gap-1.5">
-            <span>💬</span> <span>Directos</span>
-            <span id="contacts-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-[#F1F5F9] text-[#C5A059] font-mono">0</span>
-          </button>
-          <button id="tab-sidebar-channels" type="button" class="workspace-segmented-tab flex items-center justify-center gap-1.5">
-            <span>#</span> <span>Canales</span>
-            <span id="channels-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-[#F1F5F9] text-[#0A1A3A] font-mono">2</span>
-          </button>
+        <!-- Contadores conservados para la lógica de contactos y canales, sin pestañas duplicadas. -->
+        <div class="sr-only" aria-hidden="true">
+          <span id="contacts-count-badge">0</span>
+          <span id="channels-count-badge">0</span>
         </div>
 
         <!-- VISTA DE CHATS DIRECTOS (DMs) -->
@@ -273,6 +291,11 @@
             </div>
 
             <div>
+              <button id="enable-push-notifications-btn" type="button" class="text-xs text-[#C5A059] hover:text-[#99793D] font-bold cursor-pointer transition-colors">Activar notificaciones cuando SYNC ENGINE está cerrado</button>
+              <p id="push-notifications-status" class="text-[10px] text-[#64748B] mt-1" role="status" aria-live="polite"></p>
+            </div>
+
+            <div>
               <label for="profile-name-input" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre personalizado</label>
               <input type="text" id="profile-name-input" maxlength="35" title="Nombre personalizado, sin emojis" placeholder="ej. Laptop de Jose" class="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A]">
               <p class="text-[10px] text-[#64748B] mt-1 font-mono">Formato: [ID] - [Nombre] · Los emojis se eliminan automáticamente.</p>
@@ -301,13 +324,27 @@
 
       <!-- COLUMNA 2: VENTANA DE CONVERSACIÓN ACTIVA (FLEX-GROW: 1, FONDO ADAPTADO 768 × 1024px O SUPERIOR) -->
       <div id="chat-panel-container" class="flex-1 min-h-0 flex flex-col h-full min-w-0 relative">
+
+        <section id="se-calls-home" class="hidden" aria-label="Llamadas y videollamadas">
+          <div class="se-calls-content">
+            <div class="se-calls-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H4.5A1.5 1.5 0 0 0 3 4.5C3 13.6 10.4 21 19.5 21a1.5 1.5 0 0 0 1.5-1.5V17l-5-2-2 2a15 15 0 0 1-4.5-4.5l2-2-2-5H7Z"/></svg></div>
+            <h1>Llamadas y videollamadas</h1>
+            <p>Comunícate con tus contactos desde SYNC ENGINE.</p>
+            <div class="se-calls-actions">
+              <button type="button" id="se-start-call-from-home" class="se-primary-action"><span>＋</span> Iniciar llamada</button>
+              <button type="button" id="se-return-to-chats" class="se-secondary-action">Volver a conversaciones</button>
+            </div>
+            <p class="se-calls-hint">Selecciona un contacto para iniciar una llamada de voz o video.</p>
+          </div>
+        </section>
+
         <div id="workspace-split-container" class="flex flex-1 min-h-0 flex-col md:flex-row gap-0 lg:gap-3 overflow-hidden h-full min-w-0 transition-all duration-300">
 
           <!-- ÁREA CENTRAL DE CONVERSACIÓN (CHAT PANEL) -->
           <section id="chat-panel" class="flex flex-1 min-h-0 bg-white lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full overflow-hidden shadow-sm relative min-w-0 transition-all">
             
             <!-- Header del Chat Activo -->
-            <div id="chat-header-bar" class="chat-header-bar px-3 sm:px-4 py-2.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-3 flex-shrink-0 z-10">
+            <div id="chat-header-bar" class="chat-header-bar hidden px-3 sm:px-4 py-2.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-3 flex-shrink-0 z-10">
               <div class="flex items-center gap-2.5 min-w-0">
                 
                 <button id="back-to-contacts-btn" type="button" title="Volver a la lista de chats"
@@ -418,7 +455,7 @@
           </div>
 
           <!-- BARRA DE ENTRADA INFERIOR -->
-          <div id="input-container" class="mb-0 p-3 bg-white border-t border-[rgba(197,160,89,0.22)] flex flex-col gap-2 relative flex-shrink-0">
+          <div id="input-container" class="hidden mb-0 p-3 bg-white border-t border-[rgba(197,160,89,0.22)] flex flex-col gap-2 relative flex-shrink-0">
 
             <!-- Previsualización de Mensaje Citado (Reply) -->
             <div id="reply-preview-bar" class="hidden items-center justify-between p-2 sm:p-2.5 rounded-xl bg-[#F8FAFC] border-l-4 border-[#C5A059] border border-[rgba(197,160,89,0.25)] shadow-xs">
@@ -502,7 +539,7 @@
                     class="composer-field w-full resize-none rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/25 outline-none px-4 py-3 text-sm text-[#0A1A3A] placeholder-gray-400 max-h-36 overflow-y-auto leading-relaxed shadow-xs transition-all"></textarea>
                 </div>
 
-                <button id="send-btn" type="submit" title="Enviar mensaje (Enter)" aria-label="Enviar mensaje"
+                <button id="send-btn" class="se-send-energy se-shimmer-target" type="submit" title="Enviar mensaje (Enter)" aria-label="Enviar mensaje"
                   class="btn-send h-11 min-w-[44px] px-3.5 sm:px-5 rounded-2xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-sm shadow-md active:scale-95 flex items-center justify-center gap-1.5 transition-all flex-shrink-0 cursor-pointer">
                   <span class="text-base leading-none">➤</span>
                   <span class="hidden sm:inline">Enviar</span>
@@ -629,24 +666,24 @@
       <form id="auth-form" class="flex flex-col gap-4">
         <div>
           <label for="auth-username" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre de Usuario</label>
-          <input type="text" id="auth-username" required title="Nombre de usuario" placeholder="ej. jbarrantes"
+          <input type="text" id="auth-username" required title="Nombre de usuario" placeholder="ej. jbarrantes" autocomplete="username"
             class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
         </div>
 
         <div>
           <label for="auth-password" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Contraseña</label>
-          <input type="password" id="auth-password" required title="Contraseña" placeholder="••••••••"
+          <input type="password" id="auth-password" required title="Contraseña" placeholder="••••••••" autocomplete="current-password"
             class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
         </div>
 
         <div id="display-name-group" class="hidden">
           <label for="auth-display-name" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre Personalizado (sin emojis)</label>
-          <input type="text" id="auth-display-name" title="Nombre personalizado" placeholder="ej. Laptop de Jose"
+          <input type="text" id="auth-display-name" title="Nombre personalizado" placeholder="ej. Laptop de Jose" autocomplete="name"
             class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
           <p class="text-[10px] text-[#64748B] mt-1 font-mono">Se generará automáticamente tu ID único (ej. SYNC-9482).</p>
         </div>
 
-        <p id="auth-error-msg" class="text-xs text-red-500 hidden font-medium"></p>
+        <p id="auth-error-msg" class="text-xs text-red-500 hidden font-medium" role="alert"></p>
 
         <button type="submit" id="auth-submit-btn"
           class="w-full py-3 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-sm shadow-md transition-all cursor-pointer">
@@ -1199,11 +1236,14 @@
   let activeContactSyncId = null;
   let contactsMap = new Map();
   let socket = null;
+  let isSocketAuthenticated = false;
 
   // Deduplicación local de mensajes
   const renderedMessageIds = new Set();
   let activeConversationMessages = [];
   let currentPinnedMessage = null;
+  let offlineOutboxDatabase = null;
+  let flushingOfflineMessages = false;
 
   // Grabación de Audio (MediaRecorder API)
   let mediaRecorder = null;
@@ -1232,6 +1272,8 @@
   const headerUserSyncId = document.getElementById('header-user-sync-id');
   const headerUserCleanName = document.getElementById('header-user-clean-name');
   const openEditProfileBtn = document.getElementById('open-edit-profile-btn');
+  const enablePushNotificationsBtn = document.getElementById('enable-push-notifications-btn');
+  const pushNotificationsStatus = document.getElementById('push-notifications-status');
   const logoutBtn = document.getElementById('logout-btn');
 
   const sidebarPanel = document.getElementById('sidebar-panel');
@@ -1473,12 +1515,6 @@
   }
 
   // Notificaciones Web & Pop-up flotante
-  function initWebNotifications() {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
-    }
-  }
-
   function triggerPopupNotification(title, message, icon = '💬') {
     if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
       try {
@@ -1509,6 +1545,203 @@
       popup.style.transform = 'translateY(-10px)';
       setTimeout(() => popup.remove(), 300);
     }, 3800);
+  }
+
+  function openOfflineOutbox() {
+    if (offlineOutboxDatabase) return Promise.resolve(offlineOutboxDatabase);
+    if (!('indexedDB' in window)) return Promise.reject(new Error('El almacenamiento offline no está disponible.'));
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('sync-engine-chat-outbox', 1);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains('messages')) {
+          request.result.createObjectStore('messages', { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = () => {
+        offlineOutboxDatabase = request.result;
+        resolve(offlineOutboxDatabase);
+      };
+      request.onerror = () => reject(request.error || new Error('No se pudo abrir la cola offline.'));
+    });
+  }
+
+  async function saveOfflineMessage(message) {
+    const database = await openOfflineOutbox();
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction('messages', 'readwrite');
+      transaction.objectStore('messages').put(message);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error('No se pudo guardar el mensaje offline.'));
+      transaction.onabort = () => reject(transaction.error || new Error('Se canceló el guardado del mensaje offline.'));
+    });
+  }
+
+  async function getOfflineMessages() {
+    const database = await openOfflineOutbox();
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction('messages', 'readonly');
+      const request = transaction.objectStore('messages').getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error || new Error('No se pudo leer la cola offline.'));
+      transaction.onerror = () => reject(transaction.error || new Error('No se pudo leer la cola offline.'));
+    });
+  }
+
+  async function deleteOfflineMessage(messageId) {
+    const database = await openOfflineOutbox();
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction('messages', 'readwrite');
+      transaction.objectStore('messages').delete(messageId);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error('No se pudo quitar el mensaje de la cola.'));
+      transaction.onabort = () => reject(transaction.error || new Error('No se pudo quitar el mensaje de la cola.'));
+    });
+  }
+
+  async function renderOfflineMessages(contactSyncId) {
+    if (!contactSyncId || !currentUser) return;
+    try {
+      const queued = await getOfflineMessages();
+      if (activeContactSyncId !== contactSyncId) return;
+      queued
+        .filter((message) => message.fromId === currentUser.syncId && message.toId === contactSyncId)
+        .sort((a, b) => a.timestamp - b.timestamp)
+        .forEach((message) => {
+          if (!activeConversationMessages.some((item) => item.id === message.id)) {
+            activeConversationMessages.push(message);
+          }
+          renderMessageBubble(message);
+        });
+    } catch (error) {
+      console.warn('No se pudo restaurar la cola offline:', error.message);
+    }
+  }
+
+  function updateMessageDeliveryStatus(messageId, status) {
+    const wrapper = document.getElementById('msg-' + messageId);
+    const statusIcon = wrapper && wrapper.querySelector('.msg-status-check');
+    if (!statusIcon) return;
+    const states = {
+      pending: ['◷', 'Pendiente de envío'],
+      failed: ['⚠', 'No enviado; se reintentará al reconectar'],
+      sent: ['✓', 'Enviado'],
+      delivered: ['✓✓', 'Entregado'],
+      read: ['✓✓', 'Leído']
+    };
+    const [label, title] = states[status] || states.sent;
+    statusIcon.textContent = label;
+    statusIcon.title = title;
+    statusIcon.classList.toggle('read', status === 'read');
+  }
+
+  async function flushOfflineMessages() {
+    if (flushingOfflineMessages || !currentUser || !socket || !socket.connected || !isSocketAuthenticated) return;
+    flushingOfflineMessages = true;
+    try {
+      const queued = (await getOfflineMessages())
+        .filter((message) => message.fromId === currentUser.syncId)
+        .sort((a, b) => a.timestamp - b.timestamp);
+      for (const message of queued) {
+        if (!socket || !socket.connected || !isSocketAuthenticated) break;
+        await saveOfflineMessage({ ...message, status: 'pending' });
+        updateMessageDeliveryStatus(message.id, 'pending');
+        try {
+          const status = await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              cleanup();
+              reject(new Error('Se agotó el tiempo para confirmar el envío.'));
+            }, 20000);
+            const cleanup = () => {
+              clearTimeout(timeout);
+              socket.off('message-sent', onSent);
+              socket.off('error-message', onError);
+            };
+            const onSent = (result) => {
+              if (!result || result.id !== message.id) return;
+              cleanup();
+              resolve(result.status || 'sent');
+            };
+            const onError = (error) => {
+              if (!error || error.id !== message.id) return;
+              cleanup();
+              reject(new Error(error && error.message ? error.message : 'No se pudo enviar el mensaje.'));
+            };
+            socket.on('message-sent', onSent);
+            socket.on('error-message', onError);
+            socket.emit('send-private-message', {
+              clientMsgId: message.id,
+              toSyncId: message.toId,
+              text: message.text,
+              type: 'text',
+              replyTo: message.replyTo || null
+            });
+          });
+          await deleteOfflineMessage(message.id);
+          updateMessageDeliveryStatus(message.id, status);
+        } catch (error) {
+          await saveOfflineMessage({ ...message, status: 'failed' });
+          updateMessageDeliveryStatus(message.id, 'failed');
+          console.warn('No se pudo enviar un mensaje de la cola offline:', error.message);
+        }
+      }
+    } catch (error) {
+      console.warn('No se pudo procesar la cola offline:', error.message);
+    } finally {
+      flushingOfflineMessages = false;
+    }
+  }
+
+  function base64UrlToUint8Array(value) {
+    const padding = '='.repeat((4 - value.length % 4) % 4);
+    const raw = atob((value + padding).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(raw, (character) => character.charCodeAt(0));
+  }
+
+  async function enablePushNotifications() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      throw new Error('Este navegador no admite notificaciones push.');
+    }
+    if (Notification.permission !== 'granted') {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') throw new Error('No se concedió permiso para notificaciones.');
+    }
+    const keyResponse = await fetch('/api/notifications/vapid-public-key', {
+      headers: { Authorization: 'Bearer ' + currentToken }
+    });
+    const keyData = await keyResponse.json();
+    if (!keyResponse.ok || !keyData.configured || !keyData.publicKey) {
+      throw new Error('El servidor aún no tiene Web Push configurado.');
+    }
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64UrlToUint8Array(keyData.publicKey)
+      });
+    }
+    const response = await fetch('/api/save-subscription', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + currentToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ subscription: subscription.toJSON() })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || 'No se pudo registrar la suscripción push.');
+  }
+
+  if (enablePushNotificationsBtn) {
+    enablePushNotificationsBtn.addEventListener('click', async () => {
+      if (pushNotificationsStatus) pushNotificationsStatus.textContent = 'Configurando…';
+      try {
+        await enablePushNotifications();
+        if (pushNotificationsStatus) pushNotificationsStatus.textContent = 'Notificaciones push activadas.';
+      } catch (error) {
+        if (pushNotificationsStatus) pushNotificationsStatus.textContent = error.message;
+      }
+    });
   }
 
   // Pestañas y Modo de Autenticación
@@ -1652,7 +1885,6 @@
     authScreen.style.setProperty('display', 'none', 'important');
     appContainer.classList.remove('hidden');
     appContainer.style.removeProperty('display');
-    initWebNotifications();
     showNetworkLoading();
 
     headerUserSyncId.textContent = currentUser.syncId;
@@ -2568,6 +2800,10 @@
   async function selectContact(syncId) {
     if (syncId === currentUser.syncId) return;
     activeContactSyncId = syncId;
+    document.getElementById('app-container').dataset.hasActiveConversation = 'true';
+    window.dispatchEvent(new Event('sync-engine-chat-opened'));
+    document.getElementById('chat-header-bar')?.classList.remove('hidden');
+    document.getElementById('input-container')?.classList.remove('hidden');
     activeChannelId = null;
     renderedMessageIds.clear();
     cancelReply();
@@ -2626,6 +2862,8 @@
     } catch (e) {
       console.warn('Error al cargar historial:', e);
     }
+
+    await renderOfflineMessages(syncId);
 
     if (!chatMessages.querySelector('.msg-item')) {
       chatWelcome.classList.remove('hidden');
@@ -3057,22 +3295,28 @@
     socket.off('notification-mirrored');
 
     socket.on('connect', () => {
+      isSocketAuthenticated = false;
       if (networkLoadingMessage) networkLoadingMessage.textContent = 'Verificando sesión segura...';
       socket.emit('authenticate', { token: currentToken });
     });
 
     socket.on('authenticated', () => {
+      isSocketAuthenticated = true;
       hideNetworkLoading();
       loadContacts();
       const currentChan = activeChannelId || '#anuncios';
       socket.emit('join-channel', { channelId: currentChan });
+      if (activeContactSyncId) selectContact(activeContactSyncId);
+      flushOfflineMessages();
     });
 
     socket.on('auth-error', () => {
+      isSocketAuthenticated = false;
       hideNetworkLoading();
     });
 
     socket.on('connect_error', () => {
+      isSocketAuthenticated = false;
       const wasShowingLoader = networkLoadingScreen && !networkLoadingScreen.classList.contains('hidden');
       hideNetworkLoading();
       if (wasShowingLoader) {
@@ -3165,6 +3409,11 @@
       if (!msg || !msg.id) return;
 
       if (renderedMessageIds.has(msg.id)) {
+        const queuedIndex = activeConversationMessages.findIndex((item) => item.id === msg.id);
+        if (queuedIndex !== -1 && activeConversationMessages[queuedIndex].pendingOffline) {
+          activeConversationMessages[queuedIndex] = msg;
+          updateMessageDeliveryStatus(msg.id, msg.status || 'sent');
+        }
         return;
       }
 
@@ -3333,7 +3582,11 @@
     let checkIcon = '';
     if (isLocal) {
       const st = msg.status || (msg.read ? 'read' : 'delivered');
-      if (st === 'read') {
+      if (st === 'pending') {
+        checkIcon = `<span class="msg-status-check text-[11px] text-gray-400 font-bold" title="Pendiente de envío">◷</span>`;
+      } else if (st === 'failed') {
+        checkIcon = `<span class="msg-status-check text-[11px] text-red-500 font-bold" title="No enviado; se reintentará al reconectar">⚠</span>`;
+      } else if (st === 'read') {
         checkIcon = `<span class="msg-status-check read text-[11px] font-bold" title="Leído">✓✓</span>`;
       } else if (st === 'delivered') {
         checkIcon = `<span class="msg-status-check text-[11px] text-gray-400 font-bold" title="Entregado">✓✓</span>`;
@@ -3781,12 +4034,16 @@
   }
 
   // ENVÍO DE MENSAJES
-  function handleSendMessage() {
+  async function handleSendMessage() {
     const text = chatTextarea.value.trim();
     const targetChannel = activeChannelId || (!activeContactSyncId ? '#anuncios' : null);
-    if (!text || (!activeContactSyncId && !targetChannel) || !socket) return;
+    if (!text || (!activeContactSyncId && !targetChannel)) return;
 
     if (targetChannel && !activeContactSyncId) {
+      if (!socket || !socket.connected || !isSocketAuthenticated) {
+        triggerPopupNotification('Sin conexión', 'Los mensajes de canal requieren conexión.', '⚠️');
+        return;
+      }
       socket.emit('send-channel-message', {
         channelId: targetChannel,
         text: text,
@@ -3795,15 +4052,41 @@
     } else {
       const clientMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
       const replyData = currentReplyTo;
-      cancelReply();
-
-      socket.emit('send-private-message', {
-        clientMsgId: clientMsgId,
-        toSyncId: activeContactSyncId,
-        text: text,
-        type: 'text',
-        replyTo: replyData
-      });
+      if (!socket || !socket.connected || !isSocketAuthenticated) {
+        const queuedMessage = {
+          id: clientMsgId,
+          fromId: currentUser.syncId,
+          toId: activeContactSyncId,
+          text,
+          type: 'text',
+          replyTo: replyData || null,
+          timestamp: Date.now(),
+          status: 'pending',
+          pendingOffline: true
+        };
+        try {
+          await saveOfflineMessage(queuedMessage);
+          if (activeContactSyncId === queuedMessage.toId) {
+            activeConversationMessages.push(queuedMessage);
+            renderMessageBubble(queuedMessage);
+            anchorChatToBottom();
+          }
+          cancelReply();
+          triggerPopupNotification('Mensaje en cola', 'Se enviará cuando vuelva la conexión.', '⏳');
+        } catch (error) {
+          triggerPopupNotification('No se pudo guardar', error.message, '⚠️');
+          return;
+        }
+      } else {
+        cancelReply();
+        socket.emit('send-private-message', {
+          clientMsgId: clientMsgId,
+          toSyncId: activeContactSyncId,
+          text: text,
+          type: 'text',
+          replyTo: replyData
+        });
+      }
     }
 
     chatTextarea.value = '';
@@ -3814,6 +4097,12 @@
   if (chatForm) {
     chatForm.addEventListener('submit', (e) => {
       e.preventDefault();
+      const messageValue = chatTextarea?.value?.trim();
+      if (messageValue && sendBtn) {
+        sendBtn.classList.remove('se-send-energy');
+        void sendBtn.offsetWidth;
+        sendBtn.classList.add('se-send-energy');
+      }
       handleSendMessage();
     });
   }
@@ -4755,6 +5044,20 @@
   const openVaultBtn = document.getElementById('open-vault-btn');
   const exportChatBtn = document.getElementById('export-chat-btn');
 
+  window.addEventListener('sync-engine-view-change', (event) => {
+    const view = event.detail && event.detail.view;
+    if (view !== 'contacts' && view !== 'channels') return;
+    if (view === 'channels') loadChannels();
+    document.getElementById('app-container').dataset.hasActiveConversation = 'false';
+    activeContactSyncId = null;
+    activeChannelId = view === 'channels' ? null : activeChannelId;
+    renderedMessageIds.clear();
+    activeConversationMessages = [];
+    cancelReply();
+    closeChatSearch();
+    if (exportChatBtn) exportChatBtn.classList.add('hidden');
+  });
+
   const tabSidebarDms = document.getElementById('tab-sidebar-dms');
   const tabSidebarChannels = document.getElementById('tab-sidebar-channels');
   const sidebarDmsView = document.getElementById('sidebar-dms-view');
@@ -5272,15 +5575,96 @@
           </div>
         </div>
         ${chan.isDefault ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono">Equipo</span>' : ''}
+        ${!chan.isDefault && currentUser && (String(chan.creatorSyncId || '').toUpperCase() === String(currentUser.syncId || '').toUpperCase() || (Array.isArray(chan.adminSyncIds) && chan.adminSyncIds.some(id => String(id).toUpperCase() === String(currentUser.syncId || '').toUpperCase()))) ? '<button type="button" class="channel-manage-btn rounded-lg px-2 py-1 text-xs text-[#64748B] hover:bg-[#F1F5F9]" aria-label="Administrar canal" title="Administrar canal">⋯</button>' : ''}
       `;
       item.addEventListener('click', () => selectChannel(chan));
+      const manageBtn = item.querySelector('.channel-manage-btn');
+      if (manageBtn) manageBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        manageWorkspaceChannel(chan);
+      });
       channelsList.appendChild(item);
     });
+  }
+
+  async function manageWorkspaceChannel(chan) {
+    const action = window.prompt(
+      `Administrar #${chan.name}\n1. Editar nombre/descripción\n2. Agregar participante por ID SYNC\n3. Retirar participante por ID SYNC\n4. Eliminar canal\n5. Otorgar administrador (solo creador)\n6. Retirar administrador (solo creador)\n\nEscribe del 1 al 6:`
+    );
+    if (!action) return;
+
+    const request = async (url, options = {}) => {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          ...(options.headers || {})
+        }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo completar la operación');
+      return data;
+    };
+
+    try {
+      if (action.trim() === '1') {
+        const name = window.prompt('Nuevo nombre del canal:', chan.name);
+        if (name === null) return;
+        const description = window.prompt('Nueva descripción:', chan.description || '');
+        if (description === null) return;
+        await request(`/api/channels/${encodeURIComponent(chan.id)}`, {
+          method: 'PUT',
+          body: JSON.stringify({ name, description })
+        });
+      } else if (action.trim() === '2') {
+        const syncId = window.prompt('ID SYNC exacto del participante que deseas agregar:');
+        if (!syncId || !syncId.trim()) return;
+        await request(`/api/channels/${encodeURIComponent(chan.id)}/members`, {
+          method: 'POST',
+          body: JSON.stringify({ syncId: syncId.trim() })
+        });
+      } else if (action.trim() === '3') {
+        const syncId = window.prompt('ID SYNC exacto del participante que deseas retirar:');
+        if (!syncId || !syncId.trim()) return;
+        await request(`/api/channels/${encodeURIComponent(chan.id)}/members/${encodeURIComponent(syncId.trim())}`, {
+          method: 'DELETE'
+        });
+      } else if (action.trim() === '5' || action.trim() === '6') {
+        const syncId = window.prompt(action.trim() === '5'
+          ? 'ID SYNC del usuario al que otorgarás administración:'
+          : 'ID SYNC del administrador al que retirarás permisos:');
+        if (!syncId || !syncId.trim()) return;
+        await request(`/api/channels/${encodeURIComponent(chan.id)}/admins/${encodeURIComponent(syncId.trim())}`, {
+          method: action.trim() === '5' ? 'POST' : 'DELETE'
+        });
+      } else if (action.trim() === '4') {
+        if (!window.confirm(`Eliminar #${chan.name} y su historial de mensajes? Esta acción no se puede deshacer.`)) return;
+        await request(`/api/channels/${encodeURIComponent(chan.id)}`, { method: 'DELETE' });
+        if (activeChannelId === chan.id) {
+          activeChannelId = null;
+          document.getElementById('app-container').dataset.hasActiveConversation = 'false';
+          document.getElementById('chat-header-bar')?.classList.add('hidden');
+          document.getElementById('input-container')?.classList.add('hidden');
+          chatMessages.replaceChildren(chatWelcome);
+          chatWelcome.classList.remove('hidden');
+        }
+      } else {
+        return;
+      }
+      await loadChannels();
+      triggerPopupNotification('Canales', 'Los cambios se guardaron correctamente.', '✓');
+    } catch (error) {
+      window.alert('No se pudo administrar el canal: ' + error.message);
+    }
   }
 
   async function selectChannel(chan) {
     activeChannelId = chan.id;
     activeContactSyncId = null;
+    document.getElementById('app-container').dataset.hasActiveConversation = 'true';
+    document.getElementById('chat-header-bar')?.classList.remove('hidden');
+    document.getElementById('input-container')?.classList.remove('hidden');
     renderedMessageIds.clear();
     cancelReply();
     closeChatSearch();
@@ -5455,24 +5839,7 @@
   if (closeVaultModalBtn) closeVaultModalBtn.addEventListener('click', clearVaultSession);
   if (saveVaultItemBtn) saveVaultItemBtn.addEventListener('click', handleSaveVaultItem);
 
-  // Switcher DMs vs Canales
-  if (tabSidebarDms) {
-    tabSidebarDms.addEventListener('click', () => {
-      tabSidebarDms.classList.add('is-active');
-      tabSidebarChannels.classList.remove('is-active');
-      sidebarDmsView.classList.remove('hidden');
-      sidebarChannelsView.classList.add('hidden');
-    });
-  }
-  if (tabSidebarChannels) {
-    tabSidebarChannels.addEventListener('click', () => {
-      tabSidebarChannels.classList.add('is-active');
-      tabSidebarDms.classList.remove('is-active');
-      sidebarChannelsView.classList.remove('hidden');
-      sidebarDmsView.classList.add('hidden');
-      loadChannels();
-    });
-  }
+  // La navegación lateral principal controla las vistas; se eliminó el selector duplicado.
 
   // Modal Crear Canal
   if (openCreateChannelBtn) openCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.remove('hidden'));
@@ -5520,10 +5887,144 @@
     await originalShowApp();
     loadChannels();
     loadUserPlan();
+    window.dispatchEvent(new CustomEvent('sync-engine-app-ready'));
   };
 
   // INICIO
   checkExistingAuth();
+</script>
+
+
+<script data-se-shell-script>
+(() => {
+  const app = document.getElementById('app-container');
+  if (!app || app.dataset.seShellReady === '1') return;
+  app.dataset.seShellReady = '1';
+  const nav = document.getElementById('sync-engine-nav-rail');
+  const split = document.getElementById('workspace-split-container');
+  const callsHome = document.getElementById('se-calls-home');
+  const themeButton = document.getElementById('se-theme-toggle');
+  const applyTheme = (theme) => {
+    const selected = theme === 'energy' ? 'energy' : 'sync-blue';
+    app.dataset.seTheme = selected;
+    document.documentElement.dataset.seTheme = selected;
+    if (themeButton) {
+      const label = selected === 'energy' ? 'Tema Sync Blue' : 'Tema Energy';
+      const span = themeButton.querySelector('span');
+      if (span) span.textContent = label;
+      themeButton.setAttribute('aria-label', label);
+      themeButton.title = label;
+    }
+    try { localStorage.setItem('sync-engine-theme', selected); } catch (_) {}
+  };
+  let initialTheme = 'sync-blue';
+  try { initialTheme = localStorage.getItem('sync-engine-theme') || 'sync-blue'; } catch (_) {}
+  applyTheme(initialTheme);
+  const setActiveNav = (view) => {
+    nav?.querySelectorAll('[data-se-view]').forEach(button => {
+      const active = button.dataset.seView === view;
+      button.classList.toggle('is-active', active);
+      if (active) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+  };
+  const sidebar = document.getElementById('sidebar-panel');
+  const showCalls = () => {
+    if (split) split.classList.add('hidden');
+    if (sidebar) sidebar.classList.add('hidden');
+    if (callsHome) callsHome.classList.remove('hidden');
+    setActiveNav('calls');
+  };
+  const showWorkspace = () => {
+    if (callsHome) callsHome.classList.add('hidden');
+    if (split) split.classList.remove('hidden');
+    if (sidebar) sidebar.classList.remove('hidden');
+    document.getElementById('sidebar-dms-view')?.classList.remove('hidden');
+    document.getElementById('sidebar-channels-view')?.classList.add('hidden');
+  };
+  window.addEventListener('sync-engine-chat-opened', () => {
+    showWorkspace();
+    setActiveNav('chats');
+  });
+  nav?.addEventListener('click', event => {
+    const button = event.target.closest('[data-se-view]');
+    if (!button) return;
+    const view = button.dataset.seView;
+    if (view === 'calls') { showCalls(); return; }
+    showWorkspace();
+    const dmsView = document.getElementById('sidebar-dms-view');
+    const channelsView = document.getElementById('sidebar-channels-view');
+    const chatHeader = document.getElementById('chat-header-bar');
+    const messageComposer = document.getElementById('input-container');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatWelcome = document.getElementById('chat-welcome');
+
+    if (view === 'channels') {
+      dmsView?.classList.add('hidden');
+      channelsView?.classList.remove('hidden');
+      if (chatHeader) chatHeader.classList.add('hidden');
+      if (messageComposer) messageComposer.classList.add('hidden');
+      window.dispatchEvent(new CustomEvent('sync-engine-view-change', { detail: { view } }));
+      if (chatMessages && chatWelcome) {
+        chatMessages.replaceChildren(chatWelcome);
+        chatWelcome.classList.remove('hidden');
+      }
+      document.querySelectorAll('#contacts-list .contact-item.is-active').forEach(item => item.classList.remove('is-active'));
+      setActiveNav('channels');
+    } else if (view === 'profile') {
+      document.getElementById('open-edit-profile-btn')?.click();
+      setActiveNav('profile');
+    } else if (view === 'contacts' || view === 'chats') {
+      dmsView?.classList.remove('hidden');
+      channelsView?.classList.add('hidden');
+      if (view === 'contacts') {
+        window.dispatchEvent(new CustomEvent('sync-engine-view-change', { detail: { view } }));
+        if (chatHeader) chatHeader.classList.add('hidden');
+        if (messageComposer) messageComposer.classList.add('hidden');
+        if (chatMessages && chatWelcome) {
+          chatMessages.replaceChildren(chatWelcome);
+          chatWelcome.classList.remove('hidden');
+        }
+        document.querySelectorAll('#contacts-list .contact-item.is-active').forEach(item => item.classList.remove('is-active'));
+        document.body.classList.remove('mobile-view-chat');
+        if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
+      } else {
+        const hasConversation = app.dataset.hasActiveConversation === 'true';
+        if (chatHeader) chatHeader.classList.toggle('hidden', !hasConversation);
+        if (messageComposer) messageComposer.classList.toggle('hidden', !hasConversation);
+      }
+      setActiveNav(view);
+      if (view === 'contacts') document.getElementById('contact-search-input')?.focus();
+    }
+  });
+  themeButton?.addEventListener('click', () => {
+    applyTheme(app.dataset.seTheme === 'energy' ? 'sync-blue' : 'energy');
+  });
+  // Deep links desde acciones del widget nativo; se aplican tras autenticar y mostrar la app.
+  window.addEventListener('sync-engine-app-ready', () => {
+    const url = new URL(window.location.href);
+    const widgetView = url.searchParams.get('widgetView');
+    if (widgetView !== 'chats' && widgetView !== 'calls') return;
+    const target = nav?.querySelector('[data-se-view="' + widgetView + '"]');
+    if (target) target.click();
+    url.searchParams.delete('widgetView');
+    window.history.replaceState({}, '', url.toString());
+  });
+
+  document.getElementById('se-return-to-chats')?.addEventListener('click', () => {
+    showWorkspace();
+    document.getElementById('tab-sidebar-dms')?.click();
+    setActiveNav('chats');
+  });
+  document.getElementById('se-start-call-from-home')?.addEventListener('click', () => {
+    showWorkspace();
+    document.getElementById('tab-sidebar-dms')?.click();
+    setActiveNav('chats');
+    const start = document.getElementById('start-call-btn');
+    if (start) start.click();
+    else document.getElementById('contact-search-input')?.focus();
+  });
+})();
 </script>
 
 </body>

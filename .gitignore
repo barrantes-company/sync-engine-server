@@ -3,9 +3,16 @@ data/sync_db.json
 data/ssl/
 *.pem
 .env
+.env.local
+.env.development
 server.bundle.js
 syncengine-release.keystore
 android/.gradle/
 android/app/build/
+android/app/google-services.json
 android/build/
+firebase-service-account*.json
+service-account*.json
 .vscode/mcp.json
+*.jks
+*.keystore

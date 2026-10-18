@@ -50,6 +50,7 @@ function readDb() {
     if (!Array.isArray(data.files)) data.files = [];
     if (!data.pinnedMessages) data.pinnedMessages = {};
     if (!data.subscriptions) data.subscriptions = {};
+    if (!data.mobilePushTokens) data.mobilePushTokens = {};
     if (!data.channels || data.channels.length === 0) {
       data.channels = [
         { id: "chan-general", name: "general", description: "Espacio general de sincronización y equipo", createdAt: Date.now(), isDefault: true },
@@ -59,6 +60,7 @@ function readDb() {
     if (!data.channelMessages) data.channelMessages = [];
     if (!data.vaultItems) data.vaultItems = {};
     if (!data.invoices) data.invoices = {};
+    if (!Array.isArray(data.calls)) data.calls = [];
     cachedDb = data;
     if (seedDevelopmentAdmin(cachedDb)) {
       writeDb(cachedDb);
@@ -385,6 +387,77 @@ function getUserContacts(userSyncId, onlineSyncIds = new Set()) {
   return contactsList;
 }
 
+/**
+ * Registra el inicio de una llamada para poder contabilizar las perdidas.
+ * @param {string} fromId syncId de quien llama.
+ * @param {string} toId syncId de quien recibe.
+ * @param {boolean} unavailable true si el destinatario no estaba en línea.
+ * @returns {object} Registro de llamada creado.
+ */
+function recordCall(fromId, toId, unavailable) {
+  const db = readDb();
+  const call = {
+    id: 'call_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    fromId: fromId,
+    toId: toId,
+    timestamp: Date.now(),
+    status: unavailable ? 'missed' : 'ringing'
+  };
+  db.calls.push(call);
+  if (db.calls.length > 2000) {
+    db.calls = db.calls.slice(-2000);
+  }
+  writeDb(db);
+  return call;
+}
+
+/**
+ * Actualiza la última llamada pendiente entre dos usuarios.
+ * @param {string} fromId syncId de quien llamó.
+ * @param {string} toId syncId de quien recibió.
+ * @param {'answered'|'rejected'|'missed'} status Nuevo estado.
+ * @returns {boolean} true si se encontró una llamada en curso.
+ */
+function resolveCall(fromId, toId, status) {
+  const db = readDb();
+  for (let i = db.calls.length - 1; i >= 0; i--) {
+    const call = db.calls[i];
+    if (call.fromId === fromId && call.toId === toId && call.status === 'ringing') {
+      call.status = status;
+      writeDb(db);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Resumen para el widget nativo: mensajes sin leer y llamadas perdidas.
+ * @param {string} syncId syncId del usuario autenticado.
+ * @param {number} callsSince Marca de tiempo desde la que se cuentan llamadas perdidas.
+ * @returns {{unreadMessages:number, missedCalls:number, latest:Array<object>}}
+ */
+function getWidgetSummary(syncId, callsSince) {
+  const db = readDb();
+  const since = Number(callsSince) || 0;
+  const unread = db.messages
+    .filter((m) => m.toId === syncId && m.fromId !== syncId && !m.read && m.status !== 'read' && !m.deletedForEveryone)
+    .sort((a, b) => b.timestamp - a.timestamp);
+  const missed = db.calls.filter((c) => c.toId === syncId && c.status === 'missed' && c.timestamp > since);
+  const nameOf = (id) => {
+    const user = db.users.find((u) => u.syncId === id);
+    return user ? (user.formattedName || formatFullName(user.syncId, user.cleanDisplayName)) : id;
+  };
+  const latest = unread.slice(0, 5).map((m) => ({
+    id: m.id,
+    fromId: m.fromId,
+    fromName: nameOf(m.fromId),
+    type: m.type || 'text',
+    text: m.type === 'text' || !m.type ? String(m.text || '').slice(0, 120) : '',
+    timestamp: m.timestamp
+  }));
+  return { unreadMessages: unread.length, missedCalls: missed.length, latest: latest };
+}
 async function registerFile(ownerId, file) {
   if (!file.filename || file.filename === "." || file.filename === ".." ||
       /[/\\:\u0000]/.test(file.filename)) throw new Error("Nombre físico de archivo inválido");
@@ -423,6 +496,14 @@ function canReadFile(fileId, userId) {
 function saveMessage(msgData) {
   const db = readDb();
   const fromId = String(msgData.fromId).trim().toUpperCase();
+  const toId = String(msgData.toId).trim().toUpperCase();
+  if (msgData.id) {
+    const existingMessage = db.messages.find((message) => message.id === msgData.id);
+    if (existingMessage) {
+      if (existingMessage.fromId === fromId && existingMessage.toId === toId) return existingMessage;
+      throw new Error("El identificador del mensaje ya está en uso");
+    }
+  }
   const fileIds = [...new Set(msgData.fileIds || [])];
   for (const fileId of fileIds) {
     const file = db.files.find((item) => item.id === fileId);
@@ -431,7 +512,7 @@ function saveMessage(msgData) {
   const newMsg = {
     id: msgData.id || ("msg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
     fromId: fromId,
-    toId: String(msgData.toId).trim().toUpperCase(),
+    toId: toId,
     type: msgData.type || "text",
     text: msgData.text || "",
     audioData: msgData.audioData || null,
@@ -455,6 +536,10 @@ function saveMessage(msgData) {
 
   writeDb(db);
   return newMsg;
+}
+
+function getMessageById(messageId) {
+  return readDb().messages.find((message) => message.id === messageId) || null;
 }
 
 function saveTextMessage(fromId, toId, text, customId = null, replyTo = null, linkPreview = null, status = 'sent') {
@@ -661,6 +746,58 @@ function removePushSubscription(syncId, endpoint) {
     return true;
   }
   return false;
+}
+
+/**
+ * Registra o renueva un token FCM asociado al usuario.
+ * @param {string} syncId Identificador del usuario.
+ * @param {string} token Token de registro de Firebase.
+ * @returns {boolean} true cuando el token queda almacenado.
+ */
+function saveMobilePushToken(syncId, token) {
+  if (!syncId || typeof token !== "string" || token.length < 20 || token.length > 4096) return false;
+  const db = readDb();
+  if (!db.mobilePushTokens) db.mobilePushTokens = {};
+  const sId = String(syncId).trim().toUpperCase();
+  const tokens = db.mobilePushTokens[sId] || (db.mobilePushTokens[sId] = []);
+  const existing = tokens.find((item) => item.token === token);
+  if (existing) {
+    existing.updatedAt = Date.now();
+  } else {
+    tokens.push({ token: token, updatedAt: Date.now() });
+  }
+  writeDb(db);
+  return true;
+}
+
+/**
+ * Devuelve los tokens Android del usuario.
+ * @param {string} syncId Identificador del usuario.
+ * @returns {Array<{token:string,updatedAt:number}>}
+ */
+function getMobilePushTokens(syncId) {
+  if (!syncId) return [];
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  return (db.mobilePushTokens && db.mobilePushTokens[sId]) || [];
+}
+
+/**
+ * Elimina el token FCM de un usuario.
+ * @param {string} syncId Identificador del usuario.
+ * @param {string} token Token a eliminar.
+ * @returns {boolean} true si el token estaba registrado.
+ */
+function removeMobilePushToken(syncId, token) {
+  if (!syncId || !token) return false;
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  if (!db.mobilePushTokens || !Array.isArray(db.mobilePushTokens[sId])) return false;
+  const current = db.mobilePushTokens[sId];
+  db.mobilePushTokens[sId] = current.filter((item) => item.token !== token);
+  if (db.mobilePushTokens[sId].length === current.length) return false;
+  writeDb(db);
+  return true;
 }
 
 // ==== Planes, Suscripciones y Facturación ====
@@ -903,7 +1040,14 @@ function isChannelMember(channelId, userSyncId) {
     item.name.toLowerCase() === clean
   );
   if (!channel) return false;
-  if (channel.isDefault) return true;
+  if (channel.orgId) {
+    const organization = (db.organizations || []).find((org) => org.id === channel.orgId);
+    if (!organization) return false;
+    const member = Array.isArray(organization.memberSyncIds) &&
+      organization.memberSyncIds.some((id) => String(id).trim().toUpperCase() === normalizedUserId);
+    if (!member) return false;
+  }
+  if (channel.isDefault && !channel.orgId) return true;
   if (String(channel.creatorSyncId || "").trim().toUpperCase() === normalizedUserId) return true;
   return Array.isArray(channel.memberSyncIds) &&
     channel.memberSyncIds.some((memberId) => String(memberId).trim().toUpperCase() === normalizedUserId);
@@ -936,6 +1080,152 @@ function createWorkspaceChannel(name, description, creatorSyncId) {
   db.channels.push(newChannel);
   writeDb(db);
   return newChannel;
+}
+
+function canAdministerChannel(channel, actorSyncId) {
+  const actor = String(actorSyncId || "").trim().toUpperCase();
+  if (!actor || channel.isDefault) return false;
+  if (String(channel.creatorSyncId || "").trim().toUpperCase() === actor) return true;
+  return Array.isArray(channel.adminSyncIds) &&
+    channel.adminSyncIds.some((id) => String(id).trim().toUpperCase() === actor);
+}
+
+function grantWorkspaceChannelAdmin(channelId, actorSyncId, targetSyncId) {
+  const db = readDb();
+  const channel = findChannel(channelId);
+  if (!channel) throw new Error("Canal no encontrado");
+  if (channel.isDefault) throw new Error("Los canales predeterminados son administrados por el sistema");
+  if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
+    throw new Error("Solo el creador puede otorgar o retirar permisos de administrador");
+  }
+  const target = String(targetSyncId || "").trim().toUpperCase();
+  if (!db.users.some((user) => String(user.syncId || "").trim().toUpperCase() === target)) {
+    throw new Error("No existe un usuario con ese ID SYNC");
+  }
+  if (target === String(channel.creatorSyncId || "").trim().toUpperCase()) throw new Error("El creador ya es administrador del canal");
+  if (!Array.isArray(channel.memberSyncIds)) channel.memberSyncIds = [];
+  if (!channel.memberSyncIds.some((id) => String(id).trim().toUpperCase() === target)) channel.memberSyncIds.push(target);
+  if (!Array.isArray(channel.adminSyncIds)) channel.adminSyncIds = [];
+  if (!channel.adminSyncIds.some((id) => String(id).trim().toUpperCase() === target)) channel.adminSyncIds.push(target);
+  writeDb(db);
+  return channel;
+}
+
+function revokeWorkspaceChannelAdmin(channelId, actorSyncId, targetSyncId) {
+  const db = readDb();
+  const channel = findChannel(channelId);
+  if (!channel) throw new Error("Canal no encontrado");
+  if (channel.isDefault) throw new Error("Los canales predeterminados son administrados por el sistema");
+  if (String(channel.creatorSyncId || "").trim().toUpperCase() !== String(actorSyncId || "").trim().toUpperCase()) {
+    throw new Error("Solo el creador puede otorgar o retirar permisos de administrador");
+  }
+  const target = String(targetSyncId || "").trim().toUpperCase();
+  channel.adminSyncIds = (channel.adminSyncIds || []).filter((id) => String(id).trim().toUpperCase() !== target);
+  writeDb(db);
+  return channel;
+}
+
+function updateWorkspaceChannel(channelId, actorSyncId, updates = {}) {
+  const db = readDb();
+  const rawChannelId = String(channelId || "").trim();
+  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
+  const channel = (db.channels || []).find((item) =>
+    item.id === rawChannelId ||
+    item.id === cleanChannelId ||
+    item.id === ("chan-" + cleanChannelId) ||
+    String(item.name || "").toLowerCase() === cleanChannelId
+  );
+  if (!channel) throw new Error("Canal no encontrado");
+  if (channel.isDefault) throw new Error("Los canales predeterminados no se pueden editar");
+  if (!canAdministerChannel(channel, actorSyncId)) {
+    throw new Error("No tienes permisos de administrador para este canal");
+  }
+
+  if (updates.name !== undefined) {
+    const cleanName = String(updates.name || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 30);
+    if (cleanName.length < 2) throw new Error("El nombre debe tener al menos 2 caracteres alfanuméricos");
+    if (db.channels.some((item) => item.id !== channel.id && item.name === cleanName)) {
+      throw new Error("Ya existe un canal con ese nombre");
+    }
+    channel.name = cleanName;
+  }
+  if (updates.description !== undefined) {
+    channel.description = String(updates.description || "").trim().slice(0, 120);
+  }
+  writeDb(db);
+  return channel;
+}
+
+function addWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
+  const db = readDb();
+  const rawChannelId = String(channelId || "").trim();
+  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
+  const channel = (db.channels || []).find((item) =>
+    item.id === rawChannelId ||
+    item.id === cleanChannelId ||
+    item.id === ("chan-" + cleanChannelId) ||
+    String(item.name || "").toLowerCase() === cleanChannelId
+  );
+  if (!channel) throw new Error("Canal no encontrado");
+  if (channel.isDefault) throw new Error("La membresía de canales predeterminados no se puede modificar aquí");
+  if (!canAdministerChannel(channel, actorSyncId)) {
+    throw new Error("No tienes permisos para administrar participantes");
+  }
+  const target = String(targetSyncId || "").trim().toUpperCase();
+  const user = db.users.find((item) => String(item.syncId || "").trim().toUpperCase() === target);
+  if (!user) throw new Error("No existe un usuario con ese ID SYNC");
+  if (!Array.isArray(channel.memberSyncIds)) channel.memberSyncIds = [];
+  if (!channel.memberSyncIds.some((id) => String(id).trim().toUpperCase() === target)) {
+    channel.memberSyncIds.push(target);
+    writeDb(db);
+  }
+  return channel;
+}
+
+function removeWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
+  const db = readDb();
+  const rawChannelId = String(channelId || "").trim();
+  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
+  const channel = (db.channels || []).find((item) =>
+    item.id === rawChannelId ||
+    item.id === cleanChannelId ||
+    item.id === ("chan-" + cleanChannelId) ||
+    String(item.name || "").toLowerCase() === cleanChannelId
+  );
+  if (!channel) throw new Error("Canal no encontrado");
+  if (channel.isDefault) throw new Error("La membresía de canales predeterminados no se puede modificar aquí");
+  if (!canAdministerChannel(channel, actorSyncId)) {
+    throw new Error("No tienes permisos para administrar participantes");
+  }
+  const target = String(targetSyncId || "").trim().toUpperCase();
+  if (target === String(channel.creatorSyncId || "").trim().toUpperCase()) {
+    throw new Error("El creador no puede retirarse a sí mismo del canal");
+  }
+  const before = (channel.memberSyncIds || []).length;
+  channel.memberSyncIds = (channel.memberSyncIds || []).filter((id) => String(id).trim().toUpperCase() !== target);
+  if (channel.memberSyncIds.length !== before) writeDb(db);
+  return channel;
+}
+
+function deleteWorkspaceChannel(channelId, actorSyncId) {
+  const db = readDb();
+  const rawChannelId = String(channelId || "").trim();
+  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
+  const channel = (db.channels || []).find((item) =>
+    item.id === rawChannelId ||
+    item.id === cleanChannelId ||
+    item.id === ("chan-" + cleanChannelId) ||
+    String(item.name || "").toLowerCase() === cleanChannelId
+  );
+  if (!channel) throw new Error("Canal no encontrado");
+  if (channel.isDefault) throw new Error("Los canales predeterminados no se pueden eliminar");
+  if (!canAdministerChannel(channel, actorSyncId)) {
+    throw new Error("No tienes permisos para eliminar este canal");
+  }
+  db.channels = (db.channels || []).filter((item) => item.id !== channel.id);
+  db.channelMessages = (db.channelMessages || []).filter((message) => message.channelId !== channel.id);
+  writeDb(db);
+  return channel;
 }
 
 function getChannelMessages(channelId, userSyncId, limit = 100) {
@@ -1040,6 +1330,7 @@ module.exports = {
   addContact,
   getUserContacts,
   saveMessage,
+  getMessageById,
   saveTextMessage,
   updateMessageReaction,
   updateMessageStatus,
@@ -1055,6 +1346,9 @@ module.exports = {
   savePushSubscription,
   getPushSubscriptions,
   removePushSubscription,
+  saveMobilePushToken,
+  getMobilePushTokens,
+  removeMobilePushToken,
   // Nuevas capacidades de monetización y workspace
   upgradeUserPlan,
   getUserInvoices,
@@ -1065,7 +1359,16 @@ module.exports = {
   findChannel,
   isChannelMember,
   createWorkspaceChannel,
+  updateWorkspaceChannel,
+  grantWorkspaceChannelAdmin,
+  revokeWorkspaceChannelAdmin,
+  addWorkspaceChannelMember,
+  removeWorkspaceChannelMember,
+  deleteWorkspaceChannel,
   getChannelMessages,
   saveChannelMessage,
-  exportConversation
+  exportConversation,
+  recordCall,
+  resolveCall,
+  getWidgetSummary
 };
