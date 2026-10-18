@@ -1,0 +1,38 @@
+# Prepared only: applying a Blueprint can trigger an INITIAL deploy.
+# Jose must authorize creation/deployment before applying this file.
+services:
+  - type: web
+    name: sync-engine-2-staging
+    runtime: node
+    plan: 0.5c-512mb
+    region: ohio
+    repo: https://github.com/jbarrantesdlp-b2b/sync-engine-server
+    branch: staging-sync-engine-2
+    autoDeployTrigger: "off"
+    numInstances: 1
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/status
+    disk:
+      name: sync-engine-2-staging-data
+      mountPath: /var/data/sync-engine-2-staging
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24.20.0
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: staging
+      - key: DATA_DIR
+        value: /var/data/sync-engine-2-staging/db
+      - key: UPLOADS_DIR
+        value: /var/data/sync-engine-2-staging/uploads
+      - key: DISABLE_LOCAL_TLS
+        value: "true"
+      - key: SEED_DEVELOPMENT_ADMIN
+        value: "false"
+      - key: PUBSUB_ENABLED
+        value: "false"
+      - key: CORS_ORIGINS
+        sync: false

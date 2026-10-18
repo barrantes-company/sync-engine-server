@@ -2,6 +2,11 @@
   "version": 2,
   "name": "sync-engine-frontend",
   "framework": null,
+  "git": {
+    "deploymentEnabled": {
+      "staging-sync-engine-2": false
+    }
+  },
   "buildCommand": null,
   "outputDirectory": "public",
   "rewrites": [

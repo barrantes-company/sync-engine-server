@@ -1,10 +1,17 @@
 const { PubSub } = require('@google-cloud/pubsub');
 
 const gcpConfig = {
-  projectId: 'sync-engine-hub',
-  topicName: 'chat-events-topic',
-  subscriptionName: 'chat-events-sub'
+  projectId: process.env.PUBSUB_PROJECT_ID || 'sync-engine-hub',
+  topicName: process.env.PUBSUB_TOPIC || 'chat-events-topic',
+  subscriptionName: process.env.PUBSUB_SUBSCRIPTION || 'chat-events-sub'
 };
+
+if (process.env.APP_ENV === 'staging' &&
+    (!process.env.PUBSUB_PROJECT_ID || !process.env.PUBSUB_TOPIC || !process.env.PUBSUB_SUBSCRIPTION ||
+     gcpConfig.projectId === 'sync-engine-hub' || gcpConfig.topicName === 'chat-events-topic' ||
+     gcpConfig.subscriptionName === 'chat-events-sub')) {
+  throw new Error('Staging requires dedicated Pub/Sub project, topic and subscription');
+}
 
 const pubsub = new PubSub({ projectId: gcpConfig.projectId });
 

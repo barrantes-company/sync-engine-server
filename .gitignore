@@ -16,3 +16,10 @@ service-account*.json
 .vscode/mcp.json
 *.jks
 *.keystore
+staging-tests.log
+regression-tests.log
+focused-regression.log
+dependency-audit.json
+.validation-tools/
+render-schema.json
+.test-artifacts/
