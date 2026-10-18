@@ -1,9 +1,11 @@
-/* SYNC ENGINE — restrained event-driven microinteractions */
+/* SYNC ENGINE — restrained event-driven microinteractions + energy pass */
 :root {
   --se-energy-cyan: #42c9ff;
   --se-energy-blue: #0072ce;
   --se-energy-amber: #c5a059;
+  --se-energy-glow: rgba(66, 201, 255, 0.35);
 }
+
 @keyframes se-send-streak {
   0% { opacity: 0; transform: translateX(-12px) scaleX(.35); }
   20% { opacity: .9; }
@@ -17,6 +19,21 @@
   0% { transform: translateX(-130%) skewX(-18deg); }
   100% { transform: translateX(230%) skewX(-18deg); }
 }
+@keyframes se-empty-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes se-mark-glow {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--se-energy-glow)); }
+  50% { filter: drop-shadow(0 0 16px var(--se-energy-cyan)); }
+}
+@keyframes se-particle-float {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  15% { opacity: 0.6; }
+  85% { opacity: 0.4; }
+  100% { transform: translateY(-120px) translateX(20px); opacity: 0; }
+}
+
 .se-send-energy { position: relative; isolation: isolate; }
 .se-send-energy::after {
   content: ""; position: absolute; z-index: 2; pointer-events: none;
@@ -35,10 +52,65 @@
 @media (hover: hover) and (pointer: fine) {
   .se-shimmer-target:hover::before { opacity: 1; animation: se-shimmer 1.2s ease-out 1; }
 }
+
+/* Empty state energy */
+#chat-welcome {
+  position: relative;
+  animation: se-empty-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+#chat-welcome .empty-state-mark {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: 12px;
+  animation: se-mark-glow 3.5s ease-in-out infinite;
+}
+#chat-welcome .se-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+#chat-welcome .se-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: var(--se-energy-cyan);
+  border-radius: 50%;
+  opacity: 0;
+  animation: se-particle-float 6s ease-in-out infinite;
+}
+#chat-welcome .se-particle:nth-child(1) { left: 20%; bottom: 10%; animation-delay: 0s; }
+#chat-welcome .se-particle:nth-child(2) { left: 45%; bottom: 15%; animation-delay: 1.2s; }
+#chat-welcome .se-particle:nth-child(3) { left: 70%; bottom: 8%; animation-delay: 2.4s; }
+#chat-welcome .se-particle:nth-child(4) { left: 30%; bottom: 25%; animation-delay: 0.6s; }
+#chat-welcome .se-particle:nth-child(5) { left: 60%; bottom: 20%; animation-delay: 1.8s; }
+
+/* Nav rail energy */
+.se-nav-item.is-active {
+  position: relative;
+}
+.se-nav-item.is-active::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 15px;
+  background: radial-gradient(circle at center, var(--se-energy-glow), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+@media (hover: hover) and (pointer: fine) {
+  .se-nav-item:hover { transform: translateY(-1px); }
+}
+
 :focus-visible { outline: 2px solid var(--se-energy-cyan); outline-offset: 2px; }
+
 @media (prefers-reduced-motion: reduce) {
   .se-send-energy::after, .se-notification-pulse,
-  .se-shimmer-target:hover::before { animation: none !important; }
+  .se-shimmer-target:hover::before,
+  #chat-welcome, #chat-welcome .empty-state-mark,
+  #chat-welcome .se-particle { animation: none !important; }
   .se-send-energy::after { display: none; }
   * { scroll-behavior: auto !important; }
 }
