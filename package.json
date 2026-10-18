@@ -7,7 +7,8 @@
     "dev": "node server.js",
     "start": "node server.js",
     "build": "webpack --config webpack.config.js",
-    "lint": "node --check server.js db.js extension_worker.js",
+    "lint": "node --check server.js && node --check db.js && node --check ws-bridge.js && node --check pubsub-routing.js && node --check bridge-security.js && node --check pubsub-service.js && node --check extension_worker.js",
+    "test:staging": "node --test tests/security-fixes.test.js tests/staging-integration.test.js tests/persistence.test.js",
     "test": "node tests/browser-lifecycle.test.js && node tests/p0-01.test.js && node tests/p0-02.test.js && node tests/widget.test.js && node --test tests/widget-summary.test.js && node tests/no-speed-insights.test.js",
     "security-audit": "npm audit"
   },
@@ -20,10 +21,11 @@
     "multer": "^2.4.0",
     "selfsigned": "^5.5.0",
     "socket.io": "^4.8.4",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "socket.io-client": "^4.8.4",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
-    "socket.io-client": "^4.8.4",
     "webpack": "^5.111.1",
     "webpack-cli": "^5.1.4",
     "webpack-node-externals": "^3.0.0"

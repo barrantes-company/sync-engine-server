@@ -101,6 +101,7 @@ async function sendMobilePushNotification(syncId, payload) {
 
 // ==== End of Firebase Cloud Messaging ====
 const fs = require("fs");
+const crypto = require("crypto");
 const http = require("http");
 const https = require("https");
 const os = require("os");
@@ -112,8 +113,9 @@ const { Server } = require("socket.io");
 const selfsigned = require("selfsigned");
 const db = require("./db");
 const { safeUrl } = require("./public/safe-content");
+const { deliver } = require("./pubsub-routing");
 
-const PORT = (process.env.PORT && process.env.PORT !== "8080") ? process.env.PORT : 3000;
+const PORT = Number(process.env.PORT || 3000);
 const HOST = "0.0.0.0";
 
 function getLocalIPv4Addresses() {
@@ -197,7 +199,7 @@ app.get(["/widget", "/widget.html", "/public/widget.html"], (req, res) => {
     "Content-Security-Policy",
     "frame-ancestors 'self' chrome-extension:* moz-extension:*"
   );
-  res.sendFile(path.join(__dirname, "public", "widget.html"));
+  res.sendFile("widget.html", { root: path.join(__dirname, "public") });
 });
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -210,7 +212,7 @@ app.use((err, req, res, next) => {
   next(err);
 });
 // Directorio y almacenamiento Multer para documentos y archivos pesados (hasta 2 GB sin compresión)
-const UPLOADS_DIR = path.join(__dirname, "public", "uploads");
+const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads"));
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
@@ -838,7 +840,7 @@ app.get("/api/messages/:contactSyncId/export", requireAuth, (req, res) => {
 const isServerlessRuntime = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_VERSION);
 let sslOptions = null;
 
-if (!isServerlessRuntime) {
+if (!isServerlessRuntime && process.env.DISABLE_LOCAL_TLS !== "true") {
   const SSL_DIR = path.join(__dirname, "data", "ssl");
   const CERT_FILE = path.join(SSL_DIR, "cert.pem");
   const KEY_FILE = path.join(SSL_DIR, "key.pem");
@@ -908,6 +910,28 @@ if (sslOptions) {
 const onlineUsers = new Map();
 const socketToUser = new Map();
 
+function deliverPubSubEvent(payload) {
+  return deliver(payload, socketToUser, io, (socketId, user) => {
+    const socket = io.sockets.sockets.get(socketId);
+    const currentUser = socket && db.getUserByToken(socket.data.authToken);
+    return currentUser?.syncId === user.syncId;
+  });
+}
+
+function clearSocketIdentity(socket) {
+  const previous = socketToUser.get(socket.id);
+  socketToUser.delete(socket.id);
+  delete socket.data.authToken;
+  if (previous) {
+    const sockets = onlineUsers.get(previous.syncId);
+    if (sockets) {
+      sockets.delete(socket.id);
+      if (!sockets.size) onlineUsers.delete(previous.syncId);
+    }
+    for (const room of socket.rooms) if (room !== socket.id) socket.leave(room);
+  }
+}
+
 /**
  * Sends a structured channel authorization failure to a Socket.IO client.
  * @param {import("socket.io").Socket} socket
@@ -923,6 +947,7 @@ io.on("connection", function (socket) {
   socket.on("authenticate", function (payload) {
     const token = payload && payload.token ? payload.token : null;
     const user = db.getUserByToken(token);
+    clearSocketIdentity(socket);
     if (!user) {
       socket.emit("auth-error", { message: "Token inválido" });
       return;
@@ -930,6 +955,7 @@ io.on("connection", function (socket) {
 
     const syncId = user.syncId;
     socketToUser.set(socket.id, user);
+    socket.data.authToken = token;
 
     if (!onlineUsers.has(syncId)) {
       onlineUsers.set(syncId, new Set());
@@ -1584,6 +1610,8 @@ function broadcastUserStatus(syncId, isOnline) {
 }
 
 if (typeof module !== "undefined" && require.main === module) {
+  // DATA-01: fail before accepting traffic, including when /api/status is probed.
+  db.readDb();
   server.listen(PORT, HOST, function () {
   const localIps = getLocalIPv4Addresses();
   console.log("\n==================================================");
@@ -1600,16 +1628,13 @@ if (typeof module !== "undefined" && require.main === module) {
 
   // ==== Inicialización del listener de Cloud Pub/Sub ====
   // Se arranca después de que el servidor HTTP/Socket.IO ya está escuchando tráfico.
-  // Los payloads recibidos desde la suscripción se emiten de forma transparente
-  // a todos los clientes conectados (Electron, web, móvil).
+  // Only explicitly addressed, currently authenticated recipients receive events.
   try {
+    if (process.env.PUBSUB_ENABLED === "false") return;
     const { startChatSubscriptionListener } = require("./pubsub-service");
     startChatSubscriptionListener(function (pubsubPayload) {
-      // Emitir el evento al canal genérico de Pub/Sub para que cualquier cliente
-      // suscrito a 'pubsub-chat-event' lo reciba sin necesidad de estar autenticado
-      // en una conversación privada específica.
-      io.emit("pubsub-chat-event", pubsubPayload);
-      console.log("[Pub/Sub → Socket.IO] Evento propagado a clientes conectados:", pubsubPayload.type || "unknown");
+      const delivered = deliverPubSubEvent(pubsubPayload);
+      console.log("[Pub/Sub → Socket.IO] Destinatarios autenticados:", delivered);
     });
   } catch (err) {
     console.error("[Pub/Sub] No se pudo iniciar la suscripción; HTTP seguirá disponible:", err.message);
@@ -1622,6 +1647,7 @@ if (typeof module !== "undefined") {
   module.exports.app = app;
   module.exports.server = server;
   module.exports.io = io;
+  module.exports.deliverPubSubEvent = deliverPubSubEvent;
 }
 
 if (process.env.RENDER_EXTERNAL_URL) {

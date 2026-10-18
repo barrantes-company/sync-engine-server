@@ -66,11 +66,12 @@ before(async () => {
     }
   };
 
-  vm.runInNewContext(fs.readFileSync(path.join(root, 'server.js'), 'utf8') + '\nglobalThis.testIo = io;', context);
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'server.js'), 'utf8') + '\nglobalThis.testIo = io; globalThis.testOrigins = allowedOrigins;', context);
   socketServer = context.testIo;
 
   await new Promise((resolve) => http.Server.prototype.listen.call(server, 0, '127.0.0.1', resolve));
   base = 'http://127.0.0.1:' + server.address().port;
+  context.testOrigins.add(base);
 });
 
 after(async () => {

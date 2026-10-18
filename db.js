@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
 const DB_FILE = path.join(DATA_DIR, "sync_db.json");
 
 function ensureDbFile() {
@@ -34,15 +34,26 @@ function ensureDbFile() {
 let cachedDb = null;
 const writeQueue = [];
 let isProcessingQueue = false;
+let readFailure = null;
 
 function readDb() {
+  if (readFailure) throw readFailure;
   if (cachedDb) {
     return cachedDb;
   }
-  ensureDbFile();
   try {
+    ensureDbFile();
     const raw = fs.readFileSync(DB_FILE, "utf8");
     const data = JSON.parse(raw);
+    if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Invalid database root");
+    for (const key of ["users", "sessions", "messages", "files", "channels", "channelMessages", "calls", "organizations"]) {
+      if (data[key] !== undefined && !Array.isArray(data[key])) throw new Error("Invalid database collection");
+    }
+    for (const key of ["contacts", "pinnedMessages", "subscriptions", "mobilePushTokens", "vaultItems", "invoices"]) {
+      if (data[key] !== undefined && (!data[key] || typeof data[key] !== "object" || Array.isArray(data[key]))) {
+        throw new Error("Invalid database map");
+      }
+    }
     if (!data.users) data.users = [];
     if (!data.sessions) data.sessions = [];
     if (!data.contacts) data.contacts = {};
@@ -67,9 +78,9 @@ function readDb() {
     }
     return cachedDb;
   } catch (err) {
-    console.error("[DB] Error al leer base de datos, inicializando respaldo:", err.message);
-    cachedDb = { users: [], sessions: [], contacts: {}, messages: [], files: [], pinnedMessages: {} };
-    return cachedDb;
+    cachedDb = null;
+    readFailure = new Error("DB_READ_FAILED: database unavailable; restore a verified backup before restarting");
+    throw readFailure;
   }
 }
 
@@ -104,6 +115,8 @@ async function processWriteQueue() {
 }
 
 function writeDb(data) {
+  // A failed read must never be followed by replacement with empty/new data.
+  readDb();
   cachedDb = data;
   const content = JSON.stringify(data, null, 2);
   const promise = new Promise((resolve, reject) => {
@@ -1337,6 +1350,7 @@ function exportConversation(syncId, contactSyncId) {
 }
 
 module.exports = {
+  readDb,
   registerFile,
   getFileById,
   getFileByFilename,

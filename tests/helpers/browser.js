@@ -72,6 +72,17 @@ function exited(child, ms) {
 // Guarantees the process is gone (SIGTERM first when a grace period is given, then SIGKILL)
 // and releases its stderr pipe, so a wedged browser can neither leak nor keep Node alive.
 async function terminate(child, graceMs = 0) {
+  // Windows signals terminate only the parent; stop this test's entire process tree.
+  if (process.platform === 'win32' && isAlive(child)) {
+    await new Promise((resolve) => {
+      const killer = spawn('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' });
+      killer.once('error', resolve);
+      killer.once('exit', resolve);
+    });
+    await exited(child, EXIT_TIMEOUT_MS);
+    if (child.stderr) child.stderr.destroy();
+    return;
+  }
   if (isAlive(child) && graceMs > 0) {
     try { child.kill('SIGTERM'); } catch (_) {}
     await exited(child, graceMs);
@@ -123,7 +134,21 @@ async function startChromium(tempDir, { startupTimeoutMs = STARTUP_TIMEOUT_MS } 
       '\nstderr (last ' + STDERR_TAIL_CHARS + ' chars): ' + stderr.slice(-STDERR_TAIL_CHARS);
     throw error;
   }
-  return { child, executable, profile, browserUrl, stop: (graceMs = 3000) => terminate(child, graceMs) };
+  return {
+    child, executable, profile, browserUrl,
+    async stop(graceMs = 3000) {
+      if (process.platform === 'win32' && isAlive(child)) {
+        const control = new WebSocket(browserUrl, { handshakeTimeout: 1000 });
+        control.on('error', () => {});
+        try {
+          await once(control, 'open');
+          control.send(JSON.stringify({ id: 1, method: 'Browser.close' }));
+          await exited(child, graceMs);
+        } catch (_) {} finally { control.terminate(); }
+      }
+      await terminate(child, graceMs);
+    }
+  };
 }
 
 async function launchBrowser(tempDir) {
