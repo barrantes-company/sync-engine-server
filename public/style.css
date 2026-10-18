@@ -2430,3 +2430,104 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
 #auth-screen [class*="bg-gray-200"] { background: #edf3fa !important; }
 #auth-screen [class*="bg-[#C5A059]"] { background: #0877f9 !important; }
 #auth-screen [class*="text-[#C5A059]"], #auth-screen [class*="text-[#99793D]"] { color: #0877f9 !important; }
+
+/* Refinamiento visual premium: movimiento sutil, profundidad y estados consistentes */
+:root {
+  --se-ease: cubic-bezier(.22, 1, .36, 1);
+  --se-ease-soft: cubic-bezier(.16, 1, .3, 1);
+  --se-shadow-soft: 0 12px 34px rgba(7, 26, 56, .08);
+}
+
+#app-container {
+  animation: se-app-in .7s var(--se-ease) both;
+}
+
+#app-container > header.sticky {
+  position: relative;
+  isolation: isolate;
+}
+#app-container > header.sticky::after {
+  content: "";
+  position: absolute;
+  inset: auto 8% -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(8,119,249,.42), rgba(24,191,255,.28), transparent);
+  opacity: .7;
+  pointer-events: none;
+}
+
+#sidebar-panel, #chat-panel-container, #info-drawer-panel {
+  transition: box-shadow .35s var(--se-ease), border-color .35s ease, transform .35s var(--se-ease), opacity .25s ease;
+}
+#sidebar-panel:hover, #chat-panel-container:hover {
+  box-shadow: 0 16px 42px rgba(7,26,56,.08) !important;
+}
+
+#contacts-list > *, #channels-list > * {
+  animation: se-row-in .42s var(--se-ease) both;
+}
+#contacts-list > :nth-child(2), #channels-list > :nth-child(2) { animation-delay: 35ms; }
+#contacts-list > :nth-child(3), #channels-list > :nth-child(3) { animation-delay: 70ms; }
+#contacts-list > :nth-child(4), #channels-list > :nth-child(4) { animation-delay: 105ms; }
+#contacts-list > :nth-child(5), #channels-list > :nth-child(5) { animation-delay: 140ms; }
+
+.chat-bubble-inner {
+  animation: se-message-in .38s var(--se-ease) both;
+}
+.chat-bubble-inner:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(7,26,56,.11) !important;
+}
+
+#app-container button:not(:disabled),
+#app-container [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+#app-container button:not(:disabled):active,
+#app-container [role="button"]:active {
+  transform: translateY(1px) scale(.985);
+}
+#app-container button:focus-visible,
+#app-container input:focus-visible,
+#app-container textarea:focus-visible {
+  outline: 2px solid rgba(8,119,249,.65) !important;
+  outline-offset: 3px;
+}
+
+#header-plan-badge-btn, #open-vault-btn, #logout-btn,
+#add-contact-btn, #sidebar-upgrade-btn, #auth-submit-btn {
+  position: relative;
+  overflow: hidden;
+}
+#header-plan-badge-btn::before, #open-vault-btn::before, #logout-btn::before,
+#add-contact-btn::before, #sidebar-upgrade-btn::before, #auth-submit-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,.3) 50%, transparent 75%);
+  transform: translateX(-120%);
+  transition: transform .7s var(--se-ease);
+  pointer-events: none;
+}
+#header-plan-badge-btn:hover::before, #open-vault-btn:hover::before, #logout-btn:hover::before,
+#add-contact-btn:hover::before, #sidebar-upgrade-btn:hover::before, #auth-submit-btn:hover::before {
+  transform: translateX(120%);
+}
+
+@keyframes se-app-in {
+  from { opacity: 0; transform: translateY(8px) scale(.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes se-row-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes se-message-in {
+  from { opacity: 0; transform: translateY(6px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app-container, #contacts-list > *, #channels-list > *, .chat-bubble-inner { animation: none !important; }
+  #app-container button:not(:disabled), #app-container [role="button"], .chat-bubble-inner { transition: none !important; }
+}
