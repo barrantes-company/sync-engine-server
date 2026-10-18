@@ -2113,7 +2113,118 @@ header.sticky {
   }
 
   /* Respect accessibility preferences and avoid decorative motion overload. */
-  @media (prefers-reduced-motion: reduce) {
+/* ==========================================================================
+   SYNC ENGINE / REFERENCE POLISH
+   Inspiration translated into the existing workspace: crisp white surfaces,
+   electric blue actions, compact pills, soft elevation and restrained motion.
+   ========================================================================== */
+:root {
+  --se-blue: #1264f5;
+  --se-blue-strong: #0754e8;
+  --se-blue-soft: #eaf2ff;
+  --se-ink: #10203f;
+  --se-muted: #71809a;
+  --se-surface: rgba(255, 255, 255, 0.92);
+  --se-shadow-sm: 0 4px 16px rgba(16, 32, 63, 0.07);
+  --se-shadow-md: 0 14px 36px rgba(16, 32, 63, 0.12);
+}
+
+/* Preserve the current structure while giving every layer a clearer hierarchy. */
+#app-container {
+  background: linear-gradient(145deg, #ffffff 0%, #f7faff 100%);
+}
+
+#sync-engine-nav-rail {
+  background: linear-gradient(180deg, #071b35 0%, #0d2c50 100%) !important;
+  border-right: 1px solid rgba(255,255,255,.1) !important;
+  box-shadow: 8px 0 28px rgba(7, 27, 53, .14);
+}
+
+.se-nav-item {
+  transition: transform .22s cubic-bezier(.2,.8,.2,1), background-color .22s ease, color .22s ease, box-shadow .22s ease;
+}
+.se-nav-item:hover { transform: translateX(3px); }
+.se-nav-item.is-active {
+  background: linear-gradient(100deg, var(--se-blue) 0%, #3c8cff 100%) !important;
+  box-shadow: 0 8px 20px rgba(18, 100, 245, .3);
+}
+
+header.sticky {
+  background: rgba(255,255,255,.86) !important;
+  border-bottom-color: rgba(18,100,245,.12) !important;
+  box-shadow: 0 4px 22px rgba(16,32,63,.06) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+#sidebar-panel, #chat-panel, #info-drawer-panel {
+  border-color: rgba(18,100,245,.11) !important;
+}
+#sidebar-panel, #info-drawer-panel {
+  background: var(--se-surface) !important;
+  box-shadow: var(--se-shadow-sm);
+}
+#chat-panel {
+  background-image: radial-gradient(rgba(18,100,245,.08) 1px, transparent 1px), linear-gradient(180deg,#fff 0%,#f7faff 100%) !important;
+  background-size: 26px 26px, 100% 100% !important;
+}
+
+/* Inputs, segmented filters and cards inherit the reference's tactile rhythm. */
+input, textarea, select, [contenteditable="true"] {
+  border-color: rgba(18,100,245,.14) !important;
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+input:focus, textarea:focus, select:focus, [contenteditable="true"]:focus {
+  border-color: var(--se-blue) !important;
+  box-shadow: 0 0 0 4px rgba(18,100,245,.11) !important;
+  outline: none;
+}
+button, a { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled) { transition: transform .2s ease, box-shadow .2s ease, filter .2s ease; }
+button:not(:disabled):hover { filter: saturate(1.08); }
+button:not(:disabled):active { transform: translateY(1px) scale(.985); }
+
+/* Conversation surfaces feel lighter and closer to the mobile reference. */
+[class*="rounded-xl"], [class*="rounded-2xl"] {
+  transition: box-shadow .24s ease, border-color .24s ease, background-color .24s ease;
+}
+[class*="rounded-xl"]:hover, [class*="rounded-2xl"]:hover {
+  border-color: rgba(18,100,245,.2);
+}
+
+@keyframes se-enter-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+#sidebar-panel > *, #chat-panel > *, #info-drawer-panel > * {
+  animation: se-enter-up .42s both;
+}
+#sidebar-panel > *:nth-child(2) { animation-delay: .04s; }
+#chat-panel > *:nth-child(2) { animation-delay: .06s; }
+#info-drawer-panel > *:nth-child(2) { animation-delay: .08s; }
+
+@media (max-width: 1023px) {
+  #app-container { background: #f7faff; }
+  header.sticky { padding-top: max(.45rem, env(safe-area-inset-top, 0px)) !important; }
+  #sidebar-panel, #chat-panel-container { box-shadow: none !important; }
+  #sync-engine-nav-rail {
+    border-right: 0 !important;
+    border-top: 1px solid rgba(255,255,255,.12) !important;
+    box-shadow: 0 -8px 24px rgba(7,27,53,.16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
