@@ -136,7 +136,12 @@ function getLocalIPv4Addresses() {
   return addresses;
 }
 
+let shuttingDown = false;
+let stopPubSub = null;
+const messageTasks = new Set();
 const app = express();
+app.use((_req, res, next) => shuttingDown
+  ? res.status(503).json({ error: "Servidor cerrando" }) : next());
 app.disable("x-powered-by");
 app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -965,9 +970,18 @@ function authenticatedTo(room) {
   } };
 }
 
+function onMessage(socket, event, handler) {
+  socket.on(event, (...args) => {
+    const task = Promise.resolve().then(() => handler(...args));
+    messageTasks.add(task);
+    task.catch(() => socket.emit("error-message", { message: "No se pudo persistir el mensaje" }))
+      .finally(() => messageTasks.delete(task));
+  });
+}
+
 io.on("connection", function (socket) {
   socket.use(([event, payload], next) => {
-    if (event === "authenticate" || currentSocketUser(socket)) return next();
+    if (!shuttingDown && (event === "authenticate" || currentSocketUser(socket))) return next();
     socket.emit("auth-error", { message: "Sesión expirada o inválida" });
     emitChannelAuthorizationError(socket, "UNAUTHENTICATED", "Autenticación requerida");
     socket.emit("error-message", { id: payload?.clientMsgId, message: "No autenticado" });
@@ -977,7 +991,8 @@ io.on("connection", function (socket) {
   // Autenticación de Socket
   socket.on("authenticate", function (payload) {
     const token = payload && payload.token ? payload.token : null;
-    const user = db.getUserByToken(token);
+    let user;
+    try { user = db.getUserByToken(token); } catch (_) { user = null; }
     clearSocketIdentity(socket);
     if (!user) {
       socket.emit("auth-error", { message: "Token inválido" });
@@ -1048,7 +1063,7 @@ io.on("connection", function (socket) {
     }
   });
 
-  socket.on("send-channel-message", async function (payload) {
+  onMessage(socket, "send-channel-message", async function (payload) {
     const sender = socketToUser.get(socket.id);
     if (!sender) {
       emitChannelAuthorizationError(socket, "UNAUTHENTICATED", "Autenticación requerida");
@@ -1067,6 +1082,7 @@ io.on("connection", function (socket) {
 
     try {
       const msg = db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });
+      await db.flushWrites();
       authenticatedTo("channel:" + channelId).emit("channel-message-received", msg);
       if (rawChannelId !== channelId) {
         authenticatedTo("channel:" + rawChannelId).emit("channel-message-received", msg);
@@ -1077,7 +1093,7 @@ io.on("connection", function (socket) {
   });
 
   // Envío de Mensaje Privado (Texto, Audio de Voz o Archivo)
-  socket.on("send-private-message", async function (payload) {
+  onMessage(socket, "send-private-message", async function (payload) {
     const clientMsgId = payload && payload.clientMsgId;
     const emitMessageError = (message) => socket.emit("error-message", { id: clientMsgId, message });
     const sender = socketToUser.get(socket.id);
@@ -1128,58 +1144,65 @@ io.on("connection", function (socket) {
 
     let messageObj = null;
 
-    if (msgType === "text") {
-      messageObj = db.saveTextMessage(
-        sender.syncId,
-        targetSyncId,
-        text,
-        clientMsgId || null,
-        replyTo || null,
-        null,
-        initialStatus
-      );
-    } else {
-      let finalAudioData = audioData || null;
+    try {
+      if (msgType === "text") {
+        messageObj = db.saveTextMessage(
+          sender.syncId,
+          targetSyncId,
+          text,
+          clientMsgId || null,
+          replyTo || null,
+          null,
+          initialStatus
+        );
+      } else {
+        let finalAudioData = audioData || null;
 
-      // Si es audio en Base64, persistirlo en disco en /uploads/ para soporte de streaming y Range requests en iOS
-      if (msgType === "audio" && audioData && typeof audioData === "string" && audioData.startsWith("data:audio/")) {
-        try {
-          const matches = audioData.match(/^data:audio\/([a-zA-Z0-9_\-+.]+);base64,(.+)$/);
-          if (matches) {
-            const rawFormat = matches[1].toLowerCase();
-            const ext = rawFormat.includes("mp4") || rawFormat.includes("m4a") || rawFormat.includes("aac") 
-              ? "mp4" 
-              : (rawFormat.includes("wav") ? "wav" : "webm");
-            const buffer = Buffer.from(matches[2], "base64");
-            const audioFileName = `voice-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
-            const audioFilePath = path.join(UPLOADS_DIR, audioFileName);
-            fs.writeFileSync(audioFilePath, buffer);
-            const audioFile = await db.registerFile(sender.syncId, {
-              filename: audioFileName, originalname: audioFileName, size: buffer.length,
-              mimetype: "audio/" + rawFormat
-            });
-            finalAudioData = `/api/files/${audioFile.id}`;
-            fileIds.push(audioFile.id);
+        // Si es audio en Base64, persistirlo en disco en /uploads/ para soporte de streaming y Range requests en iOS
+        if (msgType === "audio" && audioData && typeof audioData === "string" && audioData.startsWith("data:audio/")) {
+          try {
+            const matches = audioData.match(/^data:audio\/([a-zA-Z0-9_\-+.]+);base64,(.+)$/);
+            if (matches) {
+              const rawFormat = matches[1].toLowerCase();
+              const ext = rawFormat.includes("mp4") || rawFormat.includes("m4a") || rawFormat.includes("aac")
+                ? "mp4"
+                : (rawFormat.includes("wav") ? "wav" : "webm");
+              const buffer = Buffer.from(matches[2], "base64");
+              const audioFileName = `voice-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+              const audioFilePath = path.join(UPLOADS_DIR, audioFileName);
+              fs.writeFileSync(audioFilePath, buffer);
+              const audioFile = await db.registerFile(sender.syncId, {
+                filename: audioFileName, originalname: audioFileName, size: buffer.length,
+                mimetype: "audio/" + rawFormat
+              });
+              finalAudioData = `/api/files/${audioFile.id}`;
+              fileIds.push(audioFile.id);
+            }
+          } catch (err) {
+            console.warn("[AUDIO] Error al persistir audio en disco:", err.message);
+            emitMessageError("No se pudo registrar el audio");
+            return;
           }
-        } catch (err) {
-          console.warn("[AUDIO] Error al persistir audio en disco:", err.message);
-          emitMessageError("No se pudo registrar el audio");
-          return;
         }
+
+        messageObj = db.saveMessage({
+          id: clientMsgId || null,
+          fromId: sender.syncId,
+          toId: targetSyncId,
+          type: msgType,
+          text: text,
+          audioData: finalAudioData,
+          fileData: fileData,
+          fileIds: fileIds,
+          replyTo: replyTo || null,
+          status: initialStatus
+        });
       }
 
-      messageObj = db.saveMessage({
-        id: clientMsgId || null,
-        fromId: sender.syncId,
-        toId: targetSyncId,
-        type: msgType,
-        text: text,
-        audioData: finalAudioData,
-        fileData: fileData,
-        fileIds: fileIds,
-        replyTo: replyTo || null,
-        status: initialStatus
-      });
+      await db.flushWrites();
+    } catch (_) {
+      emitMessageError("No se pudo persistir el mensaje");
+      return;
     }
 
     if (!isTargetOnline && !isRetry) {
@@ -1548,7 +1571,7 @@ io.on("connection", function (socket) {
     }
   });
 
-  socket.on("quick-reply", async function (payload) {
+  onMessage(socket, "quick-reply", async function (payload) {
     const sender = socketToUser.get(socket.id);
     if (!sender || !payload || !payload.toSyncId || !payload.text) return;
 
@@ -1556,15 +1579,22 @@ io.on("connection", function (socket) {
     const targetSockets = onlineUsers.get(targetSyncId);
     const initialStatus = Boolean(targetSockets && targetSockets.size > 0) ? "delivered" : "sent";
 
-    const savedMsg = db.saveTextMessage(
-      sender.syncId,
-      targetSyncId,
-      payload.text,
-      null,
-      payload.replyTo || null,
-      null,
-      initialStatus
-    );
+    let savedMsg;
+    try {
+      savedMsg = db.saveTextMessage(
+        sender.syncId,
+        targetSyncId,
+        payload.text,
+        null,
+        payload.replyTo || null,
+        null,
+        initialStatus
+      );
+      await db.flushWrites();
+    } catch (_) {
+      socket.emit("error-message", { message: "No se pudo persistir el mensaje" });
+      return;
+    }
     savedMsg.fromName = sender.formattedName;
     savedMsg.toSyncId = targetSyncId;
 
@@ -1640,7 +1670,29 @@ function broadcastUserStatus(syncId, isOnline) {
   });
 }
 
+let shutdownTask;
+function shutdown() {
+  if (shutdownTask) return shutdownTask;
+  shuttingDown = true;
+  shutdownTask = (async () => {
+    let listenerError;
+    try { if (stopPubSub) await stopPubSub(); } catch (error) { listenerError = error; }
+    await new Promise((resolve) => io.close(resolve));
+    if (httpsServer?.listening) await new Promise((resolve) => httpsServer.close(resolve));
+    await Promise.allSettled([...messageTasks]);
+    await db.closeWrites();
+    if (listenerError) throw listenerError;
+  })();
+  return shutdownTask;
+}
+
 if (typeof module !== "undefined" && require.main === module) {
+  for (const signal of ["SIGTERM", "SIGINT"]) process.once(signal, () => {
+    shutdown().catch(() => {
+      console.error("[Shutdown] Failed to drain persistent writes");
+      process.exitCode = 1;
+    });
+  });
   // DATA-01: fail before accepting traffic, including when /api/status is probed.
   db.readDb();
   server.listen(PORT, HOST, function () {
@@ -1663,7 +1715,7 @@ if (typeof module !== "undefined" && require.main === module) {
   try {
     if (process.env.PUBSUB_ENABLED === "false") return;
     const { startChatSubscriptionListener } = require("./pubsub-service");
-    startChatSubscriptionListener(function (pubsubPayload) {
+    stopPubSub = startChatSubscriptionListener(function (pubsubPayload) {
       const delivered = deliverPubSubEvent(pubsubPayload);
       console.log("[Pub/Sub → Socket.IO] Destinatarios autenticados:", delivered);
     });
@@ -1679,6 +1731,7 @@ if (typeof module !== "undefined") {
   module.exports.server = server;
   module.exports.io = io;
   module.exports.deliverPubSubEvent = deliverPubSubEvent;
+  module.exports.shutdown = shutdown;
 }
 
 if (process.env.RENDER_EXTERNAL_URL) {

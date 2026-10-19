@@ -88,6 +88,8 @@ function startChatSubscriptionListener(onMessageCallback) {
   const BACKOFF_MAX_MS  = 30000;  // techo en 30 segundos
   let   backoffDelay    = BACKOFF_BASE_MS;
   let   retryTimer      = null;
+  let activeSubscription = null;
+  let stopped = false;
 
   /**
    * Abre (o reabre) el stream de la suscripción.
@@ -95,9 +97,11 @@ function startChatSubscriptionListener(onMessageCallback) {
    * previniendo acumulación de handlers (memory leak) entre reintentos.
    */
   function openStream() {
+    if (stopped) return;
     // Crear una nueva referencia al objeto Subscription en cada intento;
     // el SDK de @google-cloud/pubsub crea internamente un nuevo StreamingPull por instancia.
     const subscription = pubsub.subscription(gcpConfig.subscriptionName);
+    activeSubscription = subscription;
 
     try {
       // Limpieza defensiva: elimina cualquier listener residual de un intento anterior.
@@ -166,6 +170,15 @@ function startChatSubscriptionListener(onMessageCallback) {
 
   // Arranque inicial del stream.
   openStream();
+  return async () => {
+    stopped = true;
+    if (retryTimer) clearTimeout(retryTimer);
+    if (activeSubscription) {
+      activeSubscription.removeAllListeners();
+      await activeSubscription.close();
+    }
+    await pubsub.close();
+  };
 }
 
 module.exports = {

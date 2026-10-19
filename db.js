@@ -35,8 +35,12 @@ let cachedDb = null;
 const writeQueue = [];
 let isProcessingQueue = false;
 let readFailure = null;
+let writeFailure = null;
+let writesClosed = false;
+let lastWrite = Promise.resolve();
 
 function readDb() {
+  if (writeFailure) throw new Error("DB_WRITE_FAILED: restart after resolving storage failure");
   if (readFailure) throw readFailure;
   if (cachedDb) {
     return cachedDb;
@@ -108,6 +112,9 @@ async function processWriteQueue() {
       } catch (_) {}
       writeQueue.shift();
       item.reject(err);
+      writeFailure = err;
+      // Never persist a later snapshot containing mutations from a failed write.
+      for (const queued of writeQueue.splice(0)) queued.reject(err);
     }
   }
 
@@ -115,6 +122,7 @@ async function processWriteQueue() {
 }
 
 function writeDb(data) {
+  if (writesClosed) throw new Error("DB_CLOSED: writes are stopped");
   // A failed read must never be followed by replacement with empty/new data.
   readDb();
   cachedDb = data;
@@ -124,7 +132,22 @@ function writeDb(data) {
     processWriteQueue();
   });
   promise.catch(() => {});
+  lastWrite = promise;
   return promise;
+}
+
+async function flushWrites() {
+  let pending;
+  do {
+    pending = lastWrite;
+    await pending;
+  } while (pending !== lastWrite);
+  if (writeFailure) throw new Error("DB_WRITE_FAILED: storage unavailable");
+}
+
+async function closeWrites() {
+  writesClosed = true;
+  await flushWrites();
 }
 
 function removeEmojis(str) {
@@ -1350,6 +1373,8 @@ function exportConversation(syncId, contactSyncId) {
 }
 
 module.exports = {
+  flushWrites,
+  closeWrites,
   readDb,
   registerFile,
   getFileById,
