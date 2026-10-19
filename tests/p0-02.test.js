@@ -10,6 +10,7 @@ const { createRequire } = require('node:module');
 const { once } = require('node:events');
 const { io: connect } = require('socket.io-client');
 const isolatedDb = require('./helpers/isolated-db');
+const { tokenFor } = isolatedDb;
 const launchBrowser = require('./helpers/browser');
 const root = path.resolve(__dirname, '..');
 const realRequire = createRequire(path.join(root, 'server.js'));
@@ -21,7 +22,7 @@ const users = ['alice', 'bob', 'charlie', 'dave'].map((username, index) => ({
 const sockets = [];
 let tempDir, db, server, socketServer, base, fileAB, messageAB, browser, alicePage, outsiderPage;
 
-function bearer(user = 'alice') { return { Authorization: 'Bearer test-' + user }; }
+function bearer(user = 'alice') { return { Authorization: 'Bearer ' + tokenFor(user) }; }
 async function get(file, user, extra = {}) {
   const headers = user ? { ...bearer(user), ...extra } : extra;
   return fetch(base + (typeof file === 'string' ? file : file.url), { headers });
@@ -40,7 +41,7 @@ async function socketFor(user) {
   socket.connect();
   await connected;
   const authenticated = waitEvent(socket, 'authenticated');
-  socket.emit('authenticate', { token: 'test-' + user });
+  socket.emit('authenticate', { token: tokenFor(user) });
   await authenticated;
   return socket;
 }
@@ -148,7 +149,7 @@ test('TEST 3: authenticated outsider C receives 403', async () => {
 
 test('TEST 4: anonymous/invalid identity receives 401; token in URL is not authentication', async () => {
   assert.equal((await get(fileAB)).status, 401);
-  assert.equal((await get(fileAB.url + '?token=test-alice')).status, 401);
+  assert.equal((await get(fileAB.url + '?token=' + tokenFor('alice'))).status, 401);
   assert.equal((await get(fileAB, null, { Authorization: 'Bearer invalid' })).status, 401);
 });
 
@@ -263,11 +264,11 @@ async function browserReady(t) {
   if (!browser) browser = await launchBrowser(tempDir);
   if (!browser) { t.skip('Set CHROME_PATH for real media/widget verification'); return false; }
   if (!alicePage) {
-    alicePage = await browser.page(base + '/', 'test-alice');
+    alicePage = await browser.page(base + '/', tokenFor('alice'));
     await alicePage.wait("typeof socket !== 'undefined' && socket && socket.connected && activeContactSyncId");
     await alicePage.evaluate(`navigator.serviceWorker.ready`);
     await alicePage.wait('navigator.serviceWorker.controller !== null');
-    outsiderPage = await browser.page(base + '/', 'test-charlie');
+    outsiderPage = await browser.page(base + '/', tokenFor('charlie'));
     await outsiderPage.wait("typeof socket !== 'undefined' && socket && socket.connected && activeContactSyncId");
   }
   return true;
@@ -334,7 +335,7 @@ test('TEST 10: real WAV and generated WebM video load/play through authorized st
     const blob = new Blob(chunks, { type: 'video/webm' });
     if (!blob.size) throw new Error('MediaRecorder produced an empty WebM');
     const body = new FormData(); body.append('file', blob, 'sample.webm');
-    const response = await fetch('/api/upload', { method: 'POST', headers: { Authorization: 'Bearer test-alice' }, body });
+    const response = await fetch('/api/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ${JSON.stringify(tokenFor('alice'))} }, body });
     const file = (await response.json()).file;
     await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Send failed')), 5000);
@@ -405,7 +406,7 @@ test('TEST 12: Media Center uses private routes; active service worker never cac
 
 test('TEST 13: real widget uploads/shares a capture and its resulting file stays private', async (t) => {
   if (!await browserReady(t)) return;
-  const widget = await browser.page(base + '/widget.html', 'test-alice');
+  const widget = await browser.page(base + '/widget.html', tokenFor('alice'));
   await widget.wait("document.getElementById('sync-label').textContent === 'Sincronizado'");
   const previousCount = db.testData.messages.length;
   await widget.evaluate(`(async () => {
