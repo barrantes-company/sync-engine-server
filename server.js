@@ -624,11 +624,11 @@ app.delete("/api/messages/:contactSyncId", requireAuth, (req, res) => {
 
   const userSockets = onlineUsers.get(req.user.syncId);
   if (userSockets) {
-    userSockets.forEach((sockId) => io.to(sockId).emit("chat-history-cleared", eventData));
+    userSockets.forEach((sockId) => authenticatedTo(sockId).emit("chat-history-cleared", eventData));
   }
   const targetSockets = onlineUsers.get(targetSyncId);
   if (targetSockets) {
-    targetSockets.forEach((sockId) => io.to(sockId).emit("chat-history-cleared", eventData));
+    targetSockets.forEach((sockId) => authenticatedTo(sockId).emit("chat-history-cleared", eventData));
   }
 
   res.json({ ok: true, deletedCount: deletedCount });
@@ -754,7 +754,7 @@ app.post("/api/channels", requireAuth, (req, res) => {
     const channel = db.createWorkspaceChannel(name, description, req.user.syncId);
     const creatorSockets = onlineUsers.get(req.user.syncId);
     if (creatorSockets) {
-      creatorSockets.forEach((socketId) => io.to(socketId).emit("channel-created", channel));
+      creatorSockets.forEach((socketId) => authenticatedTo(socketId).emit("channel-created", channel));
     }
     res.json({ ok: true, channel: channel });
   } catch (err) {
@@ -942,7 +942,38 @@ function emitChannelAuthorizationError(socket, code, message) {
   socket.emit("authorization-error", { code: code, message: message });
 }
 
+// Revalidate both senders and recipients against the current persisted-session view.
+function currentSocketUser(socket) {
+  const previous = socketToUser.get(socket.id);
+  let user;
+  try { user = db.getUserByToken(socket.data.authToken); } catch (_) { user = null; }
+  if (!previous || !user || user.syncId !== previous.syncId) {
+    clearSocketIdentity(socket);
+    return null;
+  }
+  socketToUser.set(socket.id, user);
+  return user;
+}
+
+function authenticatedTo(room) {
+  return { emit(event, ...args) {
+    const ids = [...(io.sockets.adapter.rooms.get(room) || [])];
+    for (const id of ids) {
+      const recipient = io.sockets.sockets.get(id);
+      if (recipient && currentSocketUser(recipient)) recipient.emit(event, ...args);
+    }
+  } };
+}
+
 io.on("connection", function (socket) {
+  socket.use(([event, payload], next) => {
+    if (event === "authenticate" || currentSocketUser(socket)) return next();
+    socket.emit("auth-error", { message: "Sesión expirada o inválida" });
+    emitChannelAuthorizationError(socket, "UNAUTHENTICATED", "Autenticación requerida");
+    socket.emit("error-message", { id: payload?.clientMsgId, message: "No autenticado" });
+    // Do not run any event handler after failed revalidation.
+  });
+
   // Autenticación de Socket
   socket.on("authenticate", function (payload) {
     const token = payload && payload.token ? payload.token : null;
@@ -980,7 +1011,7 @@ io.on("connection", function (socket) {
     if (!userSockets) return;
     userSockets.forEach((socketId) => {
       if (socketId !== socket.id) {
-        io.to(socketId).emit("clipboard-sync", {
+        authenticatedTo(socketId).emit("clipboard-sync", {
           text: payload.text,
           fromSyncId: sender.syncId,
           timestamp: Date.now()
@@ -1036,9 +1067,9 @@ io.on("connection", function (socket) {
 
     try {
       const msg = db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });
-      io.to("channel:" + channelId).emit("channel-message-received", msg);
+      authenticatedTo("channel:" + channelId).emit("channel-message-received", msg);
       if (rawChannelId !== channelId) {
-        io.to("channel:" + rawChannelId).emit("channel-message-received", msg);
+        authenticatedTo("channel:" + rawChannelId).emit("channel-message-received", msg);
       }
     } catch (err) {
       socket.emit("error-message", { message: err.message });
@@ -1180,7 +1211,7 @@ io.on("connection", function (socket) {
     // Entregar a todos los sockets activos del destinatario
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("receive-private-message", messageObj);
+        authenticatedTo(sockId).emit("receive-private-message", messageObj);
       });
     }
 
@@ -1188,7 +1219,7 @@ io.on("connection", function (socket) {
     const senderSockets = onlineUsers.get(sender.syncId);
     if (senderSockets && senderSockets.size > 0) {
       senderSockets.forEach((sockId) => {
-        io.to(sockId).emit("receive-private-message", messageObj);
+        authenticatedTo(sockId).emit("receive-private-message", messageObj);
       });
     }
 
@@ -1211,14 +1242,14 @@ io.on("connection", function (socket) {
             const currentTargetSockets = onlineUsers.get(targetSyncId);
             if (currentTargetSockets && currentTargetSockets.size > 0) {
               currentTargetSockets.forEach((sockId) => {
-                io.to(sockId).emit("message-preview-updated", previewEvent);
+                authenticatedTo(sockId).emit("message-preview-updated", previewEvent);
               });
             }
 
             const currentSenderSockets = onlineUsers.get(sender.syncId);
             if (currentSenderSockets && currentSenderSockets.size > 0) {
               currentSenderSockets.forEach((sockId) => {
-                io.to(sockId).emit("message-preview-updated", previewEvent);
+                authenticatedTo(sockId).emit("message-preview-updated", previewEvent);
               });
             }
           }
@@ -1248,7 +1279,7 @@ io.on("connection", function (socket) {
       const senderSockets = onlineUsers.get(contactSyncId);
       if (senderSockets && senderSockets.size > 0) {
         senderSockets.forEach((sockId) => {
-          io.to(sockId).emit("messages-read-receipt", receiptData);
+          authenticatedTo(sockId).emit("messages-read-receipt", receiptData);
         });
       }
 
@@ -1256,7 +1287,7 @@ io.on("connection", function (socket) {
       const readerSockets = onlineUsers.get(reader.syncId);
       if (readerSockets && readerSockets.size > 0) {
         readerSockets.forEach((sockId) => {
-          io.to(sockId).emit("messages-read-receipt", receiptData);
+          authenticatedTo(sockId).emit("messages-read-receipt", receiptData);
         });
       }
     }
@@ -1280,14 +1311,14 @@ io.on("connection", function (socket) {
         const targetSockets = onlineUsers.get(targetSyncId);
         if (targetSockets && targetSockets.size > 0) {
           targetSockets.forEach((sockId) => {
-            io.to(sockId).emit("message-deleted-for-everyone", eventData);
+            authenticatedTo(sockId).emit("message-deleted-for-everyone", eventData);
           });
         }
 
         const senderSockets = onlineUsers.get(sender.syncId);
         if (senderSockets && senderSockets.size > 0) {
           senderSockets.forEach((sockId) => {
-            io.to(sockId).emit("message-deleted-for-everyone", eventData);
+            authenticatedTo(sockId).emit("message-deleted-for-everyone", eventData);
           });
         }
       }
@@ -1312,7 +1343,7 @@ io.on("connection", function (socket) {
       const targetSockets = onlineUsers.get(targetSyncId);
       if (targetSockets && targetSockets.size > 0) {
         targetSockets.forEach((sockId) => {
-          io.to(sockId).emit("message-pinned", {
+          authenticatedTo(sockId).emit("message-pinned", {
             pinnedMessage: pinned,
             conversationWith: sender.syncId
           });
@@ -1322,7 +1353,7 @@ io.on("connection", function (socket) {
       const senderSockets = onlineUsers.get(sender.syncId);
       if (senderSockets && senderSockets.size > 0) {
         senderSockets.forEach((sockId) => {
-          io.to(sockId).emit("message-pinned", eventData);
+          authenticatedTo(sockId).emit("message-pinned", eventData);
         });
       }
     } catch (err) {
@@ -1341,14 +1372,14 @@ io.on("connection", function (socket) {
     const targetSockets = onlineUsers.get(targetSyncId);
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("message-unpinned", { conversationWith: sender.syncId });
+        authenticatedTo(sockId).emit("message-unpinned", { conversationWith: sender.syncId });
       });
     }
 
     const senderSockets = onlineUsers.get(sender.syncId);
     if (senderSockets && senderSockets.size > 0) {
       senderSockets.forEach((sockId) => {
-        io.to(sockId).emit("message-unpinned", { conversationWith: targetSyncId });
+        authenticatedTo(sockId).emit("message-unpinned", { conversationWith: targetSyncId });
       });
     }
   });
@@ -1371,14 +1402,14 @@ io.on("connection", function (socket) {
     const targetSockets = onlineUsers.get(targetSyncId);
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("message-reaction-updated", eventData);
+        authenticatedTo(sockId).emit("message-reaction-updated", eventData);
       });
     }
 
     const senderSockets = onlineUsers.get(sender.syncId);
     if (senderSockets && senderSockets.size > 0) {
       senderSockets.forEach((sockId) => {
-        io.to(sockId).emit("message-reaction-updated", eventData);
+        authenticatedTo(sockId).emit("message-reaction-updated", eventData);
       });
     }
   });
@@ -1399,7 +1430,7 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("call-made", {
+        authenticatedTo(sockId).emit("call-made", {
           offer: data.offer,
           fromSyncId: sender.syncId,
           fromName: sender.formattedName
@@ -1428,7 +1459,7 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("answer-made", {
+        authenticatedTo(sockId).emit("answer-made", {
           answer: data.answer,
           fromSyncId: sender.syncId,
           fromName: sender.formattedName
@@ -1446,7 +1477,7 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("ice-candidate", {
+        authenticatedTo(sockId).emit("ice-candidate", {
           candidate: data.candidate,
           fromSyncId: sender.syncId
         });
@@ -1464,7 +1495,7 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("call-rejected", {
+        authenticatedTo(sockId).emit("call-rejected", {
           fromSyncId: sender.syncId,
           fromName: sender.formattedName
         });
@@ -1483,7 +1514,7 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("call-ended", {
+        authenticatedTo(sockId).emit("call-ended", {
           fromSyncId: sender.syncId,
           fromName: sender.formattedName
         });
@@ -1511,7 +1542,7 @@ io.on("connection", function (socket) {
     if (userSockets && userSockets.size > 0) {
       userSockets.forEach((sockId) => {
         if (sockId !== socket.id) {
-          io.to(sockId).emit("notification-mirrored", notifData);
+          authenticatedTo(sockId).emit("notification-mirrored", notifData);
         }
       });
     }
@@ -1539,14 +1570,14 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("receive-private-message", savedMsg);
+        authenticatedTo(sockId).emit("receive-private-message", savedMsg);
       });
     }
 
     const senderSockets = onlineUsers.get(sender.syncId);
     if (senderSockets && senderSockets.size > 0) {
       senderSockets.forEach((sockId) => {
-        io.to(sockId).emit("receive-private-message", savedMsg);
+        authenticatedTo(sockId).emit("receive-private-message", savedMsg);
       });
     }
 
@@ -1568,12 +1599,12 @@ io.on("connection", function (socket) {
 
             const curTargets = onlineUsers.get(targetSyncId);
             if (curTargets && curTargets.size > 0) {
-              curTargets.forEach((sockId) => io.to(sockId).emit("message-preview-updated", previewEvent));
+              curTargets.forEach((sockId) => authenticatedTo(sockId).emit("message-preview-updated", previewEvent));
             }
 
             const curSenders = onlineUsers.get(sender.syncId);
             if (curSenders && curSenders.size > 0) {
-              curSenders.forEach((sockId) => io.to(sockId).emit("message-preview-updated", previewEvent));
+              curSenders.forEach((sockId) => authenticatedTo(sockId).emit("message-preview-updated", previewEvent));
             }
           }
         } catch (previewErr) {

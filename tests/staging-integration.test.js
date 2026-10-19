@@ -187,6 +187,31 @@ test("SEC-01: expired and revoked sessions receive nothing despite remaining con
   assert.equal(received.get(alice).length, 0); assert.equal(received.get(bob).length, 0);
 });
 
+test("Socket.IO normal events reject expired/revoked senders and filter expired/revoked recipients", async () => {
+  const deliveries = [];
+  alice.on("receive-private-message", (message) => deliveries.push(message));
+  bob.on("receive-private-message", (message) => deliveries.push(message));
+  for (const user of users.slice(0, 2)) {
+    const sent = event(outsider, "message-sent");
+    outsider.emit("send-private-message", { toSyncId: user.syncId, type: "text", text: "valid session to stale recipient" });
+    await sent;
+  }
+  await delay(120);
+  assert.equal(deliveries.length, 0);
+  const beforeCount = (await command("messages")).length;
+  for (const socket of [alice, bob]) {
+    const rejected = event(socket, "auth-error");
+    socket.emit("send-private-message", { toSyncId: users[2].syncId, type: "text", text: "must not persist" });
+    await rejected;
+    const denied = event(socket, "authorization-error");
+    socket.emit("join-channel", { channelId: "chan-general" });
+    assert.equal((await denied).code, "UNAUTHENTICATED");
+  }
+  assert.equal((await command("messages")).length, beforeCount);
+  // The unaffected, still-valid session continues working.
+  assert.equal((await fetch(base + "/api/auth/me", { headers: { Authorization: "Bearer " + tokens.outsider } })).status, 200);
+});
+
 test("real process restart reloads the persisted private conversation", async () => {
   for (const bridge of bridges.splice(0)) await bridge.close();
   for (const socket of clients) socket.disconnect();
