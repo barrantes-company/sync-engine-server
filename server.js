@@ -353,13 +353,8 @@ app.get('/api/notifications/vapid-public-key', requireAuth, (_req, res) => {
   res.json({ ok: true, configured: webPushConfigured, publicKey: webPushConfigured ? VAPID_PUBLIC_KEY : null });
 });
 
-function isBlockedMetadataHost(hostname) {
-  const host = String(hostname || "").toLowerCase().replace(/[\[\]]/g, "");
-  if (host === "localhost" || host.endsWith(".localhost") || host === "metadata.google.internal") return true;
-  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(host)) return true;
-  const match = host.match(/^172\.(\d+)\./);
-  return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
-}
+const { createMetadataFetcher } = require("./metadata-fetch");
+const fetchMetadata = createMetadataFetcher();
 
 // Extractor de Metadatos OpenGraph y Favicon para Rich Link Cards
 async function fetchUrlMetadata(text) {
@@ -370,21 +365,11 @@ async function fetchUrlMetadata(text) {
   const targetUrl = match[0];
   try {
     const parsed = new URL(targetUrl);
-    if (!['http:', 'https:'].includes(parsed.protocol) || isBlockedMetadataHost(parsed.hostname)) return null;
+    if (!["http:", "https:"].includes(parsed.protocol)) return null;
     const domain = parsed.hostname;
     const defaultFavicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
-
-    const response = await fetch(targetUrl, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-      }
-    });
-    clearTimeout(timeout);
+    const response = await fetchMetadata(targetUrl);
 
     if (!response.ok) {
       return {
@@ -396,7 +381,7 @@ async function fetchUrlMetadata(text) {
       };
     }
 
-    const html = await response.text();
+    const html = response.body;
 
     // og:title o <title>
     const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
@@ -416,7 +401,7 @@ async function fetchUrlMetadata(text) {
     let image = ogImgMatch ? ogImgMatch[1] : null;
 
     if (image && !image.startsWith("http://") && !image.startsWith("https://")) {
-      image = new URL(image, targetUrl).href;
+      image = new URL(image, response.url).href;
     }
     if (!image) {
       image = defaultFavicon;
