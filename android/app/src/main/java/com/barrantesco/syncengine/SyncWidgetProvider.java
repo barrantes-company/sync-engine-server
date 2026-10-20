@@ -16,12 +16,6 @@ import android.widget.RemoteViews;
 public final class SyncWidgetProvider extends AppWidgetProvider {
     private static final String TAG = "SyncWidgetProvider";
     private static final String ACTION_TICK = "com.barrantesco.syncengine.WIDGET_TICK";
-    private static final int[] FRAME_IDS = {
-            R.id.widget_frame_0, R.id.widget_frame_1, R.id.widget_frame_2,
-            R.id.widget_frame_3, R.id.widget_frame_4, R.id.widget_frame_5};
-    private static final int[] FRAME_DRAWABLES = {
-            R.drawable.widget_trails_0, R.drawable.widget_trails_1, R.drawable.widget_trails_2,
-            R.drawable.widget_trails_3, R.drawable.widget_trails_4, R.drawable.widget_trails_5};
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -48,7 +42,6 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
         }
         if (AppSettings.isLoggedIn(context)) {
             SyncJobService.schedule(context);
-            // Refresco inmediato fuera del hilo principal, sin que el sistema mate el receiver.
             final PendingResult result = goAsync();
             final Context app = context.getApplicationContext();
             new Thread(() -> {
@@ -78,46 +71,15 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
 
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId) {
         Log.d(TAG, "updateWidget start id=" + widgetId);
-        Bundle options = manager.getAppWidgetOptions(widgetId);
-        int widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
-        int heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 120);
-        int[] size = WidgetRenderer.size(context, widthDp, heightDp);
-        int w = size[0];
-        int h = size[1];
-        float unit = size[2] / 100f;
-
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sync_widget);
-        views.setViewVisibility(R.id.widget_initial_fallback, View.GONE);
+        views.setImageViewResource(R.id.widget_static, R.drawable.widget_trails_0);
 
-        if (AppSettings.animations(context)) {
-            views.setViewVisibility(R.id.widget_flipper, View.VISIBLE);
-            views.setViewVisibility(R.id.widget_static, View.GONE);
-            for (int i = 0; i < FRAME_IDS.length; i++) {
-                views.setImageViewResource(FRAME_IDS[i], FRAME_DRAWABLES[i]);
-            }
-        } else {
-            views.setViewVisibility(R.id.widget_flipper, View.GONE);
-            views.setViewVisibility(R.id.widget_static, View.VISIBLE);
-            views.setImageViewResource(R.id.widget_static, FRAME_DRAWABLES[0]);
-        }
-
-        String[] status = new String[0];
-        boolean dim = false;
-        if (AppSettings.showCounters(context)) {
-            if (AppSettings.isLoggedIn(context)) {
-                int unread = AppSettings.unread(context);
-                int missed = AppSettings.missed(context);
-                status = new String[] {
-                        String.valueOf(unread), unread == 1 ? "mensaje" : "mensajes",
-                        String.valueOf(missed), missed == 1 ? "llamada" : "llamadas"};
-                dim = unread + missed == 0;
-            } else {
-                status = new String[] {"", context.getString(R.string.widget_sign_in)};
-            }
-        }
-        android.graphics.Bitmap text = WidgetRenderer.text(context, w, h, AppSettings.timeZone(context),
-                AppSettings.use24h(context), status, dim);
-        views.setImageViewBitmap(R.id.widget_text, text);
+        String zone = AppSettings.timeZone(context);
+        CharSequence clockFormat = AppSettings.use24h(context) ? "HH:mm" : "h:mm a";
+        views.setString(R.id.widget_clock, "setTimeZone", zone);
+        views.setCharSequence(R.id.widget_clock, "setFormat12Hour", clockFormat);
+        views.setCharSequence(R.id.widget_clock, "setFormat24Hour", clockFormat);
+        views.setString(R.id.widget_date, "setTimeZone", zone);
 
         PendingIntent open = PendingIntent.getActivity(
                 context,
@@ -132,32 +94,42 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
                 new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
 
-        // El dock de acciones solo aparece en formatos panorámicos con altura suficiente.
-        boolean showActions = widthDp >= 220 && heightDp >= 55;
-        views.setViewVisibility(R.id.widget_action_row, showActions ? View.VISIBLE : View.GONE);
-        Intent messages = new Intent(context, OpenAppActivity.class)
-                .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "chats")
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        Intent calls = new Intent(context, OpenAppActivity.class)
-                .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "calls")
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        views.setOnClickPendingIntent(R.id.widget_messages_action, PendingIntent.getActivity(
-                context, 21, messages, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-        views.setOnClickPendingIntent(R.id.widget_calls_action, PendingIntent.getActivity(
-                context, 22, calls, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-        manager.updateAppWidget(widgetId, views);
-        Log.i(TAG, "updateAppWidget submitted id=" + widgetId + " size=" + widthDp + "x" + heightDp);
-        scheduleTick(context);
-    }
+        if (!AppSettings.showCounters(context)) {
+            views.setViewVisibility(R.id.widget_status, View.GONE);
+            views.setViewVisibility(R.id.widget_action_row, View.GONE);
+        } else if (!AppSettings.isLoggedIn(context)) {
+            views.setViewVisibility(R.id.widget_action_row, View.GONE);
+            views.setViewVisibility(R.id.widget_status, View.VISIBLE);
+            views.setTextViewText(R.id.widget_status, context.getString(R.string.widget_sign_in));
+        } else {
+            int unread = AppSettings.unread(context);
+            int missed = AppSettings.missed(context);
+            String messages = unread + " " + (unread == 1 ? "mensaje" : "mensajes");
+            String calls = missed + " " + (missed == 1 ? "llamada" : "llamadas");
+            int color = unread + missed == 0 ? 0xFFB4C2CF : 0xFFFFD88A;
+            views.setViewVisibility(R.id.widget_status, View.GONE);
+            views.setViewVisibility(R.id.widget_action_row, View.VISIBLE);
+            views.setTextViewText(R.id.widget_messages_action, messages);
+            views.setTextViewText(R.id.widget_calls_action, calls);
+            views.setTextColor(R.id.widget_messages_action, color);
+            views.setTextColor(R.id.widget_calls_action, color);
+            views.setContentDescription(R.id.widget_messages_action, messages);
+            views.setContentDescription(R.id.widget_calls_action, calls);
 
-    /** Programa el repintado en el próximo cambio de minuto para que la hora no se quede atrasada. */
-    private static void scheduleTick(Context context) {
-        AlarmManager alarms = context.getSystemService(AlarmManager.class);
-        if (alarms == null) {
-            return;
+            Intent messagesIntent = new Intent(context, OpenAppActivity.class)
+                    .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "chats")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            Intent callsIntent = new Intent(context, OpenAppActivity.class)
+                    .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "calls")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            views.setOnClickPendingIntent(R.id.widget_messages_action, PendingIntent.getActivity(
+                    context, 21, messagesIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+            views.setOnClickPendingIntent(R.id.widget_calls_action, PendingIntent.getActivity(
+                    context, 22, callsIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         }
-        long next = (System.currentTimeMillis() / 60000L + 1) * 60000L;
-        alarms.setAndAllowWhileIdle(AlarmManager.RTC, next, tickIntent(context));
+
+        manager.updateAppWidget(widgetId, views);
+        Log.i(TAG, "updateAppWidget submitted id=" + widgetId);
     }
 
     private static PendingIntent tickIntent(Context context) {
