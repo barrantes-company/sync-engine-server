@@ -2,8 +2,10 @@ package com.barrantesco.syncengine;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -36,6 +38,12 @@ public final class WebAppActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         buildView();
+        loadOfficialApp();
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
         loadOfficialApp();
     }
 
@@ -111,6 +119,13 @@ public final class WebAppActivity extends Activity {
         String appUrl = WidgetUrls.appUrl(configured);
         if (!WidgetUrls.isWidgetUrl(appUrl)) {
             appUrl = "https://sync-engine-server.onrender.com/";
+        }
+        String view = getIntent() == null ? null : getIntent().getStringExtra(OpenAppActivity.EXTRA_WIDGET_VIEW);
+        if ("chats".equals(view) || "calls".equals(view)) {
+            appUrl = Uri.parse(appUrl).buildUpon()
+                    .appendQueryParameter("widgetView", view)
+                    .build()
+                    .toString();
         }
         webView.loadUrl(appUrl);
     }
