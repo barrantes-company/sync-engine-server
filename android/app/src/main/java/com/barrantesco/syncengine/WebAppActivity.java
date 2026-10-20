@@ -1,10 +1,13 @@
 package com.barrantesco.syncengine;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -15,14 +18,19 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Main Android entry point. Loads the official SYNC ENGINE web application;
  * widget configuration remains a separate activity.
  */
 public final class WebAppActivity extends Activity {
+    private static final int MEDIA_PERMISSION = 42;
     private WebView webView;
     private ProgressBar progress;
     private TextView errorMessage;
+    private PermissionRequest pendingMedia;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,11 +58,25 @@ public final class WebAppActivity extends Activity {
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
         settings.setSupportMultipleWindows(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setUserAgentString(settings.getUserAgentString() + " SYNCENGINE-Android");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public void onProgressChanged(WebView view, int newProgress) {
                 progress.setProgress(newProgress);
                 progress.setVisibility(newProgress >= 100 ? View.GONE : View.VISIBLE);
+            }
+
+            @Override public void onPermissionRequest(PermissionRequest request) {
+                if (hasMediaPermission(request)) {
+                    request.grant(request.getResources());
+                    return;
+                }
+                pendingMedia = request;
+                requestPermissions(missingMediaPermissions(request), MEDIA_PERMISSION);
+            }
+
+            @Override public void onPermissionRequestCanceled(PermissionRequest request) {
+                if (request == pendingMedia) pendingMedia = null;
             }
         });
         webView.setWebViewClient(new WebViewClient() {
@@ -95,6 +117,39 @@ public final class WebAppActivity extends Activity {
 
     private void showLoadError() {
         errorMessage.setVisibility(View.VISIBLE);
+    }
+
+    @Override protected void onStart() {
+        super.onStart();
+        SyncWidgetProvider.refreshAll(this);
+    }
+
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != MEDIA_PERMISSION || pendingMedia == null) return;
+        PermissionRequest request = pendingMedia;
+        pendingMedia = null;
+        if (hasMediaPermission(request)) request.grant(request.getResources());
+        else request.deny();
+    }
+
+    private boolean hasMediaPermission(PermissionRequest request) {
+        return missingMediaPermissions(request).length == 0;
+    }
+
+    private String[] missingMediaPermissions(PermissionRequest request) {
+        List<String> missing = new ArrayList<>();
+        for (String resource : request.getResources()) {
+            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)
+                    && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                missing.add(Manifest.permission.CAMERA);
+            }
+            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)
+                    && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                missing.add(Manifest.permission.RECORD_AUDIO);
+            }
+        }
+        return missing.toArray(new String[0]);
     }
 
     @Override public void onBackPressed() {
