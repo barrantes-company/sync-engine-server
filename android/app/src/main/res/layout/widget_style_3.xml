@@ -3,104 +3,75 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#07111D">
-    
+    android:background="#050608">
+
     <ViewFlipper
         android:layout_width="match_parent"
-        android:layout_height="78dp"
-        android:layout_gravity="bottom"
+        android:layout_height="match_parent"
         android:autoStart="true"
-        android:flipInterval="1800"
+        android:flipInterval="2400"
         android:inAnimation="@anim/widget_fade_in"
         android:outAnimation="@anim/widget_fade_out">
-        <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:src="@drawable/widget_trails_0" />
-        <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:src="@drawable/widget_trails_2" />
-        <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:src="@drawable/widget_trails_4" />
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/widget_ribbon" />
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@drawable/widget_ribbon_b" />
     </ViewFlipper>
+    <TextClock
+        android:id="@+id/widget_clock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="18dp"
+        android:fontFamily="sans-serif-light"
+        android:format12Hour="h:mm"
+        android:format24Hour="HH:mm"
+        android:includeFontPadding="false"
+        android:textColor="#F4F7FC"
+        android:textSize="32sp" />
+    
+    <TextClock
+        android:id="@+id/widget_date"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:format12Hour="EEE d MMM"
+        android:format24Hour="EEE d MMM"
+        android:visibility="gone" />
+    <TextView
+        android:id="@+id/widget_status"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
     
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="16dp">
-        <LinearLayout
-            android:layout_width="0dp"
+        android:id="@+id/widget_action_row"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/widget_messages_action"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1.2"
-            android:orientation="vertical">
-            <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:gravity="start"
-            android:letterSpacing="0.22"
-            android:text="SYNC"
-            android:textColor="#6DD8FF"
-            android:textSize="10sp" />
-            <TextClock
-            android:id="@+id/widget_clock"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:format12Hour="h:mm"
-            android:format24Hour="HH:mm"
-            android:gravity="start"
-            android:includeFontPadding="false"
-            android:textColor="#FFFFFF"
-            android:textSize="30sp" />
-            <TextClock
-            android:id="@+id/widget_date"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:format12Hour="EEE d MMM"
-            android:format24Hour="EEE d MMM"
-            android:gravity="start"
-            android:includeFontPadding="false"
-            android:textColor="#C5D0E3"
-            android:textSize="12sp" />
-            <TextView
-            android:id="@+id/widget_status"
-            android:layout_width="match_parent"
+            android:text="Mensajes"
+            android:textColor="#7DDCFF"
+            android:textSize="14sp" />
+        <TextView
+            android:id="@+id/widget_calls_action"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:gravity="start"
-            android:textColor="#F7F8FB"
-            android:textSize="13sp"
-            android:visibility="gone" />
-        </LinearLayout>
-        <LinearLayout
-            android:id="@+id/widget_action_row"
-            android:layout_width="112dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="0dp"
-            android:orientation="vertical"
-            android:visibility="gone">
-            <TextView
-                android:id="@+id/widget_messages_action"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginEnd="4dp"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="Mensajes"
-                android:textColor="#F7F8FB"
-                android:textSize="13sp"
-                 />
-            <TextView
-                android:id="@+id/widget_calls_action"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginStart="4dp"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="Llamadas"
-                android:textColor="#F7F8FB"
-                android:textSize="13sp"
-                 />
-        </LinearLayout>
+            android:text="Llamadas"
+            android:textColor="#FF5CC4"
+            android:textSize="14sp" />
     </LinearLayout>
+
+
 </FrameLayout>
