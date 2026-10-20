@@ -16,6 +16,16 @@ import android.widget.RemoteViews;
 public final class SyncWidgetProvider extends AppWidgetProvider {
     private static final String TAG = "SyncWidgetProvider";
     private static final String ACTION_TICK = "com.barrantesco.syncengine.WIDGET_TICK";
+    private static final int[] LAYOUTS = {
+            R.layout.widget_style_0,
+            R.layout.widget_style_1,
+            R.layout.widget_style_2,
+            R.layout.widget_style_3,
+            R.layout.widget_style_4,
+            R.layout.widget_style_5,
+            R.layout.widget_style_6,
+            R.layout.widget_style_7
+    };
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -71,8 +81,8 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
 
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId) {
         Log.d(TAG, "updateWidget start id=" + widgetId);
-        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sync_widget);
-        views.setImageViewResource(R.id.widget_static, R.drawable.widget_trails_0);
+        int style = AppSettings.widgetStyle(context);
+        RemoteViews views = new RemoteViews(context.getPackageName(), LAYOUTS[style]);
 
         String zone = AppSettings.timeZone(context);
         CharSequence clockFormat = AppSettings.use24h(context) ? "HH:mm" : "h:mm a";
@@ -95,8 +105,13 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
 
         if (!AppSettings.showCounters(context)) {
-            views.setViewVisibility(R.id.widget_status, View.GONE);
             views.setViewVisibility(R.id.widget_action_row, View.GONE);
+            if (style == 6) {
+                views.setViewVisibility(R.id.widget_status, View.VISIBLE);
+                views.setTextViewText(R.id.widget_status, city(zone));
+            } else {
+                views.setViewVisibility(R.id.widget_status, View.GONE);
+            }
         } else if (!AppSettings.isLoggedIn(context)) {
             views.setViewVisibility(R.id.widget_action_row, View.GONE);
             views.setViewVisibility(R.id.widget_status, View.VISIBLE);
@@ -106,15 +121,15 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
             int missed = AppSettings.missed(context);
             String messages = unread + " " + (unread == 1 ? "mensaje" : "mensajes");
             String calls = missed + " " + (missed == 1 ? "llamada" : "llamadas");
-            int color = unread + missed == 0 ? 0xFFB4C2CF : 0xFFFFD88A;
-            views.setViewVisibility(R.id.widget_status, View.GONE);
             views.setViewVisibility(R.id.widget_action_row, View.VISIBLE);
             views.setTextViewText(R.id.widget_messages_action, messages);
             views.setTextViewText(R.id.widget_calls_action, calls);
-            views.setTextColor(R.id.widget_messages_action, color);
-            views.setTextColor(R.id.widget_calls_action, color);
             views.setContentDescription(R.id.widget_messages_action, messages);
             views.setContentDescription(R.id.widget_calls_action, calls);
+            if (style == 6) {
+                views.setViewVisibility(R.id.widget_status, View.VISIBLE);
+                views.setTextViewText(R.id.widget_status, city(zone));
+            }
 
             Intent messagesIntent = new Intent(context, OpenAppActivity.class)
                     .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "chats")
@@ -130,6 +145,13 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
 
         manager.updateAppWidget(widgetId, views);
         Log.i(TAG, "updateAppWidget submitted id=" + widgetId);
+    }
+
+    private static String city(String zone) {
+        if (zone == null || zone.isEmpty()) return "";
+        int slash = zone.lastIndexOf('/');
+        String name = slash >= 0 ? zone.substring(slash + 1) : zone;
+        return name.replace('_', ' ');
     }
 
     private static PendingIntent tickIntent(Context context) {
