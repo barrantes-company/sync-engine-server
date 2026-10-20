@@ -65,7 +65,7 @@
         <receiver
             android:name=".SyncWidgetProvider"
             android:exported="true"
-            android:label="@string/widget_name"
+            android:label="@string/widget_negro"
             android:permission="android.permission.BIND_APPWIDGET">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -76,6 +76,35 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/sync_widget_info" />
+        </receiver>
+
+        <receiver android:name=".WidgetReloj" android:exported="true" android:label="@string/widget_reloj" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_0" />
+        </receiver>
+        <receiver android:name=".WidgetSenal" android:exported="true" android:label="@string/widget_senal" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_1" />
+        </receiver>
+        <receiver android:name=".WidgetLinea" android:exported="true" android:label="@string/widget_linea" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_3" />
+        </receiver>
+        <receiver android:name=".WidgetBarra" android:exported="true" android:label="@string/widget_barra" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_4" />
+        </receiver>
+        <receiver android:name=".WidgetFino" android:exported="true" android:label="@string/widget_fino" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_5" />
+        </receiver>
+        <receiver android:name=".WidgetCiudad" android:exported="true" android:label="@string/widget_ciudad" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_6" />
+        </receiver>
+        <receiver android:name=".WidgetAccesos" android:exported="true" android:label="@string/widget_accesos" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_7" />
         </receiver>
     </application>
 </manifest>

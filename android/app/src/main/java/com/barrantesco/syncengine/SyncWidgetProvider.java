@@ -12,8 +12,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
 
-/** Widget de pantalla de inicio: reloj, contadores de mensajes/llamadas y accesos rápidos. */
-public final class SyncWidgetProvider extends AppWidgetProvider {
+/** Widget de pantalla de inicio. Cada estilo es un widget distinto en la parrilla. */
+public class SyncWidgetProvider extends AppWidgetProvider {
     private static final String TAG = "SyncWidgetProvider";
     private static final String ACTION_TICK = "com.barrantesco.syncengine.WIDGET_TICK";
     private static final int[] LAYOUTS = {
@@ -26,6 +26,22 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
             R.layout.widget_style_6,
             R.layout.widget_style_7
     };
+
+    private static final Class<?>[] PROVIDERS = {
+            WidgetReloj.class,
+            WidgetSenal.class,
+            SyncWidgetProvider.class,
+            WidgetLinea.class,
+            WidgetBarra.class,
+            WidgetFino.class,
+            WidgetCiudad.class,
+            WidgetAccesos.class
+    };
+
+    /** Estilo fijo de este widget. Negro es el que ya estaba instalado. */
+    int styleIndex() {
+        return 2;
+    }
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -45,7 +61,7 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
         Log.i(TAG, "onUpdate ids=" + java.util.Arrays.toString(appWidgetIds));
         for (int appWidgetId : appWidgetIds) {
             try {
-                updateWidget(context, appWidgetManager, appWidgetId);
+                updateWidget(context, appWidgetManager, appWidgetId, styleIndex());
             } catch (RuntimeException error) {
                 Log.e(TAG, "Failed to render widget id=" + appWidgetId, error);
             }
@@ -67,21 +83,38 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
     @Override
     public void onAppWidgetOptionsChanged(Context context, AppWidgetManager manager,
                                           int widgetId, Bundle newOptions) {
-        updateWidget(context, manager, widgetId);
+        updateWidget(context, manager, widgetId, styleIndex());
     }
 
     /** Repinta todos los widgets con la configuración y contadores en caché. */
     static void refreshAll(Context context) {
         AppWidgetManager manager = AppWidgetManager.getInstance(context);
-        int[] ids = manager.getAppWidgetIds(new ComponentName(context, SyncWidgetProvider.class));
-        for (int id : ids) {
-            updateWidget(context, manager, id);
+        for (int style = 0; style < PROVIDERS.length; style++) {
+            int[] ids = manager.getAppWidgetIds(new ComponentName(context, PROVIDERS[style]));
+            for (int id : ids) {
+                updateWidget(context, manager, id, style);
+            }
         }
     }
 
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId) {
+        int style = 2;
+        android.appwidget.AppWidgetProviderInfo info = manager.getAppWidgetInfo(widgetId);
+        if (info != null && info.provider != null) {
+            String name = info.provider.getClassName();
+            for (int index = 0; index < PROVIDERS.length; index++) {
+                if (PROVIDERS[index].getName().equals(name)) {
+                    style = index;
+                    break;
+                }
+            }
+        }
+        updateWidget(context, manager, widgetId, style);
+    }
+
+    static void updateWidget(Context context, AppWidgetManager manager, int widgetId, int style) {
         Log.d(TAG, "updateWidget start id=" + widgetId);
-        int style = AppSettings.widgetStyle(context);
+        if (style < 0 || style >= LAYOUTS.length) style = 2;
         RemoteViews views = new RemoteViews(context.getPackageName(), LAYOUTS[style]);
 
         String zone = AppSettings.timeZone(context);
@@ -98,11 +131,6 @@ public final class SyncWidgetProvider extends AppWidgetProvider {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, open);
         views.setOnClickPendingIntent(R.id.widget_open, open);
-        views.setOnClickPendingIntent(R.id.widget_settings, PendingIntent.getActivity(
-                context,
-                1,
-                new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
 
         if (!AppSettings.showCounters(context)) {
             views.setViewVisibility(R.id.widget_action_row, View.GONE);

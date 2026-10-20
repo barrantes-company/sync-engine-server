@@ -2,6 +2,14 @@
 <resources>
     <string name="app_name">SYNC ENGINE</string>
     <string name="widget_name">SYNC ENGINE</string>
+    <string name="widget_reloj">Reloj</string>
+    <string name="widget_senal">Señal</string>
+    <string name="widget_negro">Negro</string>
+    <string name="widget_linea">Línea</string>
+    <string name="widget_barra">Barra</string>
+    <string name="widget_fino">Fino</string>
+    <string name="widget_ciudad">Ciudad</string>
+    <string name="widget_accesos">Accesos</string>
     <string name="configure_widget">Configurar widget SYNC ENGINE</string>
     <string name="setup_instructions">Escribe la dirección de tu servidor y guarda. Luego, mantén pulsada la pantalla de inicio, abre Widgets, busca SYNC ENGINE y arrastra el widget; podrás confirmar la URL para esa instancia.</string>
     <string name="widget_url_instructions">Introduce la dirección HTTPS (o HTTP) de tu servidor. Cada widget guarda su propia dirección y al tocarlo abre la app en el navegador.</string>
