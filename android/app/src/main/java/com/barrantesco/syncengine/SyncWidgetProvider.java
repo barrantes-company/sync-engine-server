@@ -118,7 +118,7 @@ public class SyncWidgetProvider extends AppWidgetProvider {
         RemoteViews views = new RemoteViews(context.getPackageName(), LAYOUTS[style]);
 
         String zone = AppSettings.timeZone(context);
-        CharSequence clockFormat = AppSettings.use24h(context) ? "HH:mm" : "h:mm a";
+        CharSequence clockFormat = AppSettings.use24h(context) ? "HH:mm" : "h:mm";
         views.setString(R.id.widget_clock, "setTimeZone", zone);
         views.setCharSequence(R.id.widget_clock, "setFormat12Hour", clockFormat);
         views.setCharSequence(R.id.widget_clock, "setFormat24Hour", clockFormat);
@@ -130,7 +130,6 @@ public class SyncWidgetProvider extends AppWidgetProvider {
                 new Intent(context, OpenAppActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, open);
-        views.setOnClickPendingIntent(R.id.widget_open, open);
 
         if (!AppSettings.showCounters(context)) {
             views.setViewVisibility(R.id.widget_action_row, View.GONE);
@@ -142,8 +141,12 @@ public class SyncWidgetProvider extends AppWidgetProvider {
             }
         } else if (!AppSettings.isLoggedIn(context)) {
             views.setViewVisibility(R.id.widget_action_row, View.GONE);
-            views.setViewVisibility(R.id.widget_status, View.VISIBLE);
-            views.setTextViewText(R.id.widget_status, context.getString(R.string.widget_sign_in));
+            if (style == 6) {
+                views.setViewVisibility(R.id.widget_status, View.VISIBLE);
+                views.setTextViewText(R.id.widget_status, city(zone));
+            } else {
+                views.setViewVisibility(R.id.widget_status, View.GONE);
+            }
         } else {
             int unread = AppSettings.unread(context);
             int missed = AppSettings.missed(context);
