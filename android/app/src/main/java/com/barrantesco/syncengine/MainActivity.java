@@ -68,6 +68,27 @@ public final class MainActivity extends Activity {
                 AppSettings.setUse24h(this, value)), matchWrap());
         card.addView(toggle("Estelas animadas", AppSettings.animations(this), value ->
                 AppSettings.setAnimations(this, value)), matchWrap());
+        card.addView(section("DISEÑO"), matchWrap());
+        Spinner styles = new Spinner(this);
+        styles.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, AppSettings.STYLE_NAMES) {
+            @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                TextView view = (TextView) super.getView(position, convertView, parent);
+                view.setTextColor(WHITE);
+                return view;
+            }
+        });
+        styles.setSelection(AppSettings.widgetStyle(this));
+        styles.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GOLD));
+        styles.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                if (position != AppSettings.widgetStyle(MainActivity.this)) {
+                    AppSettings.setWidgetStyle(MainActivity.this, position);
+                    SyncWidgetProvider.refreshAll(MainActivity.this);
+                }
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+        });
+        card.addView(styles, matchWrap());
 
         card.addView(section("AVISOS"), matchWrap());
         card.addView(toggle("Notificaciones", AppSettings.notifications(this), value -> {
