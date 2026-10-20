@@ -12,6 +12,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
 
+import java.util.Locale;
+
 /** Widget de pantalla de inicio. Cada estilo es un widget distinto en la parrilla. */
 public class SyncWidgetProvider extends AppWidgetProvider {
     private static final String TAG = "SyncWidgetProvider";
@@ -130,48 +132,42 @@ public class SyncWidgetProvider extends AppWidgetProvider {
                 new Intent(context, OpenAppActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, open);
+        Intent messagesIntent = new Intent(context, OpenAppActivity.class)
+                .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "chats")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent callsIntent = new Intent(context, OpenAppActivity.class)
+                .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "calls")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        views.setOnClickPendingIntent(R.id.widget_messages_action, PendingIntent.getActivity(
+                context, 21, messagesIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        views.setOnClickPendingIntent(R.id.widget_calls_action, PendingIntent.getActivity(
+                context, 22, callsIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
 
-        if (!AppSettings.showCounters(context)) {
-            views.setViewVisibility(R.id.widget_action_row, View.GONE);
-            if (style == 6) {
-                views.setViewVisibility(R.id.widget_status, View.VISIBLE);
-                views.setTextViewText(R.id.widget_status, city(zone));
-            } else {
-                views.setViewVisibility(R.id.widget_status, View.GONE);
-            }
-        } else if (!AppSettings.isLoggedIn(context)) {
-            views.setViewVisibility(R.id.widget_action_row, View.GONE);
-            if (style == 6) {
-                views.setViewVisibility(R.id.widget_status, View.VISIBLE);
-                views.setTextViewText(R.id.widget_status, city(zone));
-            } else {
-                views.setViewVisibility(R.id.widget_status, View.GONE);
-            }
-        } else {
-            int unread = AppSettings.unread(context);
-            int missed = AppSettings.missed(context);
-            String messages = unread + " " + (unread == 1 ? "mensaje" : "mensajes");
-            String calls = missed + " " + (missed == 1 ? "llamada" : "llamadas");
+        boolean loggedIn = AppSettings.isLoggedIn(context);
+        int unread = loggedIn ? AppSettings.unread(context) : 0;
+        int missed = loggedIn ? AppSettings.missed(context) : 0;
+        if (style == 7) {
+            views.setViewVisibility(R.id.widget_action_row, View.VISIBLE);
+            views.setTextViewText(R.id.widget_messages_action, "Mensajes");
+            views.setTextViewText(R.id.widget_calls_action, "Llamadas");
+            views.setViewVisibility(R.id.widget_status, View.GONE);
+        } else if (style == 1 && loggedIn && AppSettings.showCounters(context)) {
+            String messages = unread + (unread == 1 ? " mensaje" : " mensajes");
+            String calls = missed + (missed == 1 ? " llamada" : " llamadas");
             views.setViewVisibility(R.id.widget_action_row, View.VISIBLE);
             views.setTextViewText(R.id.widget_messages_action, messages);
             views.setTextViewText(R.id.widget_calls_action, calls);
-            views.setContentDescription(R.id.widget_messages_action, messages);
-            views.setContentDescription(R.id.widget_calls_action, calls);
-            if (style == 6) {
-                views.setViewVisibility(R.id.widget_status, View.VISIBLE);
-                views.setTextViewText(R.id.widget_status, city(zone));
-            }
-
-            Intent messagesIntent = new Intent(context, OpenAppActivity.class)
-                    .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "chats")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            Intent callsIntent = new Intent(context, OpenAppActivity.class)
-                    .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "calls")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            views.setOnClickPendingIntent(R.id.widget_messages_action, PendingIntent.getActivity(
-                    context, 21, messagesIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-            views.setOnClickPendingIntent(R.id.widget_calls_action, PendingIntent.getActivity(
-                    context, 22, callsIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+            views.setViewVisibility(R.id.widget_status, View.GONE);
+        } else if (style == 6) {
+            views.setViewVisibility(R.id.widget_action_row, View.GONE);
+            views.setViewVisibility(R.id.widget_status, View.VISIBLE);
+            views.setTextViewText(R.id.widget_status, spaced(city(zone)));
+        } else {
+            views.setViewVisibility(R.id.widget_action_row, View.GONE);
+            views.setViewVisibility(R.id.widget_status, View.GONE);
+        }
+        if (style == 4) {
+            views.setViewVisibility(R.id.widget_dot, unread > 0 ? View.VISIBLE : View.GONE);
         }
 
         manager.updateAppWidget(widgetId, views);
@@ -183,6 +179,16 @@ public class SyncWidgetProvider extends AppWidgetProvider {
         int slash = zone.lastIndexOf('/');
         String name = slash >= 0 ? zone.substring(slash + 1) : zone;
         return name.replace('_', ' ');
+    }
+
+    private static String spaced(String name) {
+        String upper = name.toUpperCase(Locale.US);
+        StringBuilder spaced = new StringBuilder();
+        for (int index = 0; index < upper.length(); index++) {
+            if (index > 0) spaced.append(' ');
+            spaced.append(upper.charAt(index));
+        }
+        return spaced.toString();
     }
 
     private static PendingIntent tickIntent(Context context) {
