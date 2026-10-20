@@ -5,97 +5,117 @@
     android:layout_height="match_parent"
     android:background="#07111D">
 
-    <TextView
-        android:id="@+id/widget_initial_fallback"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:padding="20dp"
-        android:text="Iniciando…"
-        android:textColor="#F7F8FB"
-        android:textSize="14sp" />
-
     <ImageView
         android:id="@+id/widget_static"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="fitXY"
-        android:visibility="gone" />
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:src="@drawable/widget_trails_0" />
 
-    <ViewFlipper
-        android:id="@+id/widget_flipper"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:autoStart="true"
-        android:flipInterval="900"
-        android:inAnimation="@anim/widget_fade_in"
-        android:outAnimation="@anim/widget_fade_out">
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="28dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp">
 
-        <ImageView android:id="@+id/widget_frame_0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
-        <ImageView android:id="@+id/widget_frame_1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
-        <ImageView android:id="@+id/widget_frame_2" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
-        <ImageView android:id="@+id/widget_frame_3" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
-        <ImageView android:id="@+id/widget_frame_4" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
-        <ImageView android:id="@+id/widget_frame_5" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" />
-    </ViewFlipper>
+        <TextClock
+            android:id="@+id/widget_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:format12Hour="h:mm a"
+            android:format24Hour="HH:mm"
+            android:includeFontPadding="false"
+            android:textColor="#FFFFFFFF"
+            android:textSize="36sp" />
 
-    <ImageView
-        android:id="@+id/widget_text"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="fitXY" />
+        <TextClock
+            android:id="@+id/widget_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:fontFamily="sans-serif"
+            android:format12Hour="EEE d MMM"
+            android:format24Hour="EEE d MMM"
+            android:includeFontPadding="false"
+            android:textColor="#CCFFFFFF"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/widget_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:minHeight="48dp"
+            android:textColor="#E6FFFFFF"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/widget_action_row"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="2dp"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/widget_messages_action"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:contentDescription="Abrir mensajes"
+                android:focusable="true"
+                android:gravity="center"
+                android:textColor="#FFFFD88A"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/widget_calls_action"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:contentDescription="Abrir llamadas"
+                android:focusable="true"
+                android:gravity="center"
+                android:textColor="#FFFFD88A"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
 
     <ImageButton
         android:id="@+id/widget_open"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_gravity="start|top"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="2dp"
         android:background="@android:color/transparent"
         android:contentDescription="Abrir"
-        android:padding="13dp"
+        android:padding="14dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_widget_open" />
 
     <ImageButton
         android:id="@+id/widget_settings"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_gravity="end|top"
-        android:layout_marginEnd="8dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="4dp"
         android:background="@android:color/transparent"
         android:contentDescription="Ajustes"
-        android:padding="13dp"
+        android:padding="14dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_widget_settings" />
-
-    <LinearLayout
-        android:id="@+id/widget_action_row"
-        android:layout_width="200dp"
-        android:layout_height="22dp"
-        android:layout_gravity="end|bottom"
-        android:layout_marginEnd="8dp"
-        android:orientation="horizontal"
-        android:visibility="gone">
-        <View
-            android:id="@+id/widget_messages_action"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@android:color/transparent"
-            android:clickable="true"
-            android:contentDescription="Abrir mensajes"
-            android:focusable="true" />
-        <View
-            android:id="@+id/widget_calls_action"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@android:color/transparent"
-            android:clickable="true"
-            android:contentDescription="Abrir llamadas"
-            android:focusable="true" />
-    </LinearLayout>
 </FrameLayout>
