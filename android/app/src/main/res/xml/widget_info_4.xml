@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:description="@string/widget_barra"
+    android:description="@string/widget_barra_hint"
     android:initialLayout="@layout/widget_style_4"
-    android:minHeight="70dp"
+    android:minHeight="64dp"
     android:minWidth="250dp"
     android:previewLayout="@layout/widget_style_4"
     android:resizeMode="horizontal|vertical"
