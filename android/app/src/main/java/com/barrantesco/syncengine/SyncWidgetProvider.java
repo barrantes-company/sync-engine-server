@@ -120,11 +120,15 @@ public class SyncWidgetProvider extends AppWidgetProvider {
         RemoteViews views = new RemoteViews(context.getPackageName(), LAYOUTS[style]);
 
         String zone = AppSettings.timeZone(context);
-        CharSequence clockFormat = AppSettings.use24h(context) ? "HH:mm" : "h:mm";
         views.setString(R.id.widget_clock, "setTimeZone", zone);
-        views.setCharSequence(R.id.widget_clock, "setFormat12Hour", clockFormat);
-        views.setCharSequence(R.id.widget_clock, "setFormat24Hour", clockFormat);
         views.setString(R.id.widget_date, "setTimeZone", zone);
+        if (style == 0 || style == 2) {
+            views.setString(R.id.widget_minutes, "setTimeZone", zone);
+        } else {
+            CharSequence clockFormat = AppSettings.use24h(context) ? "HH:mm" : "h:mm";
+            views.setCharSequence(R.id.widget_clock, "setFormat12Hour", clockFormat);
+            views.setCharSequence(R.id.widget_clock, "setFormat24Hour", clockFormat);
+        }
 
         PendingIntent open = PendingIntent.getActivity(
                 context,
@@ -146,28 +150,27 @@ public class SyncWidgetProvider extends AppWidgetProvider {
         boolean loggedIn = AppSettings.isLoggedIn(context);
         int unread = loggedIn ? AppSettings.unread(context) : 0;
         int missed = loggedIn ? AppSettings.missed(context) : 0;
-        if (style == 7) {
-            views.setViewVisibility(R.id.widget_action_row, View.VISIBLE);
-            views.setTextViewText(R.id.widget_messages_action, "Mensajes");
-            views.setTextViewText(R.id.widget_calls_action, "Llamadas");
-            views.setViewVisibility(R.id.widget_status, View.GONE);
-        } else if (style == 1 && loggedIn && AppSettings.showCounters(context)) {
-            String messages = unread + (unread == 1 ? " mensaje" : " mensajes");
-            String calls = missed + (missed == 1 ? " llamada" : " llamadas");
-            views.setViewVisibility(R.id.widget_action_row, View.VISIBLE);
-            views.setTextViewText(R.id.widget_messages_action, messages);
-            views.setTextViewText(R.id.widget_calls_action, calls);
-            views.setViewVisibility(R.id.widget_status, View.GONE);
-        } else if (style == 6) {
-            views.setViewVisibility(R.id.widget_action_row, View.GONE);
-            views.setViewVisibility(R.id.widget_status, View.VISIBLE);
-            views.setTextViewText(R.id.widget_status, spaced(city(zone)));
+        String unreadText = Integer.toString(unread);
+        String missedText = Integer.toString(missed);
+        if (style == 1) {
+            views.setTextViewText(R.id.widget_messages_count, unreadText);
+            views.setTextViewText(R.id.widget_calls_count, missedText);
         } else {
-            views.setViewVisibility(R.id.widget_action_row, View.GONE);
-            views.setViewVisibility(R.id.widget_status, View.GONE);
+            views.setTextViewText(R.id.widget_messages_action, unreadText);
+            views.setTextViewText(R.id.widget_calls_action, missedText);
         }
-        if (style == 4) {
-            views.setViewVisibility(R.id.widget_dot, unread > 0 ? View.VISIBLE : View.GONE);
+        if (style == 6) {
+            views.setViewVisibility(R.id.widget_status, View.VISIBLE);
+            views.setTextViewText(R.id.widget_status, city(zone));
+        } else if (style == 7) {
+            views.setTextViewText(R.id.widget_status, "Mensajes");
+        } else if (style != 1 && style != 3) {
+            if (loggedIn) {
+                views.setViewVisibility(R.id.widget_status, View.VISIBLE);
+                views.setTextViewText(R.id.widget_status, "ONLINE");
+            } else {
+                views.setViewVisibility(R.id.widget_status, View.GONE);
+            }
         }
 
         manager.updateAppWidget(widgetId, views);
