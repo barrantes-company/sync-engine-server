@@ -3,46 +3,47 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg_dark"
+    android:background="@drawable/widget_glass_dark"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingStart="14dp"
-    android:paddingEnd="14dp">
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp">
     <ImageView
-        android:layout_width="16dp"
-        android:layout_height="16dp"
-        android:layout_marginEnd="6dp"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
         android:src="@drawable/ic_widget_pin" />
     <TextView
         android:id="@+id/widget_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="#F4F7FC"
-        android:textSize="14sp" />
+        android:layout_marginStart="6dp"
+        android:text="Lima"
+        android:textColor="#F7F7F5"
+        android:textSize="16sp" />
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:gravity="center_horizontal"
+        android:gravity="end"
         android:orientation="vertical">
         <TextClock
             android:id="@+id/widget_clock"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="sans-serif-black"
             android:format12Hour="h:mm"
             android:format24Hour="HH:mm"
             android:includeFontPadding="false"
-            android:textColor="#F4F7FC"
-            android:textSize="28sp" />
+            android:textColor="#F7F7F5"
+            android:textSize="36sp" />
         <TextClock
             android:id="@+id/widget_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:format12Hour="EEEE, d 'de' MMMM"
             android:format24Hour="EEEE, d 'de' MMMM"
-            android:textColor="#C8C8C8"
-            android:textSize="11sp" />
+            android:textColor="#D0D0D0"
+            android:textSize="12sp" />
     </LinearLayout>
     <TextView android:id="@+id/widget_messages_action" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
     <TextView android:id="@+id/widget_calls_action" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />

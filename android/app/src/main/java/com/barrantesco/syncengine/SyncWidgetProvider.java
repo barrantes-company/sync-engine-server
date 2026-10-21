@@ -122,13 +122,9 @@ public class SyncWidgetProvider extends AppWidgetProvider {
         String zone = AppSettings.timeZone(context);
         views.setString(R.id.widget_clock, "setTimeZone", zone);
         views.setString(R.id.widget_date, "setTimeZone", zone);
-        if (style == 0 || style == 2) {
-            views.setString(R.id.widget_minutes, "setTimeZone", zone);
-        } else {
-            CharSequence clockFormat = AppSettings.use24h(context) ? "HH:mm" : "h:mm";
-            views.setCharSequence(R.id.widget_clock, "setFormat12Hour", clockFormat);
-            views.setCharSequence(R.id.widget_clock, "setFormat24Hour", clockFormat);
-        }
+        CharSequence clockFormat = AppSettings.use24h(context) ? "HH:mm" : "h:mm";
+        views.setCharSequence(R.id.widget_clock, "setFormat12Hour", clockFormat);
+        views.setCharSequence(R.id.widget_clock, "setFormat24Hour", clockFormat);
 
         PendingIntent open = PendingIntent.getActivity(
                 context,

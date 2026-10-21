@@ -3,11 +3,11 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg_dark"
+    android:background="@drawable/widget_glass_dark"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingStart="14dp"
-    android:paddingEnd="12dp">
+    android:paddingStart="16dp"
+    android:paddingEnd="14dp">
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -16,24 +16,25 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:letterSpacing="0.18"
             android:text="SYNC"
             android:textColor="#F5A623"
-            android:textSize="10sp" />
+            android:textSize="11sp" />
         <TextView
             android:id="@+id/widget_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Mensajes"
-            android:textColor="#F4F7FC"
-            android:textSize="16sp" />
+            android:textColor="#F7F7F5"
+            android:textSize="20sp" />
         <TextClock
             android:id="@+id/widget_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:format12Hour="EEE d MMM"
             android:format24Hour="EEE d MMM"
-            android:textColor="#C8C8C8"
-            android:textSize="11sp" />
+            android:textColor="#D0D0D0"
+            android:textSize="12sp" />
         <TextClock
             android:id="@+id/widget_clock"
             android:layout_width="0dp"
@@ -50,22 +51,22 @@
         android:orientation="horizontal">
         <TextView
             android:id="@+id/widget_messages_action"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="8dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="10dp"
             android:background="@drawable/widget_circle_dark"
             android:gravity="center"
             android:text="0"
-            android:textColor="#F4F7FC"
-            android:textSize="13sp" />
+            android:textColor="#F7F7F5"
+            android:textSize="16sp" />
         <TextView
             android:id="@+id/widget_calls_action"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="@drawable/widget_circle_dark"
             android:gravity="center"
             android:text="0"
-            android:textColor="#F4F7FC"
-            android:textSize="13sp" />
+            android:textColor="#F7F7F5"
+            android:textSize="16sp" />
     </LinearLayout>
 </LinearLayout>
