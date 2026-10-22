@@ -47,8 +47,12 @@ function configureWebPush(directory) {
     try {
       webPush.setVapidDetails(VAPID_EMAIL, keys.publicKey, keys.privateKey);
       if (generated) {
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(file, JSON.stringify(keys), { mode: 0o600 });
+        try {
+          fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(file, JSON.stringify(keys), { mode: 0o600 });
+        } catch (err) {
+          console.warn("[WebPush] Claves activas, pero no se pudieron guardar:", err.message);
+        }
       }
       VAPID_PUBLIC_KEY = keys.publicKey;
       VAPID_PRIVATE_KEY = keys.privateKey;
