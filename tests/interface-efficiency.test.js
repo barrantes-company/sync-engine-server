@@ -43,3 +43,20 @@ test('the call log lists both directions for the signed-in user', () => {
   assert.equal(calls.find((call) => call.direction === 'out').status, 'missed');
   assert.equal(calls.find((call) => call.direction === 'out').peerName, 'SYNC-1002 - Bob');
 });
+
+test('search reaches a message that the first page does not show', () => {
+  const db = fixture([
+    { syncId: 'SYNC-1001', username: 'alice', formattedName: 'SYNC-1001 - Alice', cleanDisplayName: 'Alice' },
+    { syncId: 'SYNC-1002', username: 'bob', formattedName: 'SYNC-1002 - Bob', cleanDisplayName: 'Bob' }
+  ]);
+  const first = db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'aguja-inicio');
+  for (let i = 0; i < 44; i += 1) db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'mensaje ' + i);
+  const page = db.getMessagesPage('SYNC-1001', 'SYNC-1002', 40);
+  assert.equal(page.messages.some((message) => message.id === first.id), false);
+  const found = db.searchMessagesBetween('SYNC-1001', 'SYNC-1002', 'aguja-inicio');
+  assert.equal(found.total, 1);
+  const windowed = db.getMessagesPage('SYNC-1001', 'SYNC-1002', 40, '', found.matches[0].id);
+  assert.equal(windowed.messages.some((message) => message.id === first.id), true);
+  assert.equal(windowed.hasMoreAfter, true);
+});
+

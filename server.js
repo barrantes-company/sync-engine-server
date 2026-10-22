@@ -725,14 +725,24 @@ app.post("/api/contacts/add", requireAuth, (req, res) => {
 });
 
 // Rutas de Mensajería e Historial
+app.get("/api/messages/:contactSyncId/search", requireAuth, (req, res) => {
+  const result = db.searchMessagesBetween(req.user.syncId, req.params.contactSyncId, req.query.q);
+  res.json({ ok: true, total: result.total, matches: result.matches });
+});
+
 app.get("/api/messages/:contactSyncId", requireAuth, (req, res) => {
   const { contactSyncId } = req.params;
   const targetSyncId = contactSyncId.toUpperCase();
-  const limit = Number(req.query.limit) || 40;
-  const beforeId = typeof req.query.beforeId === "string" ? req.query.beforeId : "";
-  const page = db.getMessagesPage(req.user.syncId, targetSyncId, limit, beforeId);
+  const page = db.getMessagesPage(
+    req.user.syncId,
+    targetSyncId,
+    Number(req.query.limit) || 40,
+    typeof req.query.beforeId === "string" ? req.query.beforeId : "",
+    typeof req.query.aroundId === "string" ? req.query.aroundId : "",
+    typeof req.query.afterId === "string" ? req.query.afterId : ""
+  );
   const pinnedMessage = db.getPinnedMessage(req.user.syncId, targetSyncId);
-  res.json({ ok: true, messages: page.messages, hasMore: page.hasMore, pinnedMessage: pinnedMessage });
+  res.json({ ok: true, messages: page.messages, hasMore: page.hasMore, hasMoreAfter: page.hasMoreAfter, pinnedMessage: pinnedMessage });
 });
 
 // Endpoint para vaciar historial completo con un contacto
@@ -870,15 +880,26 @@ app.get("/api/calls", requireAuth, (req, res) => {
   res.json({ ok: true, calls: db.listCallsForUser(req.user.syncId, req.query.limit) });
 });
 
+app.get("/api/channels/:channelId/search", requireAuth, (req, res) => {
+  try {
+    const result = db.searchChannelMessages(req.params.channelId, req.user.syncId, req.query.q);
+    res.json({ ok: true, total: result.total, matches: result.matches });
+  } catch (err) {
+    res.status(403).json({ error: err.message });
+  }
+});
+
 app.get("/api/channels/:channelId/messages", requireAuth, (req, res) => {
   try {
     const page = db.getChannelMessagePage(
       req.params.channelId,
       req.user.syncId,
       Number(req.query.limit) || 40,
-      typeof req.query.beforeId === "string" ? req.query.beforeId : ""
+      typeof req.query.beforeId === "string" ? req.query.beforeId : "",
+      typeof req.query.aroundId === "string" ? req.query.aroundId : "",
+      typeof req.query.afterId === "string" ? req.query.afterId : ""
     );
-    res.json({ ok: true, messages: page.messages, hasMore: page.hasMore });
+    res.json({ ok: true, messages: page.messages, hasMore: page.hasMore, hasMoreAfter: page.hasMoreAfter });
   } catch (err) {
     res.status(403).json({ error: err.message });
   }

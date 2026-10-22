@@ -789,14 +789,45 @@ function getMessagesBetween(user1Id, user2Id) {
   }).sort((a, b) => a.timestamp - b.timestamp);
 }
 
-function getMessagesPage(user1Id, user2Id, limit = 40, beforeId = "") {
+function sliceMessageWindow(messages, limit, beforeId, aroundId, afterId) {
   const cap = Math.min(Math.max(Number(limit) || 40, 1), 100);
-  let messages = getMessagesBetween(user1Id, user2Id);
+  if (aroundId) {
+    const index = messages.findIndex((message) => message.id === aroundId);
+    if (index < 0) return { messages: [], hasMore: false, hasMoreAfter: false };
+    let start = Math.max(0, index - Math.floor(cap / 2));
+    let end = Math.min(messages.length, start + cap);
+    start = Math.max(0, end - cap);
+    return { messages: messages.slice(start, end), hasMore: start > 0, hasMoreAfter: end < messages.length };
+  }
+  if (afterId) {
+    const index = messages.findIndex((message) => message.id === afterId);
+    const newer = index >= 0 ? messages.slice(index + 1) : [];
+    return { messages: newer.slice(0, cap), hasMore: false, hasMoreAfter: newer.length > cap };
+  }
+  let older = messages;
   if (beforeId) {
     const index = messages.findIndex((message) => message.id === beforeId);
-    messages = index > 0 ? messages.slice(0, index) : [];
+    older = index > 0 ? messages.slice(0, index) : [];
   }
-  return { messages: messages.slice(-cap), hasMore: messages.length > cap };
+  return { messages: older.slice(-cap), hasMore: older.length > cap, hasMoreAfter: false };
+}
+
+function getMessagesPage(user1Id, user2Id, limit = 40, beforeId = "", aroundId = "", afterId = "") {
+  return sliceMessageWindow(getMessagesBetween(user1Id, user2Id), limit, beforeId, aroundId, afterId);
+}
+
+function searchMessagesBetween(user1Id, user2Id, query) {
+  const needle = String(query || "").trim().toLowerCase();
+  if (!needle) return { total: 0, matches: [] };
+  const found = getMessagesBetween(user1Id, user2Id).filter((message) => !message.deletedForEveryone && String(message.text || "").toLowerCase().includes(needle));
+  return {
+    total: found.length,
+    matches: found.slice(-80).map((message) => ({
+      id: message.id,
+      text: String(message.text || "").slice(0, 140),
+      timestamp: message.timestamp
+    }))
+  };
 }
 
 function clearMessagesBetween(user1Id, user2Id) {
@@ -1178,14 +1209,23 @@ function getChannelMessages(channelId, userSyncId, limit = 100) {
     .slice(-limit);
 }
 
-function getChannelMessagePage(channelId, userSyncId, limit = 40, beforeId = "") {
-  const cap = Math.min(Math.max(Number(limit) || 40, 1), 100);
-  let messages = getChannelMessages(channelId, userSyncId, 1500);
-  if (beforeId) {
-    const index = messages.findIndex((message) => message.id === beforeId);
-    messages = index > 0 ? messages.slice(0, index) : [];
-  }
-  return { messages: messages.slice(-cap), hasMore: messages.length > cap };
+function getChannelMessagePage(channelId, userSyncId, limit = 40, beforeId = "", aroundId = "", afterId = "") {
+  return sliceMessageWindow(getChannelMessages(channelId, userSyncId, 1500), limit, beforeId, aroundId, afterId);
+}
+
+function searchChannelMessages(channelId, userSyncId, query) {
+  const needle = String(query || "").trim().toLowerCase();
+  if (!needle) return { total: 0, matches: [] };
+  const found = getChannelMessages(channelId, userSyncId, 1500)
+    .filter((message) => String(message.text || "").toLowerCase().includes(needle));
+  return {
+    total: found.length,
+    matches: found.slice(-80).map((message) => ({
+      id: message.id,
+      text: String(message.text || "").slice(0, 140),
+      timestamp: message.createdAt
+    }))
+  };
 }
 
 function saveChannelMessage(channelId, senderSyncId, payload) {
@@ -1285,6 +1325,7 @@ module.exports = {
   unpinMessage,
   getMessagesBetween,
   getMessagesPage,
+  searchMessagesBetween,
   clearMessagesBetween,
   writeDb,
   updateMessageLinkPreview,
@@ -1307,6 +1348,7 @@ module.exports = {
   deleteWorkspaceChannel,
   getChannelMessages,
   getChannelMessagePage,
+  searchChannelMessages,
   saveChannelMessage,
   exportConversation,
   recordCall,

@@ -1645,30 +1645,13 @@ header.sticky {
    No cambia contratos, autenticación ni lógica de mensajes.
    ========================================================================== */
 @media (max-width: 767px) {
-  :root {
-    --accent-gold: #2F7BFF;
-    --accent-gold-hover: #4A8CFF;
-    --accent-gold-dark: #1559D6;
-    --accent-gold-glow: rgba(47, 123, 255, 0.20);
-    --accent-tech: #00C7F2;
-    --border-subtle: rgba(17, 39, 76, 0.10);
-    --border-medium: rgba(47, 123, 255, 0.25);
-    --border-active: #2F7BFF;
-    --bg-main: #F5F8FD;
-    --bg-card: #FFFFFF;
-    --bg-card-hover: #EEF4FC;
-    --bg-chat: #F5F8FD;
-    --bg-bubble-self: #1266F1;
-    --bg-bubble-other: #FFFFFF;
-  }
-
   html, body {
     width: 100%;
     min-width: 0;
     height: 100%;
     height: 100dvh;
     overflow: hidden;
-    background: #F5F8FD !important;
+    background: #F8FAFC !important;
     overscroll-behavior: none;
   }
 
@@ -1679,7 +1662,7 @@ header.sticky {
     height: 100dvh !important;
     min-height: 0 !important;
     box-shadow: none !important;
-    background: #F5F8FD !important;
+    background: #F8FAFC !important;
   }
 
   #app-container > header.sticky {
@@ -1738,11 +1721,11 @@ header.sticky {
     padding: 0 !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    background: #F5F8FD !important;
+    background: #F8FAFC !important;
   }
 
   #sidebar-panel {
-    background: #F5F8FD !important;
+    background: #F8FAFC !important;
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
@@ -1790,7 +1773,7 @@ header.sticky {
 
   #contact-search-input:focus {
     background: #FFFFFF !important;
-    border-color: #2F7BFF !important;
+    border-color: #0877F9 !important;
     box-shadow: 0 0 0 3px rgba(47,123,255,.12) !important;
   }
 
@@ -1798,14 +1781,14 @@ header.sticky {
   #open-create-channel-btn {
     min-height: 40px;
     border-radius: 12px !important;
-    background: #1266F1 !important;
+    background: #0877F9 !important;
     box-shadow: none !important;
   }
 
   #contacts-list,
   #channels-list {
     padding: 8px 10px max(18px, env(safe-area-inset-bottom, 0px)) !important;
-    background: #F5F8FD !important;
+    background: #F8FAFC !important;
   }
 
   #sidebar-panel > div:last-child {
@@ -1821,14 +1804,14 @@ header.sticky {
   }
 
   #chat-panel-container {
-    background: #F5F8FD !important;
+    background: #F8FAFC !important;
   }
 
   #chat-panel {
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    background-color: #F5F8FD !important;
+    background-color: #F8FAFC !important;
     background-image: none !important;
   }
 
@@ -1851,7 +1834,7 @@ header.sticky {
   }
 
   .chat-canvas {
-    background-color: #F5F8FD !important;
+    background-color: #F8FAFC !important;
     background-image: none !important;
   }
 
@@ -1930,7 +1913,7 @@ header.sticky {
   a:focus-visible,
   input:focus-visible,
   textarea:focus-visible {
-    outline-color: #2F7BFF !important;
+    outline-color: #0877F9 !important;
   }
 }
 
@@ -2273,12 +2256,29 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
 .se-calls-heading h1, .se-calls-content h1 { font-size: clamp(24px,3vw,34px); margin: 0; font-weight: 700; color: var(--se-navy); }
 .se-calls-heading p, .se-calls-content > p { font-size: 14px; color: #65748B; margin: 4px 0 0; }
 .se-calls-list { display: flex; flex-direction: column; gap: 8px; width: min(640px, 100%); }
-.se-call-row { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; text-align: left; padding: 12px 14px; border-radius: 16px; border: 1px solid rgba(17,39,76,.08); background: #F7FAFF; color: var(--se-navy); cursor: pointer; }
+.se-call-row { display: flex; flex-direction: row; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; border-radius: 16px; border: 1px solid rgba(17,39,76,.08); background: #F7FAFF; color: var(--se-navy); }
 .se-call-row[data-status="missed"] { background: #FFF6F6; }
+.se-call-open { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; background: none; border: 0; color: inherit; cursor: pointer; text-align: left; }
+.se-call-back { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 999px; border: 1px solid rgba(8,119,249,.25); background: #EAF3FF; color: #0877F9; cursor: pointer; }
 .se-call-name { font-weight: 700; }
 .se-call-meta { font-size: 12px; color: #65748B; }
 .se-calls-empty { margin: 12px 0; color: #65748B; }
 .history-more { display: block; margin: 0 auto 12px; padding: 8px 14px; border: 0; border-radius: 999px; background: #EAF3FF; color: #0A4CC2; font-size: 12px; font-weight: 700; cursor: pointer; }
+.history-newer { margin-top: 12px; }
+.chat-more { position: relative; }
+.chat-more-summary { list-style: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; border: 1px solid rgba(8,119,249,.25); background: #F8FAFC; color: #0877F9; font-weight: 800; cursor: pointer; }
+.chat-more-summary::-webkit-details-marker { display: none; }
+.chat-more-menu { display: flex; align-items: center; gap: 6px; }
+.channel-admin-action { display: block; width: 100%; text-align: left; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(17,39,76,.08); background: #F7FAFF; color: #0A1A3A; font-weight: 650; cursor: pointer; }
+.channel-admin-action.is-danger { background: #FFF6F6; color: #9F1239; }
+#channel-admin-form.hidden { display: none; }
+@media (max-width: 1023px) {
+  .chat-more-menu { display: none; position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; flex-direction: column; align-items: stretch; min-width: 180px; padding: 8px; border-radius: 16px; background: #FFFFFF; box-shadow: 0 12px 30px rgba(7,26,56,.16); }
+  .chat-more[open] .chat-more-menu { display: flex; }
+}
+@media (min-width: 1024px) {
+  .chat-more-summary { display: none; }
+}
 
 .logo-electric-stream { position: relative; display: block; width: 70px; height: 70px; flex: 0 0 70px; }
 .logo-electric-mask { position: absolute; inset: 0; -webkit-mask-image: url('/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png'); mask-image: url('/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png'); -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; overflow: hidden; pointer-events: none; }
