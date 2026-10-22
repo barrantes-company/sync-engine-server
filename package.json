@@ -4,7 +4,7 @@
   "private": true,
   "main": "server.js",
   "scripts": {
-    "dev": "node server.js",
+    "dev": "node scripts/dev.js",
     "start": "node server.js",
     "build": "webpack --config webpack.config.js",
     "build:css": "tailwindcss -c tailwind.config.js -i public/tailwind.input.css -o public/utilities.css --minify && cat public/utilities.css public/theme.css public/sync-effects.css > public/style.css",
