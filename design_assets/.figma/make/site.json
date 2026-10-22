@@ -1,0 +1,10 @@
+{
+  "description": "Create customizable home screen widgets for Android that display time, date, message counts, and call status, enhancing user accessibility and engagement.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

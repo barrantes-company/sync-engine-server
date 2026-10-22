@@ -30,6 +30,15 @@ public final class WidgetConfigActivity extends Activity {
             return;
         }
 
+        // Con una URL válida ya disponible no hace falta mostrar la pantalla.
+        String existingUrl = WidgetUrls.widgetUrl(this, widgetId);
+        if (WidgetUrls.isWidgetUrl(existingUrl)) {
+            urlField = new EditText(this);
+            urlField.setText(existingUrl);
+            saveWidget();
+            return;
+        }
+
         int padding = dp(24);
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);

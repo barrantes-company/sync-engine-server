@@ -321,7 +321,7 @@ async def generate_llm_summary(conversation_text: str) -> str:
         lines = [line for line in conversation_text.split("\n") if line.strip()]
         return f"• Puntos analizados: {len(lines)} mensajes recientes.\n• Resumen sintético: Conversación en curso centrada en coordinación operativa y soporte técnico."
 
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={GEMINI_API_KEY}"
     prompt = (
         "Analiza el siguiente fragmento de chat de mensajería empresarial y devuelve una respuesta estructurada "
         "con máximo 3 viñetas concisas destacando los acuerdos, tareas pendientes o temas clave tratados:\n\n"

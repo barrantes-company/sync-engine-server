@@ -1,0 +1,25 @@
+{
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.metadata/**",
+    "**/archetype-resources/**",
+    "**/META-INF/maven/**",
+    "**/.worktree-visual-motion/**",
+    "**/.staging-sync-engine-2/**",
+    "**/design_assets/**"
+  ],
+  "files.exclude": {
+    "**/.worktree-visual-motion/android": true,
+    "**/.staging-sync-engine-2/android": true,
+    "**/design_assets/sync-engine-server/android": true
+  },
+  "files.watcherExclude": {
+    "**/.worktree-visual-motion/android/**": true,
+    "**/.staging-sync-engine-2/android/**": true,
+    "**/design_assets/sync-engine-server/android/**": true
+  },
+  "gradle.nestedProjects": [
+    "android"
+  ],
+  "java.configuration.updateBuildConfiguration": "automatic"
+}

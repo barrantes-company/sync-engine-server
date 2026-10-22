@@ -1,5 +1,7 @@
 plugins {
     id 'com.android.application'
+    id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
 }
 
 android {
@@ -8,9 +10,56 @@ android {
 
     defaultConfig {
         applicationId 'com.barrantesco.syncengine'
-        minSdk 23
+        minSdk 24
         targetSdk 35
         versionCode 1
         versionName '1.0'
+        // Servidor oficial predeterminado de origen (Render / Producción Cloud)
+        def defaultUrl = (System.getenv('SYNC_DEFAULT_URL') ?: 'https://sync-engine-server.onrender.com')
+                .replace('\\', '\\\\').replace('"', '\\"')
+        buildConfigField 'String', 'DEFAULT_WIDGET_URL', "\"${defaultUrl}\""
+        def firebaseApiKey = (System.getenv('FIREBASE_ANDROID_API_KEY') ?: '').replace('\\', '\\\\').replace('"', '\\"')
+        def firebaseProjectId = (System.getenv('FIREBASE_PROJECT_ID') ?: '').replace('\\', '\\\\').replace('"', '\\"')
+        def firebaseAppId = (System.getenv('FIREBASE_ANDROID_APP_ID') ?: '').replace('\\', '\\\\').replace('"', '\\"')
+        def firebaseSenderId = (System.getenv('FIREBASE_SENDER_ID') ?: '').replace('\\', '\\\\').replace('"', '\\"')
+        buildConfigField 'String', 'FIREBASE_API_KEY', "\"${firebaseApiKey}\""
+        buildConfigField 'String', 'FIREBASE_PROJECT_ID', "\"${firebaseProjectId}\""
+        buildConfigField 'String', 'FIREBASE_APP_ID', "\"${firebaseAppId}\""
+        buildConfigField 'String', 'FIREBASE_SENDER_ID', "\"${firebaseSenderId}\""
     }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Credenciales de release leídas del entorno; nunca se guardan en el repo.
+    signingConfigs {
+        release {
+            if (System.getenv('KEYSTORE_PATH')) {
+                storeFile file(System.getenv('KEYSTORE_PATH'))
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
+        }
+
+    }
+
+    buildTypes {
+        release {
+            if (System.getenv('KEYSTORE_PATH')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation platform('com.google.firebase:firebase-bom:35.0.2')
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-firestore'
+    implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.google.firebase:firebase-appcheck-playintegrity'
+    implementation 'com.google.firebase:firebase-crashlytics'
+    implementation 'com.google.firebase:firebase-analytics'
 }

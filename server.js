@@ -73,6 +73,7 @@ if (!isTargetOnline) {
 
 // ==== End of Web Push Additions ====
 const fs = require("fs");
+const dns = require("dns").promises;
 const http = require("http");
 const https = require("https");
 const os = require("os");
@@ -85,8 +86,60 @@ const selfsigned = require("selfsigned");
 const db = require("./db");
 const { safeUrl } = require("./public/safe-content");
 
+const asyncHandler = (fn) => (req, res, next) => {
+  fn(req, res, next).catch(next);
+};
+
 const PORT = (process.env.PORT && process.env.PORT !== "8080") ? process.env.PORT : 3000;
 const HOST = "0.0.0.0";
+const configuredCorsOrigins = new Set(String(process.env.CORS_ORIGINS || "").split(",").map((origin) => origin.trim()).filter(Boolean));
+
+function isAllowedCorsOrigin(origin) {
+  if (!origin) return true;
+  if (origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://")) return true;
+  return configuredCorsOrigins.has(origin);
+}
+
+function isPrivateAddress(address) {
+  const value = String(address || "").toLowerCase().replace(/^\[|\]$/g, "");
+  if (!value) return true;
+  if (value === "localhost" || value.endsWith(".localhost") || value.endsWith(".local") ||
+      value === "::" || value === "::1" || value.startsWith("fc") || value.startsWith("fd") ||
+      value.startsWith("fe8") || value.startsWith("fe9") || value.startsWith("fea") ||
+      value.startsWith("feb") || value.startsWith("ff")) return true;
+  if (value.startsWith("::ffff:")) return isPrivateAddress(value.slice(7));
+  if (value.includes(":")) {
+    // Reject IPv6 non-global special-use ranges not covered above.
+    if (value.startsWith("2001:db8:") || value.startsWith("2001:10:") ||
+        value.startsWith("2001:2:") || value.startsWith("2002:") ||
+        value.startsWith("64:ff9b:") || value.startsWith("100:")) return true;
+    return false;
+  }
+  const octets = value.split(".").map(Number);
+  if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) return false;
+  return octets[0] === 10 || octets[0] === 127 || octets[0] === 0 ||
+    (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+    (octets[0] === 192 && octets[1] === 168) ||
+    (octets[0] === 169 && octets[1] === 254) ||
+    (octets[0] === 100 && octets[1] >= 64 && octets[1] <= 127) ||
+    (octets[0] === 192 && octets[1] === 0 && octets[2] === 0) ||
+    (octets[0] === 198 && (octets[1] === 18 || octets[1] === 19)) ||
+    (octets[0] === 198 && octets[1] === 51 && octets[2] === 100) ||
+    (octets[0] === 203 && octets[1] === 0 && octets[2] === 113) ||
+    octets[0] >= 224;
+}
+
+async function assertPublicPreviewUrl(targetUrl) {
+  const parsed = new URL(targetUrl);
+  if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password || !parsed.hostname) {
+    throw new Error("URL de vista previa no válida");
+  }
+  if (isPrivateAddress(parsed.hostname)) throw new Error("El destino de la vista previa no está permitido");
+  const addresses = await dns.lookup(parsed.hostname, { all: true, verbatim: true });
+  if (!addresses.length || addresses.some((entry) => isPrivateAddress(entry.address))) {
+    throw new Error("El destino de la vista previa no está permitido");
+  }
+}
 
 function getLocalIPv4Addresses() {
   const nets = os.networkInterfaces();
@@ -107,21 +160,46 @@ function getLocalIPv4Addresses() {
 }
 
 const app = express();
+const authAttempts = new Map();
+const AUTH_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_MAX_ATTEMPTS = 5;
+const AUTH_MAX_TRACKED_IPS = 10000;
+
+function authRateLimit(req, res, next) {
+  const now = Date.now();
+  // Expire stale keys and bound memory use when requests arrive from many IPs.
+  for (const [ip, attempt] of authAttempts) {
+    if (attempt.resetAt <= now) authAttempts.delete(ip);
+  }
+  const key = req.ip || req.socket?.remoteAddress || "unknown";
+  const current = authAttempts.get(key);
+  if (!current || current.resetAt <= now) {
+    if (authAttempts.size >= AUTH_MAX_TRACKED_IPS) {
+      const oldestKey = authAttempts.keys().next().value;
+      if (oldestKey !== undefined) authAttempts.delete(oldestKey);
+    }
+    authAttempts.set(key, { count: 1, resetAt: now + AUTH_WINDOW_MS });
+    return next();
+  }
+  if (current.count >= AUTH_MAX_ATTEMPTS) {
+    res.setHeader("Retry-After", Math.ceil((current.resetAt - now) / 1000));
+    return res.status(429).json({ error: "Demasiados intentos de autenticación; inténtalo en 15 minutos." });
+  }
+  current.count += 1;
+  next();
+}
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://") || origin === "null") {
-      return callback(null, true);
-    }
-    return callback(null, true);
+    return callback(null, isAllowedCorsOrigin(origin));
   },
   credentials: true
 };
 app.use(cors(corsOptions));
 
-// Configuración de body-parser para soporte de transferencias pesadas de hasta 2 GB
-app.use(express.json({ limit: "2gb" }));
-app.use(express.urlencoded({ limit: "2gb", extended: true }));
+// Configuración de body-parser limitada a 1 MB para prevenir ataques DoS en memoria
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ limit: "1mb", extended: true }));
 app.use(
   "/.well-known",
   express.static(path.join(__dirname, "public", ".well-known"), {
@@ -185,12 +263,25 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 2 * 1024 * 1024 * 1024 // 2 GB
-  }
-});
+const MAX_STANDARD_UPLOAD_BYTES = 50 * 1024 * 1024;
+const MAX_PREMIUM_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024;
+
+function uploadSingleFileForPlan(req, res, next) {
+  const plan = String(req.user?.plan || "free").trim().toLowerCase();
+  const maxBytes = plan === "enterprise" || plan === "pro"
+    ? MAX_PREMIUM_UPLOAD_BYTES
+    : MAX_STANDARD_UPLOAD_BYTES;
+
+  multer({
+    storage: storage,
+    limits: { fileSize: maxBytes }
+  }).single("file")(req, res, (err) => {
+    if (err && err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "El archivo supera el límite del plan" });
+    }
+    return next(err);
+  });
+}
 
 // Middleware de Autenticación
 function requireAuth(req, res, next) {
@@ -297,6 +388,9 @@ app.post('/api/notifications/subscribe', requireAuth, (req, res) => {
   if (!syncId || !subscription) {
     return res.status(400).json({ error: 'syncId y subscription son requeridos' });
   }
+  if (String(syncId).trim().toUpperCase() !== req.user.syncId) {
+    return res.status(403).json({ error: 'No puedes registrar notificaciones para otro usuario' });
+  }
   try {
     storeSubscription(syncId, subscription);
     return res.json({ ok: true });
@@ -315,6 +409,7 @@ async function fetchUrlMetadata(text) {
   const targetUrl = match[0];
   try {
     const parsed = new URL(targetUrl);
+    await assertPublicPreviewUrl(targetUrl);
     const domain = parsed.hostname;
     const defaultFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
@@ -323,6 +418,7 @@ async function fetchUrlMetadata(text) {
 
     const response = await fetch(targetUrl, {
       signal: controller.signal,
+      redirect: "manual",
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
@@ -392,7 +488,7 @@ async function fetchUrlMetadata(text) {
 }
 
 // Rutas de Autenticación
-app.post("/api/auth/register", (req, res) => {
+app.post("/api/auth/register", authRateLimit, (req, res) => {
   try {
     const { username, password, displayName } = req.body || {};
     const user = db.registerUser(username, password, displayName);
@@ -403,7 +499,7 @@ app.post("/api/auth/register", (req, res) => {
   }
 });
 
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", authRateLimit, (req, res) => {
   try {
     const { username, password } = req.body || {};
     const result = db.loginUser(username, password);
@@ -417,8 +513,14 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
   res.json({ ok: true, user: req.user });
 });
 
+app.post("/api/auth/logout", requireAuth, (req, res) => {
+  const token = req.headers.authorization.slice(7).trim();
+  db.revokeSession(token);
+  res.json({ ok: true });
+});
+
 // Endpoint de Registro Web Push inyectado de forma segura
-app.post("/api/save-subscription", requireAuth, async (req, res) => {
+app.post("/api/save-subscription", requireAuth, asyncHandler(async (req, res) => {
   try {
     const subscription = req.body?.subscription || req.body;
 
@@ -442,10 +544,10 @@ app.post("/api/save-subscription", requireAuth, async (req, res) => {
     console.error("[Push] Error al guardar suscripción:", err);
     return res.status(500).json({ ok: false, error: "Error interno al guardar la suscripción" });
   }
-});
+}));
 
 // Rutas de Usuario y Perfil
-app.post("/api/user/profile", requireAuth, async (req, res) => {
+app.post("/api/user/profile", requireAuth, asyncHandler(async (req, res) => {
   try {
     const { displayName, avatarUrl } = req.body || {};
     if (avatarUrl !== undefined && avatarUrl !== null && !safeUrl(avatarUrl, "avatar")) {
@@ -457,13 +559,22 @@ app.post("/api/user/profile", requireAuth, async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message || "Error al actualizar perfil" });
   }
-});
+}));
 
 // Endpoint de Subida de Documentos y Archivos Pesados (hasta 2 GB sin compresión)
-app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
+app.post("/api/upload", requireAuth, uploadSingleFileForPlan, asyncHandler(async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No se proporcionó ningún archivo" });
+    }
+
+    const plan = String(req.user.plan || "free").trim().toLowerCase();
+    const maxUploadBytes = plan === "enterprise" || plan === "pro"
+      ? MAX_PREMIUM_UPLOAD_BYTES
+      : MAX_STANDARD_UPLOAD_BYTES;
+    if (req.file.size > maxUploadBytes) {
+      try { await fs.promises.unlink(req.file.path); } catch (_) {}
+      return res.status(413).json({ error: "El archivo supera el límite del plan" });
     }
 
     const registeredFile = await db.registerFile(req.user.syncId, req.file);
@@ -492,7 +603,7 @@ app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => 
   } catch (err) {
     res.status(500).json({ error: "Error al procesar subida de archivo: " + err.message });
   }
-});
+}));
 
 // Rutas de Contactos
 app.get("/api/contacts", requireAuth, (req, res) => {
@@ -547,12 +658,12 @@ app.delete("/api/messages/:contactSyncId", requireAuth, (req, res) => {
 });
 
 // Endpoint auxiliar para vista previa de enlaces
-app.get("/api/link-preview", requireAuth, async (req, res) => {
+app.get("/api/link-preview", requireAuth, asyncHandler(async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: "URL requerida" });
   const preview = await fetchUrlMetadata(url);
   res.json({ ok: true, preview: preview });
-});
+}));
 
 app.get('/api/status', function (_req, res) {
   res.json({
@@ -601,6 +712,9 @@ app.get("/api/billing/plan", requireAuth, (req, res) => {
 });
 
 app.post("/api/billing/upgrade", requireAuth, (req, res) => {
+  if (process.env.ALLOW_TEST_BILLING !== "true") {
+    return res.status(403).json({ error: "La actualización de plan de prueba está deshabilitada. Contacte a ventas BARRANTES CO. para facturación B2B." });
+  }
   const { plan, billingCycle, paymentDetails } = req.body || {};
   try {
     const result = db.upgradeUserPlan(req.user.syncId, plan, billingCycle, paymentDetails);
@@ -628,6 +742,35 @@ app.post("/api/billing/apply-coupon", requireAuth, (req, res) => {
     res.json({ ok: true, valid: true, discountPercent: coupons[cleanCode], code: cleanCode });
   } else {
     res.status(400).json({ ok: false, valid: false, error: "Código promocional no válido o caducado" });
+  }
+});
+
+// Webhook de pagos deshabilitado hasta implementar verificación criptográfica
+// específica del proveedor sobre el cuerpo original de la solicitud.
+app.post("/api/billing/webhook", (_req, res) => {
+  return res.status(503).json({
+    error: "Webhook de pagos no habilitado: falta verificación de firma del proveedor."
+  });
+});
+
+// Endpoint de Eliminación de Cuenta (Cumplimiento Políticas Google Play & Apple App Store)
+app.post("/api/user/delete-account", requireAuth, (req, res) => {
+  try {
+    const result = db.deleteUserAccount(req.user.syncId);
+    res.json({ ok: true, message: "Cuenta y datos eliminados permanentemente", details: result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Endpoint B2B para crear Organización
+app.post("/api/org/create", requireAuth, (req, res) => {
+  try {
+    const { name } = req.body || {};
+    const org = db.createOrganization(name, req.user.syncId);
+    res.json({ ok: true, organization: org });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
@@ -735,11 +878,23 @@ try {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: function (origin, callback) {
+      callback(null, isAllowedCorsOrigin(origin));
+    },
     methods: ["GET", "POST"]
   },
   maxHttpBufferSize: 50e6
 });
+
+function canReceivePubSubEvent(user, payload) {
+  if (!user || !payload || typeof payload !== "object") return false;
+  const directAudience = [payload.targetSyncId, payload.recipientSyncId, payload.userSyncId]
+    .filter(Boolean)
+    .map((value) => String(value).trim().toUpperCase());
+  if (directAudience.length) return directAudience.includes(user.syncId);
+  if (payload.channelId) return db.isChannelMember(payload.channelId, user.syncId);
+  return false;
+}
 
 let httpsServer = null;
 const HTTPS_PORT = process.env.HTTPS_PORT || (Number(PORT) + 443);
@@ -1174,27 +1329,30 @@ io.on("connection", function (socket) {
     if (!sender || !payload || !payload.messageId || !payload.toSyncId || !payload.emoji) return;
 
     const targetSyncId = String(payload.toSyncId).trim().toUpperCase();
-    const updatedReactions = db.updateMessageReaction(payload.messageId, sender.syncId, payload.emoji);
+    try {
+      const updatedReactions = db.updateMessageReaction(payload.messageId, sender.syncId, payload.emoji, targetSyncId);
+      const eventData = {
+        messageId: payload.messageId,
+        fromSyncId: sender.syncId,
+        emoji: payload.emoji,
+        reactions: updatedReactions
+      };
 
-    const eventData = {
-      messageId: payload.messageId,
-      fromSyncId: sender.syncId,
-      emoji: payload.emoji,
-      reactions: updatedReactions
-    };
+      const targetSockets = onlineUsers.get(targetSyncId);
+      if (targetSockets && targetSockets.size > 0) {
+        targetSockets.forEach((sockId) => {
+          io.to(sockId).emit("message-reaction-updated", eventData);
+        });
+      }
 
-    const targetSockets = onlineUsers.get(targetSyncId);
-    if (targetSockets && targetSockets.size > 0) {
-      targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("message-reaction-updated", eventData);
-      });
-    }
-
-    const senderSockets = onlineUsers.get(sender.syncId);
-    if (senderSockets && senderSockets.size > 0) {
-      senderSockets.forEach((sockId) => {
-        io.to(sockId).emit("message-reaction-updated", eventData);
-      });
+      const senderSockets = onlineUsers.get(sender.syncId);
+      if (senderSockets && senderSockets.size > 0) {
+        senderSockets.forEach((sockId) => {
+          io.to(sockId).emit("message-reaction-updated", eventData);
+        });
+      }
+    } catch (err) {
+      socket.emit("error-message", { message: err.message });
     }
   });
 
@@ -1430,11 +1588,14 @@ server.listen(PORT, HOST, function () {
   try {
     const { startChatSubscriptionListener } = require("./pubsub-service");
     startChatSubscriptionListener(function (pubsubPayload) {
-      // Emitir el evento al canal genérico de Pub/Sub para que cualquier cliente
-      // suscrito a 'pubsub-chat-event' lo reciba sin necesidad de estar autenticado
-      // en una conversación privada específica.
-      io.emit("pubsub-chat-event", pubsubPayload);
-      console.log("[Pub/Sub → Socket.IO] Evento propagado a clientes conectados:", pubsubPayload.type || "unknown");
+      let delivered = 0;
+      socketToUser.forEach((user, socketId) => {
+        if (canReceivePubSubEvent(user, pubsubPayload)) {
+          io.to(socketId).emit("pubsub-chat-event", pubsubPayload);
+          delivered += 1;
+        }
+      });
+      console.log("[Pub/Sub → Socket.IO] Evento autorizado para sockets:", delivered);
     });
   } catch (err) {
     console.error("[Pub/Sub] No se pudo iniciar la suscripción; HTTP seguirá disponible:", err.message);

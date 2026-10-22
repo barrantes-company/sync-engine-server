@@ -1,0 +1,99 @@
+:root {
+  color: #0A1A3A;
+  background: #F8FAFC;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 340px;
+  margin: 0;
+}
+
+.popup {
+  padding: 20px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.35);
+}
+
+.brand img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.eyebrow {
+  margin: 0 0 3px;
+  color: #99793D;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+h1 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.description {
+  margin: 16px 0;
+  color: #64748B;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+form {
+  display: grid;
+  gap: 8px;
+}
+
+label {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+input {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(10, 26, 58, 0.2);
+  border-radius: 8px;
+}
+
+button {
+  min-height: 36px;
+  color: #FFFFFF;
+  background: #0A1A3A;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.open-button {
+  width: 100%;
+  margin-top: 9px;
+  background: #C5A059;
+}
+
+.status {
+  min-height: 14px;
+  margin: 10px 0 0;
+  color: #64748B;
+  font-size: 11px;
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.barrantesco.syncengine",
+      "sha256_cert_fingerprints": [
+        "3D:5A:BD:5C:86:2C:0C:2A:A5:B1:32:04:74:A5:BA:6E:B6:CE:91:C9:06:C9:56:C9:7D:CE:05:65:F4:96:E0:ED"
+      ]
+    }
+  }
+]

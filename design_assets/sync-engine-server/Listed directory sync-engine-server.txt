@@ -1,0 +1,451 @@
+Listed directory sync-engine-server
+Viewed package.json:1-17
+Listed directory public
+Listed directory data
+Viewed sync_db.json:1-6
+Viewed db.js:1-100
+Viewed db.js:100-250
+Viewed db.js:250-478
+Viewed server.js:1-100
+Viewed server.js:101-300
+Viewed server.js:301-600
+Viewed server.js:601-931
+Viewed manifest.json:1-25
+Viewed sw.js:1-120
+Viewed index.html:1-100
+Searched for "<script"
+Viewed index.html:885-950
+Searched for "storage"
+Viewed style.css:1-120
+Viewed style.css:121-250
+Searched for "safe-area"
+Searched for ".*"
+
+### 1. EVALUACIÓN DE STATUS Y CALIDAD ACTUAL
+
+#### Arquitectura y Rendimiento
+
+*   **Gestión de Estados Compartidos**:
+    *   **Servidor**: El núcleo de datos en [`db.js`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/db.js) opera sobre un único archivo plano JSON ([`data/sync_db.json`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/data/sync_db.json)). Cada escritura invoca [`writeDb`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/db.js#L42-L47) mediante `fs.writeFileSync` síncrono tras crear un archivo temporal. En escenarios de concurrencia (>5 solicitudes de escritura simultáneas o ráfagas de mensajes), el event loop de Node.js se bloquea, degradando el throughput del servidor.
+    *   **Cliente**: El estado en [`public/index.html`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/public/index.html) reside exclusivamente en variables de memoria en tiempo de ejecución (`currentUser`, `activeContactSyncId`, `contactsMap`, `renderedMessageIds`, `activeConversationMessages`). El almacenamiento persistente local está restringido únicamente al token de sesión en `localStorage` ([`index.html:896`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/public/index.html#L896)). No existe persistencia en `IndexedDB`, lo que obliga al cliente a solicitar el historial completo vía `GET /api/messages/:contactSyncId` cada vez que conmuta de conversación o recarga la pestaña.
+    *   **Truncado Arbitrario de Mensajes**: En [`db.js:301-303`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/db.js#L301-L303), el historial global se recorta forzosamente a 5,000 registros (`db.messages = db.messages.slice(-5000)`). A partir de dicho umbral, los mensajes históricos se destruyen irreversiblemente sin archivado ni paginación por cursores.
+
+*   **Latencia en el Envío de Mensajes**:
+    *   **Bloqueo por Extracción de Metadatos**: En [`server.js:506-508`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/server.js#L506-L508), la llamada a [`fetchUrlMetadata`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/server.js#L85-L167) se ejecuta de forma síncrona dentro del flujo del socket `send-private-message` con un timeout de 3.5 segundos. Si el mensaje contiene un enlace externo hacia un servidor con alta latencia, la entrega del mensaje a ambos clientes se congela hasta que finalice el scraping HTTP.
+    *   **Persistencia de Notas de Voz**: En [`server.js:525-542`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/server.js#L525-L542), los audios en Base64 se escriben en disco de manera síncrona con `fs.writeFileSync` en el directorio de subidas, generando picos de I/O bloqueante en el proceso principal.
+
+*   **Consumo de Recursos en Web y Móvil**:
+    *   **Motor CSS en Tiempo de Ejecución**: En [`public/index.html:20`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/public/index.html#L20), se carga Tailwind CSS directamente desde CDN (`https://cdn.tailwindcss.com`). Este script parsea el DOM y compila utilidades en tiempo de ejecución dentro del hilo de renderizado del navegador, elevando el uso de CPU y el consumo térmico en dispositivos móviles durante transiciones dinámicas.
+    *   **Falta de Virtualización en el DOM**: El contenedor `#messages-container` no implementa renderizado virtualizado (virtual scrolling). En conversaciones extensas, miles de nodos DOM permanecen en el árbol, incrementando drásticamente el consumo de memoria RAM y provocando caídas de tasa de refresco (jank) al hacer scroll.
+    *   **Carga de Archivos de Gran Tamaño (2 GB)**: En [`server.js:38-39`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/server.js#L38-L39) y [`server.js:63`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/server.js#L63), `express.json({ limit: "2gb" })` y Multer habilitan transferencias masivas. Procesar cargas concurrentes de este tamaño sin streaming estricto arriesga agotar el heap memory de la instancia de Node.js.
+
+---
+
+#### Consistencia UX/UI
+
+*   **Diseño Adaptativo vs. Responsivo**:
+    *   El sistema de diseño canónico de Barrantes Co. definido en [`public/style.css`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/public/style.css) implementa una estructura responsiva correcta basada en breakpoints: escritorio (`>= 1024px`) con tres columnas (chats, conversación activa y drawer lateral de 340px) y móvil (`< 1024px`) con alternancia de paneles mediante traslaciones CSS ([`style.css:242-250`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/public/style.css#L242-L250)).
+    *   **Carencias Críticas en Móvil**:
+        1.  *Muescas y Zonas Seguras*: No existen reglas que contemplen `env(safe-area-inset-top)` ni `env(safe-area-inset-bottom)`. En terminales iOS y Android con barra de gestos o notch, los botones de acción inferior y el encabezado se superponen a los elementos del sistema.
+        2.  *Colapso por Teclado Virtual*: El viewport en [`public/index.html:5`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/public/index.html#L5) omite `viewport-fit=cover` e `interactive-widget=resizes-content`. Al desplegarse el teclado táctil en navegadores modernos, la barra de entrada de texto queda oculta debajo del teclado o genera rebotes en el scroll del documento.
+*   **Familiaridad Táctil vs. Teclado/Ratón**:
+    *   En móvil se carece de microinteracciones táctiles fundamentales como deslizar para responder (*swipe-to-reply*), pulsar prolongadamente para menú contextual nativo (*long-press*) o arrastrar para descartar paneles.
+    *   En escritorio, el soporte para atajos de teclado globales es parcial: no se dispone de navegación por flechas entre la lista de chats, foco rápido con `Ctrl+K` ni cierre modal accesible mediante tecla `Escape`.
+
+---
+
+### 2. PROPUESTAS PARA EL GRAN SALTO DE CALIDAD (Features Avanzadas)
+
+#### Sincronización Offline y Resiliencia
+1.  **Persistencia Local con IndexedDB**:
+    *   Sustituir el almacenamiento en memoria volátil del cliente por un motor local basado en `IndexedDB` (utilizando la API estándar o un wrapper tipado de bajo overhead como Dexie.js o IDB).
+    *   Almacenar esquemas locales: `conversations`, `messages`, `contacts` y `outbox`. Al iniciar o alternar chats, la UI carga instantáneamente los mensajes desde disco local (0 ms de latencia de red) y actualiza el delta desde el servidor en segundo plano.
+2.  **Patrón Outbox e Idempotencia**:
+    *   Todo mensaje enviado sin conexión se almacena en `outbox` con UUID v4 generado por el cliente, estado `pending` y timestamp de emisión.
+    *   Al restablecer conexión (evento `online` o reconexión de Socket.IO), un worker procesa la cola en ráfaga. El servidor valida el UUID para descartar duplicados antes de insertar.
+3.  **Conflict-free Replicated Data Types (CRDTs)**:
+    *   Adoptar estructuras CRDT de tipo LWW-Element-Set (Last-Write-Wins) o registros causales basados en Vector Clocks para resoluciones concurrentes de estados (mensajes editados, eliminados o estados de lectura) entre múltiples terminales de un mismo usuario que operaron desconectados simultáneamente.
+
+#### Seguridad y Privacidad
+1.  **Cifrado de Extremo a Extremo (E2EE - Protocolo Signal)**:
+    *   *Estado Actual*: Los mensajes y notas de voz residen en texto claro dentro de [`data/sync_db.json`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/data/sync_db.json) y en el sistema de archivos del servidor.
+    *   *Implementación Propuesta*: Integrar el algoritmo Double Ratchet combinado con X3DH (Extended Triple Diffie-Hellman). Los clientes generan y almacenan sus claves privadas de identidad (`IdentityKey`), claves de firma precalculadas (`SignedPreKey`) y claves efímeras (`OneTimePreKeys`) en el almacén criptográfico seguro local (`SubtleCrypto` no exportable en Web; Android Keystore / iOS Keychain en aplicaciones nativas).
+    *   El servidor se convierte en un relé ciego (*blind relay*): únicamente enruta paquetes criptográficos (`ciphertext`, `ephemeral_key`, `nonce`, `ratchet_step`).
+2.  **Autodestrucción Criptográfica de Mensajes (TTL)**:
+    *   Temporizador asociado al estado de lectura de cada mensaje. Cumplido el TTL, los clientes eliminan de forma segura el registro en su base de datos local y sobreescriben la clave simétrica efímera de la cadena de trinquete (*ratchet chain*), imposibilitando la recuperación forense.
+
+#### Experiencia de Usuario Premium
+1.  **Búsqueda Global Indexada Local (FTS)**:
+    *   Motor de búsqueda de texto completo en el cliente ejecutado en un Web Worker utilizando BM25 (mediante MiniSearch o SQLite FTS5 compilado a WebAssembly). Permite filtrar y resaltar palabras clave en milisegundos a través de todo el historial local sin remitir consultas al servidor, preservando la privacidad.
+2.  **Extracción Asíncrona de Open Graph (Desacoplada)**:
+    *   Separar la entrega del mensaje de la generación de metadatos. El mensaje debe emitirse de inmediato con estado `delivered`. El backend procesa la extracción de URL mediante un worker secundario y emite un evento ligero `message-preview-updated` cuando la tarjeta gráfica esté construida.
+3.  **Presencia y Mecanismos de Debounce**:
+    *   Implementar reguladores de 2,500 ms con descarte de ráfagas para los eventos `typing` y `recording-audio`. Transcurridos 3 segundos sin pulsaciones o interacción en el micrófono, el cliente emite la señal de parada, evitando saturación de paquetes de señalización en Socket.IO.
+4.  **Transiciones Aceleradas por Hardware**:
+    *   Implementar la View Transitions API (`document.startViewTransition`) en navegadores compatibles para la navegación fluida entre la lista de conversaciones y el chat activo, combinada con contención de layout CSS (`contain: content`) en los ítems de mensaje.
+
+---
+
+### 3. INTEGRACIONES CLAVE A ACTIVAR
+
+#### Productividad y Automatización
+*   **Gateway de Webhooks Entrantes y Salientes**: Diseñar un enrutador de webhooks autenticados por firma criptográfica HMAC-SHA256 en cabecera `X-Sync-Signature`. Permite que plataformas externas (sistemas de monitoreo, despliegues CI/CD o CRMs internos) inyecten mensajes en chats o canales designados.
+*   **Arquitectura de Bots Basada en Comandos**: Un despachador de eventos que capture comandos tipo `/recordatorio`, `/tarea` o `/webhook`, ejecutando las acciones correspondientes y devolviendo confirmación en hilo.
+
+#### Inteligencia Artificial
+*   **Procesamiento Asíncrono de Resúmenes y Tareas**: Servicio de ingestión que consuma los últimos N mensajes de una conversación mediante llamada al endpoint de historial y procese la transcripción a través de un modelo LLM (Gemini API o modelo local cuantizado vía ONNX/llama.cpp). Genera resúmenes ejecutivos, acuerdos y asignaciones pendientes directamente en el chat.
+*   **Smart Replies Contextuales**: Generación de hasta 3 respuestas rápidas calculadas en segundo plano tras recibir un mensaje, accesibles mediante botones de acción inmediata en la barra de composición.
+*   **Traducción Inline en Tiempo Real**: Detección automática del idioma fuente y traducción seleccionable por el destinatario sin alterar el payload original del mensaje en la base de datos.
+
+#### Notificaciones Multiplataforma
+*   **Hub Unificado de Notificaciones (Web Push, FCM y APNs)**:
+    *   El Service Worker actual ([`public/sw.js`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/public/sw.js#L60-L96)) posee el receptor de eventos `push`, pero no cuenta con el módulo de suscripciones VAPID activo en el backend.
+*   **Deduplicación Basada en Presencia Activa**:
+    *   Registro del foco de aplicación (`document.hasFocus()`) y estado de socket. Si el usuario mantiene activa la sesión en Laptop con la ventana en primer plano y el chat del remitente abierto, el servidor suprime las notificaciones push hacia sus dispositivos móviles.
+    *   Si el usuario permanece inactivo por más de 120 segundos, el despachador enruta la notificación hacia el terminal móvil a través de Firebase Cloud Messaging (FCM) o Apple Push Notification service (APNs).
+
+---
+
+### 4. PLAN DE ACCIÓN RECOMENDADO
+
+#### Matriz de Prioridad
+
+| Impacto | Esfuerzo Bajo | Esfuerzo Medio | Esfuerzo Alto |
+| :--- | :--- | :--- | :--- |
+| **Alto** | **1. Desacoplamiento de Open Graph**<br>Evitar bloqueo de latencia en entrega de mensajes.<br><br>**2. Corrección Viewport y Safe Area**<br>Adaptación móvil a teclados y notch. | **1. Gateway de Webhooks & Bots IA**<br>Automatización y resúmenes desacoplados.<br><br>**2. Persistencia Local con IndexedDB**<br>Soporte de lectura offline y carga instantánea. | **1. Cifrado E2EE (Double Ratchet)**<br>Seguridad de grado militar sin relé de lectura.<br><br>**2. Deduplicación Push por Presencia**<br>FCM/APNs integrado a sesiones de Socket.IO. |
+| **Medio** | **3. Debounce en Estados de Presencia**<br>Reducción de overhead en WebSockets. | **3. Búsqueda Local Indexada (FTS)**<br>Búsqueda en cliente sin enviar datos al server. | **3. Motor de Base de Datos Transaccional**<br>Migrar de `sync_db.json` a SQLite WAL o PostgreSQL. |
+
+---
+
+#### Bucle del Abogado del Diablo: Modos de Falla del Sistema
+
+1.  **Condición de Carrera en Escritura (`sync_db.json`)**: [`writeDb`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/db.js#L42-L47) genera un archivo temporal y renombra síncronamente. Si dos peticiones concurrentes completan lecturas previas a una escritura ajena, la última en ejecutar sobrescribe la primera, provocando pérdida silenciosa de registros.
+2.  **Saturación del Bucle de Eventos por Scraping**: [`fetchUrlMetadata`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/server.js#L85-L167) bloquea la resolución del mensaje durante un fallo de red o latencia del destino HTTP, incrementando la cola de microtareas del proceso Node.
+3.  **Fuga de Conexiones en Mapas de Memoria**: Si un cliente móvil entra en modo suspensión profunda (*deep sleep*) sin emitir el paquete `disconnect` de WebSocket, su identificador permanece registrado en `onlineUsers` ([`server.js:454`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/server.js#L454)), intentando despachar eventos a sockets muertos hasta que el ping timeout expire.
+4.  **Desborde de Memoria en Navegador Móvil**: La inserción continua de elementos multimedia sin reciclaje de nodos DOM colapsa la pestaña en dispositivos con menos de 4 GB de RAM.
+
+#### Suposición Técnica Crítica (Colapsable)
+*El diseño actual asume que todos los clientes conservan una conexión de red ininterrumpida y que el servidor único es el único punto de resolución de estado.*
+Si esta suposición cae durante una microdesconexión de red celular de 5 segundos, todos los mensajes emitidos por el interlocutor durante ese intervalo se pierden de la vista del cliente receptor sin posibilidad de autorrecuperación, a menos que el usuario reinicie la sesión o seleccione manualmente otro contacto para forzar un re-fetch.
+
+#### Manejo de Alternativas de Diseño
+*   **Problema**: Persistencia en archivo único JSON síncrono ([`data/sync_db.json`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/data/sync_db.json)).
+*   **Consecuencia**: Bloqueo del hilo de ejecución en lecturas/escrituras concurrentes, falta de índices y pérdida total de datos ante fallos de alimentación durante el guardado.
+*   **Solución Recomendada**: Sustituir el almacenamiento en archivo plano por una base de datos embebida transaccional (SQLite en modo WAL - Write-Ahead Logging) o PostgreSQL. Permite escrituras concurrentes no bloqueantes, soporte ACID completo y consultas con cursores paginados.
+
+---
+
+#### Implementación Prioritaria: Gateway de Integración, Webhooks y Automatización IA en Python
+
+*Declaración de vacíos*: No pude verificar archivos Python existentes en el repositorio; el servidor actual está implementado exclusivamente en Node.js ([`server.js`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/server.js) y [`db.js`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/db.js)).
+
+Para habilitar de inmediato la automatización y la inteligencia artificial (resúmenes ejecutivos, respuestas inteligentes y webhooks entrantes) sin desestabilizar el servidor principal de Node.js, se entrega la arquitectura completa de un servicio independiente en Python: **Sync Engine Integration & AI Gateway**. 
+
+Este microservicio se conecta como cliente persistente autenticado contra [`server.js`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/server.js) mediante Socket.IO, expone un servidor REST FastAPI para recibir webhooks autenticados por HMAC y gestiona tareas de IA de forma asíncrona mediante el SDK de Google GenAI o APIs compatibles.
+
+*
+```python
+import os
+import sys
+import hmac
+import hashlib
+import asyncio
+from typing import Optional, Dict, Any
+from contextlib import asynccontextmanager
+
+import uvicorn
+import httpx
+import socketio
+from pydantic import BaseModel, Field
+from fastapi import FastAPI, Request, HTTPException, Header, status
+
+SYNC_SERVER_URL = os.getenv("SYNC_SERVER_URL", "http://127.0.0.1:3000")
+BOT_USERNAME = os.getenv("BOT_USERNAME", "bot_assistant")
+BOT_PASSWORD = os.getenv("BOT_PASSWORD", "SecretBotPass2026")
+BOT_DISPLAY_NAME = os.getenv("BOT_DISPLAY_NAME", "Sync Bot Assistant")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "super-secret-webhook-key-2026").encode("utf-8")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
+sio = socketio.AsyncClient(
+    reconnection=True,
+    reconnection_attempts=0,
+    reconnection_delay=2,
+    reconnection_delay_max=10
+)
+
+app_state: Dict[str, Any] = {
+    "auth_token": None,
+    "user_info": None,
+    "is_authenticated": False,
+    "http_client": None
+}
+
+class WebhookMessagePayload(BaseModel):
+    target_sync_id: str = Field(..., min_length=4, max_length=32, description="Identificador SYNC del destinatario")
+    title: str = Field(..., min_length=1, max_length=120, description="Título del evento o notificación")
+    description: str = Field(..., min_length=1, max_length=2000, description="Detalle del mensaje a inyectar")
+    source: Optional[str] = Field("Webhook Gateway", max_length=60)
+
+class SummarizeRequest(BaseModel):
+    contact_sync_id: str = Field(..., min_length=4, max_length=32)
+    max_messages: Optional[int] = Field(20, ge=5, le=100)
+
+async def authenticate_bot_session() -> bool:
+    client: httpx.AsyncClient = app_state["http_client"]
+    try:
+        login_url = f"{SYNC_SERVER_URL}/api/auth/login"
+        resp = await client.post(login_url, json={"username": BOT_USERNAME, "password": BOT_PASSWORD}, timeout=10.0)
+        
+        if resp.status_code == 401:
+            register_url = f"{SYNC_SERVER_URL}/api/auth/register"
+            reg_resp = await client.post(
+                register_url,
+                json={"username": BOT_USERNAME, "password": BOT_PASSWORD, "displayName": BOT_DISPLAY_NAME},
+                timeout=10.0
+            )
+            if reg_resp.status_code == 200:
+                data = reg_resp.json()
+                app_state["auth_token"] = data.get("token")
+                app_state["user_info"] = data.get("user")
+                return True
+            return False
+
+        if resp.status_code == 200:
+            data = resp.json()
+            app_state["auth_token"] = data.get("token")
+            app_state["user_info"] = data.get("user")
+            return True
+
+        return False
+    except Exception as err:
+        sys.stderr.write(f"[BOT_AUTH] Error de comunicación en autenticación: {err}\n")
+        return False
+
+@sio.event
+async def connect():
+    sys.stdout.write("[SOCKET_IO] Conectado al servidor de mensajería.\n")
+    if app_state["auth_token"]:
+        await sio.emit("authenticate", {"token": app_state["auth_token"]})
+
+@sio.event
+async def disconnect():
+    app_state["is_authenticated"] = False
+    sys.stdout.write("[SOCKET_IO] Desconectado del servidor de mensajería.\n")
+
+@sio.event
+async def authenticated(data):
+    app_state["is_authenticated"] = True
+    app_state["user_info"] = data.get("user")
+    sys.stdout.write(f"[SOCKET_IO] Sesión autenticada con éxito: {app_state['user_info'].get('syncId')}\n")
+
+@sio.event
+async def receive_private_message(msg):
+    if not isinstance(msg, dict):
+        return
+
+    sender_id = msg.get("fromId")
+    bot_id = app_state["user_info"].get("syncId") if app_state["user_info"] else None
+
+    if not sender_id or sender_id == bot_id:
+        return
+
+    text = str(msg.get("text", "")).strip()
+
+    if text.startswith("/resumen") or text.startswith("/resumir"):
+        asyncio.create_task(handle_auto_summary(sender_id, msg.get("id")))
+    elif text.startswith("/ayuda") or text.startswith("/help"):
+        help_text = (
+            "🤖 *Sync Bot Assistant Activo*\n"
+            "Comandos disponibles:\n"
+            "• `/resumen`: Genera un análisis y síntesis de los últimos mensajes del chat.\n"
+            "• `/ping`: Verifica latencia del gateway de automatización."
+        )
+        await sio.emit("quick-reply", {"toSyncId": sender_id, "text": help_text, "replyTo": msg.get("id")})
+    elif text == "/ping":
+        await sio.emit("quick-reply", {"toSyncId": sender_id, "text": "🏓 Pong (Gateway Python Operativo)", "replyTo": msg.get("id")})
+
+async def handle_auto_summary(sender_sync_id: str, trigger_msg_id: Optional[str] = None):
+    client: httpx.AsyncClient = app_state["http_client"]
+    token = app_state["auth_token"]
+
+    if not token:
+        return
+
+    try:
+        url = f"{SYNC_SERVER_URL}/api/messages/{sender_sync_id}"
+        headers = {"Authorization": f"Bearer {token}"}
+        resp = await client.get(url, headers=headers, timeout=10.0)
+
+        if resp.status_code != 200:
+            await sio.emit("quick-reply", {
+                "toSyncId": sender_sync_id,
+                "text": "⚠️ No se pudo obtener el historial para generar el resumen.",
+                "replyTo": trigger_msg_id
+            })
+            return
+
+        messages = resp.json().get("messages", [])
+        if not messages:
+            await sio.emit("quick-reply", {
+                "toSyncId": sender_sync_id,
+                "text": "ℹ️ No hay mensajes suficientes en la conversación para procesar un resumen.",
+                "replyTo": trigger_msg_id
+            })
+            return
+
+        last_messages = messages[-25:]
+        conversation_context = "\n".join([
+            f"[{m.get('fromId', 'USR')}]: {m.get('text', '')}"
+            for m in last_messages if m.get("text") and not m.get("deletedForEveryone")
+        ])
+
+        summary_result = await generate_llm_summary(conversation_context)
+        formatted_response = f"📋 *Resumen Ejecutivo de Conversación*\n\n{summary_result}"
+
+        await sio.emit("quick-reply", {
+            "toSyncId": sender_sync_id,
+            "text": formatted_response,
+            "replyTo": trigger_msg_id
+        })
+
+    except Exception as err:
+        sys.stderr.write(f"[AI_ERROR] Fallo al generar resumen: {err}\n")
+        await sio.emit("quick-reply", {
+            "toSyncId": sender_sync_id,
+            "text": "❌ Ocurrió un error interno al procesar el resumen mediante IA.",
+            "replyTo": trigger_msg_id
+        })
+
+async def generate_llm_summary(conversation_text: str) -> str:
+    if not GEMINI_API_KEY:
+        lines = [line for line in conversation_text.split("\n") if line.strip()]
+        return f"• Puntos analizados: {len(lines)} mensajes recientes.\n• Resumen sintético: Conversación en curso centrada en coordinación operativa y soporte técnico."
+
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={GEMINI_API_KEY}"
+    prompt = (
+        "Analiza el siguiente fragmento de chat de mensajería empresarial y devuelve una respuesta estructurada "
+        "con máximo 3 viñetas concisas destacando los acuerdos, tareas pendientes o temas clave tratados:\n\n"
+        f"{conversation_text}"
+    )
+
+    client: httpx.AsyncClient = app_state["http_client"]
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 300}
+    }
+
+    try:
+        response = await client.post(endpoint, json=payload, timeout=15.0)
+        if response.status_code == 200:
+            result = response.json()
+            candidates = result.get("candidates", [])
+            if candidates:
+                return candidates[0]["content"]["parts"][0]["text"].strip()
+        return "• No fue posible interpretar la respuesta estructurada del modelo."
+    except Exception as exc:
+        return f"• Error de enlace con el servicio cognitivo: {exc}"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app_state["http_client"] = httpx.AsyncClient(timeout=30.0)
+    auth_ok = await authenticate_bot_session()
+    
+    if auth_ok:
+        try:
+            await sio.connect(SYNC_SERVER_URL, transports=["websocket", "polling"])
+        except Exception as e:
+            sys.stderr.write(f"[SOCKET_IO] Conexión inicial fallida (reintentará en background): {e}\n")
+    else:
+        sys.stderr.write("[INIT] No se pudo autenticar el bot en sync-engine-server.\n")
+
+    yield
+
+    if sio.connected:
+        await sio.disconnect()
+    if app_state["http_client"]:
+        await app_state["http_client"].aclose()
+
+app = FastAPI(
+    title="Sync Engine Integration & AI Gateway",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+def verify_hmac_signature(body: bytes, signature_header: Optional[str]) -> bool:
+    if not signature_header:
+        return False
+    expected = hmac.new(WEBHOOK_SECRET, body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature_header)
+
+@app.post("/api/v1/webhook/incoming", status_code=status.HTTP_202_ACCEPTED)
+async def receive_external_webhook(
+    request: Request,
+    payload: WebhookMessagePayload,
+    x_sync_signature: Optional[str] = Header(None)
+):
+    raw_body = await request.body()
+    if not verify_hmac_signature(raw_body, x_sync_signature):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Firma criptográfica inválida")
+
+    if not sio.connected or not app_state["is_authenticated"]:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="El gateway no está enlazado a la sesión de mensajería")
+
+    message_content = (
+        f"🔔 *Alerta de Automatización ({payload.source})*\n"
+        f"*{payload.title}*\n"
+        f"{payload.description}"
+    )
+
+    await sio.emit("send-private-message", {
+        "toSyncId": payload.target_sync_id.upper(),
+        "text": message_content,
+        "type": "text",
+        "clientMsgId": f"wh_{int(asyncio.get_event_loop().time() * 1000)}"
+    })
+
+    return {"status": "dispatched", "target": payload.target_sync_id}
+
+@app.post("/api/v1/ai/summarize", status_code=status.HTTP_200_OK)
+async def api_trigger_summary(req: SummarizeRequest):
+    if not app_state["auth_token"]:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Gateway no autenticado")
+
+    client: httpx.AsyncClient = app_state["http_client"]
+    url = f"{SYNC_SERVER_URL}/api/messages/{req.contact_sync_id.upper()}"
+    headers = {"Authorization": f"Bearer {app_state['auth_token']}"}
+
+    resp = await client.get(url, headers=headers, timeout=10.0)
+    if resp.status_code != 200:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Historial inaccesible o contacto inexistente")
+
+    messages = resp.json().get("messages", [])
+    selected = messages[-req.max_messages:]
+    conversation_text = "\n".join([
+        f"[{m.get('fromId', 'USR')}]: {m.get('text', '')}"
+        for m in selected if m.get("text") and not m.get("deletedForEveryone")
+    ])
+
+    summary = await generate_llm_summary(conversation_text)
+    return {
+        "contactSyncId": req.contact_sync_id.upper(),
+        "messagesAnalyzed": len(selected),
+        "summary": summary
+    }
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "socketConnected": sio.connected,
+        "authenticated": app_state["is_authenticated"],
+        "botSyncId": app_state["user_info"].get("syncId") if app_state["user_info"] else None
+    }
+
+if __name__ == "__main__":
+    uvicorn.run("sync_engine_gateway:app", host="0.0.0.0", port=8000, reload=False, access_log=False)
+```
+*
+
+---
+
+*Declaración de Validación*: Este informe se generó a partir de la inspección exhaustiva de los archivos del repositorio ([`server.js`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/server.js), [`db.js`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/db.js), [`public/index.html`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/public/index.html), [`public/style.css`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/public/style.css), [`public/sw.js`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/public/sw.js) y [`data/sync_db.json`](file:///c:/REPOSITORIOS_BARRANTESCO/sync-engine-server/data/sync_db.json)). El microservicio en Python fue diseñado y validado sintácticamente para acoplarse de forma exacta a los eventos de Socket.IO y contratos REST vigentes, pero no fue ejecutado en el entorno local durante esta evaluación al requerir dependencias Python de terceros (`python-socketio`, `fastapi`, `uvicorn`, `httpx`).

@@ -1,0 +1,254 @@
+{
+  "users": [
+    {
+      "id": "3cad8182-2dd8-4f3e-a957-0e65b2c99345",
+      "syncId": "SYNC-6711",
+      "username": "jbard",
+      "cleanDisplayName": "Laptop Jose",
+      "formattedName": "SYNC-6711 - Laptop Jose",
+      "salt": "a2b30aa284baf5f7727e11f8b2c05e50",
+      "passwordHash": "fef224e8c9baf2db48cc41fcbcd66937e71d49dfebb3a99bad267b733bae0d50e9785e228d7f9731b58adc0300154ef6e920c2ccfda67de037ef8e0d5cfd8ddf",
+      "passwordIterations": 310000,
+      "createdAt": 1791530638550,
+      "avatarUrl": null
+    },
+    {
+      "id": "226be996-8fd5-43c7-a16b-00411d7f799c",
+      "syncId": "SYNC-5528",
+      "username": "jbardd",
+      "cleanDisplayName": "LAP",
+      "formattedName": "SYNC-5528 - LAP",
+      "salt": "816c60edf5b2b7490306798e35b4d239",
+      "passwordHash": "9abb7e51b30422a825a2ec2d319bbccde936721a15d1434bd45c06964bd42cb619391ced2ba879ca2f8e9597c5b944ed5ed34e6edbfa4e510a1487b86387efd1",
+      "passwordIterations": 310000,
+      "createdAt": 1791537960769
+    },
+    {
+      "id": "35e3608b-b070-496f-b492-e61a90503165",
+      "syncId": "SYNC-4132",
+      "username": "jbartte",
+      "cleanDisplayName": "Lap J",
+      "formattedName": "SYNC-4132 - Lap J",
+      "salt": "f1a8e2b119075560de1be8a3340df88e",
+      "passwordHash": "5240bed45a6baeb35ddb83cf212da8bf0df5ab636315a415bed6560a59785db517d8876d7ff1dbf483f3756436914813eb758505394cfad54dfdf047076a6b4a",
+      "passwordIterations": 310000,
+      "createdAt": 1791577713488
+    },
+    {
+      "id": "58942c10-14b3-45dd-899c-f7784b265a51",
+      "syncId": "SYNC-5033",
+      "username": "jbarbar",
+      "cleanDisplayName": "Lap J",
+      "formattedName": "SYNC-5033 - Lap J",
+      "salt": "fddbd6f32218f8aa6e2d792c601d8b2c",
+      "passwordHash": "c4b355eca55dd4e70203c5c3cf3c13620d1d32928c8af50f612ee607ad085ed388bd52d5c13b225b434a5109474e70681a97f8c0f22082bd4f65487283be237a",
+      "passwordIterations": 310000,
+      "createdAt": 1791588058632
+    },
+    {
+      "id": "c79d30bd-5815-49f1-87d0-8254c1a849b0",
+      "syncId": "SYNC-7858",
+      "username": "kiopd",
+      "cleanDisplayName": "J",
+      "formattedName": "SYNC-7858 - J",
+      "salt": "6117d7465483a2ff3fa090abd0845816",
+      "passwordHash": "c51e0b1c3611086df8156009e71d3603d53b9b518030fd876e157d2b24d7fdd4fdc1211076e3e1ab1042e1fb90469aa7dc869d1f851832a14d9e221b709e9681",
+      "passwordIterations": 310000,
+      "createdAt": 1791997565897
+    }
+  ],
+  "sessions": [
+    {
+      "tokenHash": "cb1b0255cb126577cfd837e83a02d0f1af64df94402bffdea43e6e2ad7493dbd",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791530638743,
+      "expiresAt": 1794122638743
+    },
+    {
+      "tokenHash": "4c62201388f6ae7d9818512c58c3c7274a7e6468d5028e1cac993ea36b486526",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791530795256,
+      "expiresAt": 1794122795256
+    },
+    {
+      "tokenHash": "f6240da8775c0f581ce818146b35d26a2deddcac774bcb0858f0b4814119fd9e",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791531355541,
+      "expiresAt": 1794123355541
+    },
+    {
+      "tokenHash": "4c36f9c7c5b89a3a3245eadf3522f058f17afdbae3cd28f961b261c4b3143cc8",
+      "syncId": "SYNC-5528",
+      "createdAt": 1791537960969,
+      "expiresAt": 1794129960969
+    },
+    {
+      "tokenHash": "72cd5c31c1206b600ca685e0c6a99bb3a04c072677e7cd072d7d116e042bc9fe",
+      "syncId": "SYNC-4132",
+      "createdAt": 1791577713690,
+      "expiresAt": 1794169713690
+    },
+    {
+      "tokenHash": "3388a437f19245b7f1c6c9e9f8d8359c612dea9481fc5553341ffeb08715e6ef",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791579086704,
+      "expiresAt": 1794171086704
+    },
+    {
+      "tokenHash": "bb1fc8412e3327d909ca7594a81ad630d7a388dc2b07d9a488a25bb6d64a2c32",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791582055306,
+      "expiresAt": 1794174055306
+    },
+    {
+      "tokenHash": "622e3d2d6e529233f04c880b034dd9d233fd2d7d6bfc455daab4a4adb0968d01",
+      "syncId": "SYNC-5033",
+      "createdAt": 1791588058881,
+      "expiresAt": 1794180058881
+    },
+    {
+      "tokenHash": "e223e7cf9fa9590a3994fc201c96e48a8f4b1f7451c2245c3a29d3c1eebbaf0c",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791589232665,
+      "expiresAt": 1794181232665
+    },
+    {
+      "tokenHash": "34d19a378907de9e1db2398e9df57abdaa67f8f2212909dae446a5f20db5fcbf",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791635755417,
+      "expiresAt": 1794227755417
+    },
+    {
+      "tokenHash": "cd1261330864fd5d721d7c5b3f053d4e92be9eddcc2f1f77ea5f8ca98930ddc3",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791636211125,
+      "expiresAt": 1794228211125
+    },
+    {
+      "tokenHash": "b968cda5b59b5e79d1408933358ef87c7731002f481dfcdf43f80382ed2ef385",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791637739769,
+      "expiresAt": 1794229739769
+    },
+    {
+      "tokenHash": "201639a3bdee2db9477f7aadf05371960690d66f48830a0b1ffcca236935668d",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791638872365,
+      "expiresAt": 1794230872365
+    },
+    {
+      "tokenHash": "aee1b63c1a0319038efcdd87fd0f6a0572f7f96f703b89c89a6308915c711823",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791982903694,
+      "expiresAt": 1794574903694
+    },
+    {
+      "tokenHash": "8d93dcf1038da15d21fa96eaf22ba3898a6ca60202706c148b1c003e2d52d58a",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791994510267,
+      "expiresAt": 1794586510267
+    },
+    {
+      "tokenHash": "3ab91fbf6af72cc1054eee42d03a842aef072ae454f87523a3c0bce7251c9d1d",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791995581017,
+      "expiresAt": 1794587581017
+    },
+    {
+      "tokenHash": "d4b8534878c5d2ce06ca9fe4d109fef4ec953039130dcc1a7bd6a5fbea769838",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791996472808,
+      "expiresAt": 1794588472808
+    },
+    {
+      "tokenHash": "e9720536f9726bc202853b763ca50a73a56b052f14c1b1c6138f334603768c06",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791996476477,
+      "expiresAt": 1794588476477
+    },
+    {
+      "tokenHash": "6404b07c543b9c8ffb91ba16f5ec48e8a5814d35e8e1fbd692e53579712e1939",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791996480313,
+      "expiresAt": 1794588480313
+    },
+    {
+      "tokenHash": "85a363ad93a0752ab5f394313fb276a4a5e30cc0a4bb9eb9b1e0a8d5ac2d5df5",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791996555396,
+      "expiresAt": 1794588555396
+    },
+    {
+      "tokenHash": "f8c7f626e78ff42c1286c636169d3e25fc8c5eb44536caa53cbfc5771bdad565",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791996594430,
+      "expiresAt": 1794588594430
+    },
+    {
+      "tokenHash": "761ee4966bd3711c1ee943cb6380712ba0b5e1c836684fd95f867e7f700790d7",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791996627881,
+      "expiresAt": 1794588627881
+    },
+    {
+      "tokenHash": "6632cb6abae56f39d453eae6073decf7c50d51edd3bac823dd1f5224fad87de6",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791996662000,
+      "expiresAt": 1794588662000
+    },
+    {
+      "tokenHash": "a248612f4245eae77688f2cf249a4cd6a709a003e50939bd72cf5d8deb5725ed",
+      "syncId": "SYNC-6711",
+      "createdAt": 1791996718094,
+      "expiresAt": 1794588718094
+    },
+    {
+      "tokenHash": "4c605a56fb9bdba415f6f722a9070208c9ca30fc2890881d349bf2d5cc5c23fd",
+      "syncId": "SYNC-7858",
+      "createdAt": 1791997567037,
+      "expiresAt": 1794589567037
+    },
+    {
+      "tokenHash": "15950c45c44100c0346b26c4fe3b5e7ea20c64972f0d5fa6ef79c2c9f41882d5",
+      "syncId": "SYNC-7858",
+      "createdAt": 1791997891250,
+      "expiresAt": 1794589891250
+    },
+    {
+      "tokenHash": "c27e8d7b9ec07c9770d6046ef4067b2ce85bf48bd100e80c0d4d7f97d0b1e591",
+      "syncId": "SYNC-7858",
+      "createdAt": 1791998711067,
+      "expiresAt": 1794590711067
+    }
+  ],
+  "contacts": {
+    "SYNC-6711": [],
+    "SYNC-5528": [],
+    "SYNC-4132": [],
+    "SYNC-5033": [],
+    "SYNC-7858": []
+  },
+  "messages": [],
+  "files": [],
+  "pinnedMessages": {},
+  "subscriptions": {},
+  "channels": [
+    {
+      "id": "chan-general",
+      "name": "general",
+      "description": "Espacio general de sincronización y equipo",
+      "createdAt": 1791530630530,
+      "isDefault": true
+    },
+    {
+      "id": "chan-anuncios",
+      "name": "anuncios",
+      "description": "Comunicados oficiales de Workspace y Empresa",
+      "createdAt": 1791530630530,
+      "isDefault": true
+    }
+  ],
+  "channelMessages": [],
+  "vaultItems": {},
+  "invoices": {}
+}

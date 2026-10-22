@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@google-cloud/pubsub": "4.9.0",
+    "@vercel/connect": "^2.4.1",
+    "@vercel/toolbar": "^0.2.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",

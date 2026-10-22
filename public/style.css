@@ -1990,3 +1990,277 @@ header.sticky {
     padding-right: 9px !important;
   }
 }
+
+/* ==========================================================================
+   SYNC ENGINE MOBILE — EXPERIENCE PASS 02
+   Jerarquía, navegación, mensajes, canales y perfil. Solo presentación.
+   ========================================================================== */
+@media (min-width: 0px) {
+  #sidebar-panel {
+    background-color: #000000 !important;
+    border-right: 1px solid #1C1C1E !important;
+    color: #F2F2F7 !important;
+  }
+
+  #chat-panel {
+    background-color: #000000 !important;
+    color: #F2F2F7 !important;
+  }
+
+  #sidebar-panel > div:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding-top: max(10px, env(safe-area-inset-top, 0px)) !important;
+    background-color: #000000 !important;
+    border-bottom: 1px solid #1C1C1E !important;
+  }
+
+  .workspace-segmented-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    font-weight: 800 !important;
+    letter-spacing: .01em;
+    color: #8E8E93 !important;
+  }
+
+  .workspace-segmented-tab.is-active {
+    color: #0A84FF !important;
+  }
+
+  .workspace-segmented-tab span:first-child {
+    font-size: 15px;
+  }
+
+  #sidebar-dms-view,
+  #contacts-list {
+    background-color: #000000 !important;
+  }
+
+  #sidebar-dms-view > div:first-child,
+  #sidebar-channels-view > div:first-child {
+    position: sticky;
+    top: 58px;
+    z-index: 2;
+    background-color: #000000 !important;
+    border-bottom: 1px solid #1C1C1E !important;
+  }
+
+  #contacts-list {
+    gap: 4px !important;
+    padding: 4px 6px !important;
+    background: #000000 !important;
+    scroll-padding-top: 8px;
+  }
+
+  #contacts-list .contact-item {
+    min-height: 48px !important;
+    margin: 0 !important;
+    padding: 6px 10px !important;
+    border: 1px solid #1C1C1E !important;
+    border-radius: 12px !important;
+    background: #050505 !important;
+    box-shadow: none !important;
+  }
+
+  #contacts-list .contact-item:hover,
+  #contacts-list .contact-item:focus-visible {
+    background: #121214 !important;
+    border-color: #2C2C2E !important;
+    box-shadow: none !important;
+  }
+
+  #contacts-list .contact-item.is-active {
+    background: #141418 !important;
+    border-color: #0A84FF !important;
+    border-left: 3px solid #0A84FF !important;
+    box-shadow: none !important;
+  }
+
+  #contacts-list .contact-item p.font-bold {
+    color: #F2F2F7 !important;
+    font-size: 13px !important;
+  }
+
+  #contacts-list .contact-item span.font-mono,
+  #contacts-list .contact-item p.text-\[11px\] {
+    color: #8E8E93 !important;
+  }
+
+  #contact-search-input {
+    background-color: #121214 !important;
+    border-color: #2C2C2E !important;
+    color: #F2F2F7 !important;
+  }
+
+  #contact-search-input:focus {
+    border-color: #0A84FF !important;
+    box-shadow: 0 0 0 1px #0A84FF !important;
+  }
+
+  #add-contact-btn {
+    background: #0A84FF !important;
+    color: #F2F2F7 !important;
+  }
+
+  #sidebar-pro-card {
+    display: none !important;
+  }
+
+  #channels-list .channel-item {
+    min-height: 60px;
+    margin: 0 !important;
+    padding: 12px 13px !important;
+    border-left: 3px solid transparent !important;
+  }
+
+  #channels-list .channel-item.is-active {
+    border-left-color: #2F7BFF !important;
+    background: #EAF2FF !important;
+    color: #123B83;
+  }
+
+  #chat-header-bar {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+  }
+
+  #active-chat-info-trigger {
+    min-width: 0;
+    padding: 2px 0;
+  }
+
+  #active-chat-name {
+    max-width: 46vw;
+    font-size: 14px !important;
+  }
+
+  #active-chat-id {
+    max-width: 32vw;
+    font-size: 9px !important;
+  }
+
+  #chat-messages {
+    padding: 16px 12px 12px !important;
+    overscroll-behavior: contain;
+    scroll-padding-bottom: 18px;
+  }
+
+  #chat-messages .msg-item {
+    max-width: 92% !important;
+  }
+
+  div.chat-bubble-inner {
+    padding: 10px 12px 9px !important;
+    font-size: 14px !important;
+    line-height: 1.52 !important;
+  }
+
+  .msg-meta-time {
+    font-size: 10px;
+  }
+
+  #pinned-message-bar,
+  #chat-search-bar {
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+
+  #chat-search-input {
+    min-height: 38px !important;
+  }
+
+  #input-container {
+    position: relative;
+    margin: 8px 10px max(8px, env(safe-area-inset-bottom, 0px)) !important;
+    padding: 7px !important;
+    border-radius: 18px !important;
+  }
+
+  #input-container button,
+  #chat-header-bar button,
+  #sidebar-panel button,
+  #info-drawer-panel button {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  #chat-textarea {
+    min-height: 42px !important;
+    max-height: 128px !important;
+    padding: 10px 12px !important;
+  }
+
+  #info-drawer-panel {
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: min(78dvh, 620px);
+    border-radius: 24px 24px 0 0 !important;
+    transform: translateY(100%) !important;
+  }
+
+  #info-drawer-panel.drawer-open {
+    transform: translateY(0) !important;
+  }
+
+  #info-drawer-panel::before {
+    content: '';
+    display: block;
+    width: 42px;
+    height: 4px;
+    margin: 9px auto 2px;
+    border-radius: 99px;
+    background: #CBD5E1;
+    flex: 0 0 auto;
+  }
+
+  #edit-profile-modal.profile-settings-popover {
+    position: fixed !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+    padding: 16px !important;
+    border: 1px solid rgba(47, 123, 255, .16) !important;
+    border-radius: 22px !important;
+    box-shadow: 0 18px 48px rgba(5, 20, 44, .22) !important;
+  }
+
+  #create-channel-modal > div,
+  #media-hub-modal > div,
+  #vault-modal > div,
+  #export-report-modal > div {
+    width: min(100%, 560px) !important;
+    max-height: calc(100dvh - 24px) !important;
+    margin: 12px !important;
+    border-radius: 22px !important;
+  }
+
+  #drawer-backdrop {
+    background: rgba(5, 20, 44, .42) !important;
+  }
+}
+
+@media (max-width: 380px) {
+  #active-chat-name {
+    max-width: 40vw;
+  }
+
+  #chat-messages .msg-item {
+    max-width: 96% !important;
+  }
+
+  #input-container button,
+  #chat-header-bar button {
+    min-width: 38px;
+    min-height: 38px;
+  }
+}
+

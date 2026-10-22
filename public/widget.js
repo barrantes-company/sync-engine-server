@@ -32,6 +32,8 @@
   const incomingClipboard = document.getElementById('incoming-clipboard');
   const incomingClipboardPreview = document.getElementById('incoming-clipboard-preview');
   const cameraInput = document.getElementById('camera-input');
+  const modeSelector = document.getElementById('mode-selector');
+  const widgetContainer = document.getElementById('widget-container');
 
   // Estado del Widget
   let token = localStorage.getItem(TOKEN_KEY);
@@ -45,6 +47,23 @@
   let noticeTimer = null;
   let clockInterval = null;
   let unreadPollInterval = null;
+  let callCounter = 0;
+
+  const MODE_KEY = 'sync_engine_widget_mode';
+  const VALID_MODES = new Set(['mode-1', 'mode-2', 'mode-3', 'mode-4', 'mode-5', 'mode-6', 'mode-7', 'mode-8', 'mode-9', 'mode-10']);
+
+  function setModeBinding(name, value) {
+    document.querySelectorAll(`[data-bind="${name}"]`).forEach((element) => {
+      element.textContent = String(value);
+    });
+  }
+
+  function applyWidgetMode(mode) {
+    const nextMode = VALID_MODES.has(mode) ? mode : 'mode-1';
+    if (widgetContainer) widgetContainer.dataset.widgetMode = nextMode;
+    localStorage.setItem(MODE_KEY, nextMode);
+    if (modeSelector) modeSelector.value = nextMode;
+  }
 
   // 1. Reloj y Fecha (Material You en Tiempo Real)
   function updateClock() {
@@ -576,5 +595,7 @@
   clockInterval = setInterval(updateClock, 1000);
   initNativeNotifications();
   loadWeather();
+  if (modeSelector) modeSelector.addEventListener('change', () => applyWidgetMode(modeSelector.value));
+  applyWidgetMode(localStorage.getItem(MODE_KEY) || 'mode-1');
   initializeSession();
 })();
