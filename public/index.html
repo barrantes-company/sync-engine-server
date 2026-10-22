@@ -21,6 +21,11 @@
 <link rel="stylesheet" href="/style.css">
 <script>
 (function () {
+  const current = new URL(location.href);
+  if (current.searchParams.has('_lr')) {
+    current.searchParams.delete('_lr');
+    history.replaceState({}, '', current.pathname + current.search + current.hash);
+  }
   fetch('/dev/reload?probe=1', { cache: 'no-store' }).then(function (probe) {
     if (!probe.ok) return;
     const source = new EventSource('/dev/reload');
@@ -28,18 +33,17 @@
       let data = {};
       try { data = JSON.parse(event.data); } catch (error) { return; }
       if (data.target === 'css') {
-        const current = document.querySelector('link[href^="/style.css"]');
-        if (!current) return location.reload();
-        const next = current.cloneNode();
+        const link = document.querySelector('link[href^="/style.css"]');
+        if (!link) return location.reload();
+        const next = link.cloneNode();
         next.href = '/style.css?v=' + data.version;
-        next.onload = function () { current.remove(); };
-        current.after(next);
+        next.onload = function () { link.remove(); };
+        link.after(next);
         return;
       }
-      const registrations = navigator.serviceWorker ? navigator.serviceWorker.getRegistrations() : Promise.resolve([]);
-      registrations.then(function (items) {
-        return Promise.all(items.map(function (item) { return item.unregister(); }));
-      }).then(function () { location.reload(); });
+      const nextUrl = new URL(location.href);
+      nextUrl.searchParams.set('_lr', data.version);
+      location.replace(nextUrl.pathname + nextUrl.search + nextUrl.hash);
     };
   }).catch(function () {});
 })();

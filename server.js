@@ -227,12 +227,6 @@ app.get("/dev/reload", (req, res) => {
 });
 
 if (process.env.LIVE_RELOAD === "1") {
-  const liveTargets = [
-    ["public/style.css", "css"],
-    ["public/index.html", "page"],
-    ["public/safe-content.js", "page"],
-    ["public/private-files.js", "page"]
-  ];
   let liveTimer = null;
   let liveTarget = "css";
   const notifyLiveReload = (target) => {
@@ -244,11 +238,13 @@ if (process.env.LIVE_RELOAD === "1") {
       for (const client of liveClients) client.write(`data: ${payload}\n\n`);
     }, 80);
   };
-  for (const [file, target] of liveTargets) {
-    fs.watch(path.join(__dirname, file), () => notifyLiveReload(target));
-  }
+  const pageFiles = new Set(["index.html", "safe-content.js", "private-files.js"]);
+  fs.watch(path.join(__dirname, "public"), (_event, filename) => {
+    if (filename === "style.css") notifyLiveReload("css");
+    else if (pageFiles.has(filename)) notifyLiveReload("page");
+  });
   app.use((req, res, next) => {
-    if (/\.(css|html|js)$/.test(req.path)) res.set("Cache-Control", "no-store");
+    if (req.path === "/" || /\.(css|html|js)$/.test(req.path)) res.set("Cache-Control", "no-store");
     next();
   });
 }
