@@ -494,6 +494,33 @@ function getWidgetSummary(syncId, callsSince) {
   }));
   return { unreadMessages: unread.length, missedCalls: missed.length, latest: latest };
 }
+
+function listCallsForUser(syncId, limit = 40) {
+  const db = readDb();
+  const id = String(syncId || "").trim().toUpperCase();
+  const cap = Math.min(Math.max(Number(limit) || 40, 1), 100);
+  const nameOf = (peerId) => {
+    const user = db.users.find((item) => item.syncId === peerId);
+    return user ? (user.formattedName || formatFullName(user.syncId, user.cleanDisplayName)) : peerId;
+  };
+  return (db.calls || [])
+    .filter((call) => call.fromId === id || call.toId === id)
+    .slice(-cap)
+    .reverse()
+    .map((call) => {
+      const outgoing = call.fromId === id;
+      return {
+        id: call.id,
+        fromId: call.fromId,
+        toId: call.toId,
+        timestamp: call.timestamp,
+        status: call.status,
+        direction: outgoing ? "out" : "in",
+        peerSyncId: outgoing ? call.toId : call.fromId,
+        peerName: nameOf(outgoing ? call.toId : call.fromId)
+      };
+    });
+}
 async function registerFile(ownerId, file) {
   if (!file.filename || file.filename === "." || file.filename === ".." ||
       /[/\\:\u0000]/.test(file.filename)) throw new Error("Nombre físico de archivo inválido");
@@ -760,6 +787,16 @@ function getMessagesBetween(user1Id, user2Id) {
     const mTo = String(m.toId).trim().toUpperCase();
     return (mFrom === u1 && mTo === u2) || (mFrom === u2 && mTo === u1);
   }).sort((a, b) => a.timestamp - b.timestamp);
+}
+
+function getMessagesPage(user1Id, user2Id, limit = 40, beforeId = "") {
+  const cap = Math.min(Math.max(Number(limit) || 40, 1), 100);
+  let messages = getMessagesBetween(user1Id, user2Id);
+  if (beforeId) {
+    const index = messages.findIndex((message) => message.id === beforeId);
+    messages = index > 0 ? messages.slice(0, index) : [];
+  }
+  return { messages: messages.slice(-cap), hasMore: messages.length > cap };
 }
 
 function clearMessagesBetween(user1Id, user2Id) {
@@ -1141,6 +1178,16 @@ function getChannelMessages(channelId, userSyncId, limit = 100) {
     .slice(-limit);
 }
 
+function getChannelMessagePage(channelId, userSyncId, limit = 40, beforeId = "") {
+  const cap = Math.min(Math.max(Number(limit) || 40, 1), 100);
+  let messages = getChannelMessages(channelId, userSyncId, 1500);
+  if (beforeId) {
+    const index = messages.findIndex((message) => message.id === beforeId);
+    messages = index > 0 ? messages.slice(0, index) : [];
+  }
+  return { messages: messages.slice(-cap), hasMore: messages.length > cap };
+}
+
 function saveChannelMessage(channelId, senderSyncId, payload) {
   const channel = findChannel(channelId);
   const resolvedChannelId = channel ? channel.id : channelId;
@@ -1237,6 +1284,7 @@ module.exports = {
   setPinnedMessage,
   unpinMessage,
   getMessagesBetween,
+  getMessagesPage,
   clearMessagesBetween,
   writeDb,
   updateMessageLinkPreview,
@@ -1258,9 +1306,11 @@ module.exports = {
   removeWorkspaceChannelMember,
   deleteWorkspaceChannel,
   getChannelMessages,
+  getChannelMessagePage,
   saveChannelMessage,
   exportConversation,
   recordCall,
   resolveCall,
+  listCallsForUser,
   getWidgetSummary
 };

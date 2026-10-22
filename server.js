@@ -691,9 +691,11 @@ app.post("/api/contacts/add", requireAuth, (req, res) => {
 app.get("/api/messages/:contactSyncId", requireAuth, (req, res) => {
   const { contactSyncId } = req.params;
   const targetSyncId = contactSyncId.toUpperCase();
-  const messages = db.getMessagesBetween(req.user.syncId, targetSyncId);
+  const limit = Number(req.query.limit) || 40;
+  const beforeId = typeof req.query.beforeId === "string" ? req.query.beforeId : "";
+  const page = db.getMessagesPage(req.user.syncId, targetSyncId, limit, beforeId);
   const pinnedMessage = db.getPinnedMessage(req.user.syncId, targetSyncId);
-  res.json({ ok: true, messages: messages, pinnedMessage: pinnedMessage });
+  res.json({ ok: true, messages: page.messages, hasMore: page.hasMore, pinnedMessage: pinnedMessage });
 });
 
 // Endpoint para vaciar historial completo con un contacto
@@ -826,10 +828,20 @@ app.delete("/api/channels/:channelId", requireAuth, (req, res) => {
   }
 });
 
+app.get("/api/calls", requireAuth, (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ ok: true, calls: db.listCallsForUser(req.user.syncId, req.query.limit) });
+});
+
 app.get("/api/channels/:channelId/messages", requireAuth, (req, res) => {
   try {
-    const messages = db.getChannelMessages(req.params.channelId, req.user.syncId);
-    res.json({ ok: true, messages: messages });
+    const page = db.getChannelMessagePage(
+      req.params.channelId,
+      req.user.syncId,
+      Number(req.query.limit) || 40,
+      typeof req.query.beforeId === "string" ? req.query.beforeId : ""
+    );
+    res.json({ ok: true, messages: page.messages, hasMore: page.hasMore });
   } catch (err) {
     res.status(403).json({ error: err.message });
   }
