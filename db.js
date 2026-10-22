@@ -494,6 +494,33 @@ function getWidgetSummary(syncId, callsSince) {
   }));
   return { unreadMessages: unread.length, missedCalls: missed.length, latest: latest };
 }
+
+function listCallsForUser(syncId, limit = 40) {
+  const db = readDb();
+  const id = String(syncId || "").trim().toUpperCase();
+  const cap = Math.min(Math.max(Number(limit) || 40, 1), 100);
+  const nameOf = (peerId) => {
+    const user = db.users.find((item) => item.syncId === peerId);
+    return user ? (user.formattedName || formatFullName(user.syncId, user.cleanDisplayName)) : peerId;
+  };
+  return (db.calls || [])
+    .filter((call) => call.fromId === id || call.toId === id)
+    .slice(-cap)
+    .reverse()
+    .map((call) => {
+      const outgoing = call.fromId === id;
+      return {
+        id: call.id,
+        fromId: call.fromId,
+        toId: call.toId,
+        timestamp: call.timestamp,
+        status: call.status,
+        direction: outgoing ? "out" : "in",
+        peerSyncId: outgoing ? call.toId : call.fromId,
+        peerName: nameOf(outgoing ? call.toId : call.fromId)
+      };
+    });
+}
 async function registerFile(ownerId, file) {
   if (!file.filename || file.filename === "." || file.filename === ".." ||
       /[/\\:\u0000]/.test(file.filename)) throw new Error("Nombre físico de archivo inválido");
@@ -760,6 +787,47 @@ function getMessagesBetween(user1Id, user2Id) {
     const mTo = String(m.toId).trim().toUpperCase();
     return (mFrom === u1 && mTo === u2) || (mFrom === u2 && mTo === u1);
   }).sort((a, b) => a.timestamp - b.timestamp);
+}
+
+function sliceMessageWindow(messages, limit, beforeId, aroundId, afterId) {
+  const cap = Math.min(Math.max(Number(limit) || 40, 1), 100);
+  if (aroundId) {
+    const index = messages.findIndex((message) => message.id === aroundId);
+    if (index < 0) return { messages: [], hasMore: false, hasMoreAfter: false };
+    let start = Math.max(0, index - Math.floor(cap / 2));
+    let end = Math.min(messages.length, start + cap);
+    start = Math.max(0, end - cap);
+    return { messages: messages.slice(start, end), hasMore: start > 0, hasMoreAfter: end < messages.length };
+  }
+  if (afterId) {
+    const index = messages.findIndex((message) => message.id === afterId);
+    const newer = index >= 0 ? messages.slice(index + 1) : [];
+    return { messages: newer.slice(0, cap), hasMore: false, hasMoreAfter: newer.length > cap };
+  }
+  let older = messages;
+  if (beforeId) {
+    const index = messages.findIndex((message) => message.id === beforeId);
+    older = index > 0 ? messages.slice(0, index) : [];
+  }
+  return { messages: older.slice(-cap), hasMore: older.length > cap, hasMoreAfter: false };
+}
+
+function getMessagesPage(user1Id, user2Id, limit = 40, beforeId = "", aroundId = "", afterId = "") {
+  return sliceMessageWindow(getMessagesBetween(user1Id, user2Id), limit, beforeId, aroundId, afterId);
+}
+
+function searchMessagesBetween(user1Id, user2Id, query) {
+  const needle = String(query || "").trim().toLowerCase();
+  if (!needle) return { total: 0, matches: [] };
+  const found = getMessagesBetween(user1Id, user2Id).filter((message) => !message.deletedForEveryone && String(message.text || "").toLowerCase().includes(needle));
+  return {
+    total: found.length,
+    matches: found.slice(-80).map((message) => ({
+      id: message.id,
+      text: String(message.text || "").slice(0, 140),
+      timestamp: message.timestamp
+    }))
+  };
 }
 
 function clearMessagesBetween(user1Id, user2Id) {
@@ -1141,6 +1209,25 @@ function getChannelMessages(channelId, userSyncId, limit = 100) {
     .slice(-limit);
 }
 
+function getChannelMessagePage(channelId, userSyncId, limit = 40, beforeId = "", aroundId = "", afterId = "") {
+  return sliceMessageWindow(getChannelMessages(channelId, userSyncId, 1500), limit, beforeId, aroundId, afterId);
+}
+
+function searchChannelMessages(channelId, userSyncId, query) {
+  const needle = String(query || "").trim().toLowerCase();
+  if (!needle) return { total: 0, matches: [] };
+  const found = getChannelMessages(channelId, userSyncId, 1500)
+    .filter((message) => String(message.text || "").toLowerCase().includes(needle));
+  return {
+    total: found.length,
+    matches: found.slice(-80).map((message) => ({
+      id: message.id,
+      text: String(message.text || "").slice(0, 140),
+      timestamp: message.createdAt
+    }))
+  };
+}
+
 function saveChannelMessage(channelId, senderSyncId, payload) {
   const channel = findChannel(channelId);
   const resolvedChannelId = channel ? channel.id : channelId;
@@ -1237,6 +1324,8 @@ module.exports = {
   setPinnedMessage,
   unpinMessage,
   getMessagesBetween,
+  getMessagesPage,
+  searchMessagesBetween,
   clearMessagesBetween,
   writeDb,
   updateMessageLinkPreview,
@@ -1258,9 +1347,12 @@ module.exports = {
   removeWorkspaceChannelMember,
   deleteWorkspaceChannel,
   getChannelMessages,
+  getChannelMessagePage,
+  searchChannelMessages,
   saveChannelMessage,
   exportConversation,
   recordCall,
   resolveCall,
+  listCallsForUser,
   getWidgetSummary
 };

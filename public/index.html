@@ -19,107 +19,39 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/sync-effects.css">
-
-<script src="https://cdn.tailwindcss.com"></script>
+<script>
+(function () {
+  const current = new URL(location.href);
+  if (current.searchParams.has('_lr')) {
+    current.searchParams.delete('_lr');
+    history.replaceState({}, '', current.pathname + current.search + current.hash);
+  }
+  fetch('/dev/reload?probe=1', { cache: 'no-store' }).then(function (probe) {
+    if (!probe.ok) return;
+    const source = new EventSource('/dev/reload');
+    source.onmessage = function (event) {
+      let data = {};
+      try { data = JSON.parse(event.data); } catch (error) { return; }
+      if (data.target === 'css') {
+        const link = document.querySelector('link[href^="/style.css"]');
+        if (!link) return location.reload();
+        const next = link.cloneNode();
+        next.href = '/style.css?v=' + data.version;
+        next.onload = function () { link.remove(); };
+        link.after(next);
+        return;
+      }
+      const nextUrl = new URL(location.href);
+      nextUrl.searchParams.set('_lr', data.version);
+      location.replace(nextUrl.pathname + nextUrl.search + nextUrl.hash);
+    };
+  }).catch(function () {});
+})();
+</script>
 <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
 <script src="/safe-content.js"></script>
 <script src="/private-files.js"></script>
 
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          bgMain: '#FFFFFF',
-          bgCard: '#F8FAFC',
-          accentGold: '#C5A059',
-          accentTech: '#0072CE',
-          textPrimary: '#0A1A3A',
-          borderSubtle: 'rgba(10, 26, 58, 0.12)',
-          waGreen: '#0072CE',
-          waTeal: '#C5A059',
-          waDarkTeal: '#0A1A3A',
-          waLightTeal: '#0072CE',
-          waBg: '#F8FAFC',
-          waChatBg: '#F8FAFC',
-          waBubbleSent: '#0A1A3A',
-          waBubbleReceived: '#F1F5F9',
-          waTextPrimary: '#0A1A3A',
-          waTextSecondary: '#64748B',
-          waBorder: 'rgba(197, 160, 89, 0.22)',
-          waHover: 'rgba(197, 160, 89, 0.08)',
-          waBlueCheck: '#0072CE',
-        },
-        fontFamily: {
-          sans: ['Inter', 'sans-serif'],
-          title: ['Montserrat', 'sans-serif'],
-        },
-        boxShadow: {
-          'wa-card': '0 2px 8px rgba(0, 0, 0, 0.06)',
-          'wa-float': '0 4px 20px rgba(0, 0, 0, 0.08), 0 0 10px rgba(197, 160, 89, 0.15)',
-          'wa-bubble': '0 1px 3px rgba(0, 0, 0, 0.08)',
-        },
-      },
-    },
-  };
-</script>
-
-<style>
-  html, body {
-    background-color: var(--bg-main, #FFFFFF);
-    color: var(--text-primary, #0A1A3A);
-    min-height: 100vh;
-    font-family: 'Inter', sans-serif;
-  }
-
-  .logo-electric-stream {
-    position: relative;
-    display: block;
-    width: 70px;
-    height: 70px;
-    flex: 0 0 70px;
-  }
-
-  .logo-electric-mask {
-    position: absolute;
-    inset: 0;
-    -webkit-mask-image: url('/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png');
-    mask-image: url('/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png');
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-size: 100% 100%;
-    mask-size: 100% 100%;
-    overflow: hidden;
-    pointer-events: none;
-  }
-
-  .logo-electric-light {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 72%;
-    background: linear-gradient(90deg, transparent, #FFFFFF 20%, #C5A059 48%, #0072CE 56%, #C5A059 74%, transparent);
-    mix-blend-mode: screen;
-    will-change: transform, filter, opacity;
-    animation: electricFlow 3s ease-in-out infinite;
-  }
-
-  @keyframes electricFlow {
-    0% { opacity: 0.25; transform: translate3d(-115%, 0, 0); filter: drop-shadow(0 0 2px #C5A059); }
-    50% { opacity: 1; transform: translate3d(35%, 0, 0); filter: drop-shadow(0 0 8px #0072CE) brightness(1.3); }
-    100% { opacity: 0.25; transform: translate3d(145%, 0, 0); filter: drop-shadow(0 0 2px #C5A059); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .logo-electric-light {
-      animation: none;
-      opacity: 0.35;
-      transform: translate3d(20%, 0, 0);
-    }
-  }
-</style>
 </head>
 <body class="font-sans text-[#0A1A3A] antialiased selection:bg-[#C5A059]/30 selection:text-[#0A1A3A] bg-white">
 
@@ -292,16 +224,19 @@
       <!-- COLUMNA 2: VENTANA DE CONVERSACIÓN ACTIVA (FLEX-GROW: 1, FONDO ADAPTADO 768 × 1024px O SUPERIOR) -->
       <div id="chat-panel-container" class="flex-1 min-h-0 flex flex-col h-full min-w-0 relative">
 
-        <section id="se-calls-home" class="hidden" aria-label="Llamadas y videollamadas">
+        <section id="se-calls-home" class="hidden" aria-label="Llamadas">
           <div class="se-calls-content">
-            <div class="se-calls-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H4.5A1.5 1.5 0 0 0 3 4.5C3 13.6 10.4 21 19.5 21a1.5 1.5 0 0 0 1.5-1.5V17l-5-2-2 2a15 15 0 0 1-4.5-4.5l2-2-2-5H7Z"/></svg></div>
-            <h1>Llamadas y videollamadas</h1>
-            <p>Comunícate con tus contactos desde SYNC ENGINE.</p>
-            <div class="se-calls-actions">
-              <button type="button" id="se-start-call-from-home" class="se-primary-action"><span>＋</span> Iniciar llamada</button>
-              <button type="button" id="se-return-to-chats" class="se-secondary-action">Volver a conversaciones</button>
+            <div class="se-calls-heading">
+              <div class="se-calls-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H4.5A1.5 1.5 0 0 0 3 4.5C3 13.6 10.4 21 19.5 21a1.5 1.5 0 0 0 1.5-1.5V17l-5-2-2 2a15 15 0 0 1-4.5-4.5l2-2-2-5H7Z"/></svg></div>
+              <div>
+                <h1>Llamadas</h1>
+                <p>Las llamadas de voz que hiciste y recibiste.</p>
+              </div>
             </div>
-            <p class="se-calls-hint">Selecciona un contacto para iniciar una llamada de voz o video.</p>
+            <div id="se-calls-list" class="se-calls-list" role="list"></div>
+            <div class="se-calls-actions">
+              <button type="button" id="se-start-call-from-home" class="se-primary-action"><span>＋</span> Llamar a un contacto</button>
+            </div>
           </div>
         </section>
 
@@ -321,7 +256,7 @@
                   </svg>
                 </button>
 
-                <div id="active-chat-info-trigger" class="flex items-center gap-3 min-w-0 cursor-pointer group" title="Ver detalles y medios del contacto">
+                <div id="active-chat-info-trigger" class="flex items-center gap-3 min-w-0 cursor-pointer group" title="Ver datos y archivos del contacto">
                   <div id="active-chat-avatar" class="chat-header-avatar w-11 h-11 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm font-mono avatar-circle overflow-hidden">
                     💬
                   </div>
@@ -336,37 +271,33 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-1.5 sm:gap-2">
-                <!-- Botón Drawer / Información y Medios (Columna 3) -->
-                <button id="toggle-drawer-btn" type="button" title="Información del Contacto y Medios (Columna 3)" aria-label="Información y Centro de Medios"
+              <div class="chat-header-actions flex items-center gap-1.5 sm:gap-2">
+                <button id="start-call-btn" type="button" title="Iniciar llamada de voz" aria-label="Iniciar llamada de voz"
+                  class="icon-btn chat-action-call h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
+                  📞
+                </button>
+                <details class="chat-more">
+                  <summary class="chat-more-summary" aria-label="Más acciones">⋯</summary>
+                  <div class="chat-more-menu">
+                    <button id="open-media-hub-btn" type="button" title="Archivos y medios compartidos" aria-label="Archivos y medios compartidos"
+                      class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
+                      📁
+                    </button>
+                    <button id="export-chat-btn" type="button" title="Exportar la conversación" aria-label="Exportar conversación"
+                      class="icon-btn h-9 px-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] hover:text-[#C5A059] border border-[rgba(197,160,89,0.25)] flex items-center gap-1.5 text-xs font-semibold shadow-xs transition-all cursor-pointer">
+                      <span>📜</span>
+                      <span class="hidden xl:inline">Exportar</span>
+                    </button>
+                    <button id="toggle-chat-search-btn" type="button" title="Buscar en la conversación" aria-label="Buscar en la conversación"
+                      class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
+                      🔍
+                    </button>
+                  </div>
+                </details>
+                <button id="toggle-drawer-btn" type="button" title="Información del Contacto y Medios" aria-label="Información y Centro de Medios"
                   class="icon-btn h-9 px-3 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center gap-1.5 text-xs font-bold shadow-xs transition-all cursor-pointer">
                   <span>ℹ️</span>
-                  <span class="hidden xl:inline">Info &amp; Medios</span>
-                </button>
-
-                <!-- Botón Centro de Medios Compartidos -->
-                <button id="open-media-hub-btn" type="button" title="Archivos y medios compartidos" aria-label="Archivos y medios compartidos"
-                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
-                  📁
-                </button>
-
-                <!-- Botón Exportar Transcripción / Auditoría -->
-                <button id="export-chat-btn" type="button" title="Exportar la conversación" aria-label="Exportar conversación"
-                  class="icon-btn h-9 px-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] hover:text-[#C5A059] border border-[rgba(197,160,89,0.25)] flex items-center gap-1.5 text-xs font-semibold shadow-xs transition-all cursor-pointer">
-                  <span>📜</span>
-                  <span class="hidden xl:inline">Exportar</span>
-                </button>
-
-                <!-- Botón Búsqueda Interna -->
-                <button id="toggle-chat-search-btn" type="button" title="Buscar en la conversación" aria-label="Buscar en la conversación"
-                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
-                  🔍
-                </button>
-
-                <!-- Botón Llamada de Voz WebRTC -->
-                <button id="start-call-btn" type="button" title="Iniciar llamada de voz WebRTC" aria-label="Iniciar llamada de voz"
-                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
-                  📞
+                  <span class="hidden xl:inline">Info & Medios</span>
                 </button>
               </div>
             </div>
@@ -798,7 +729,8 @@
           <h3 class="font-bold text-base sm:text-lg text-[#0A1A3A] flex items-center gap-2 font-title">
             <span>📁 Medios y Archivos Compartidos</span>
           </h3>
-          <p id="media-hub-subtitle" class="text-xs text-[#C5A059] font-mono mt-0.5">SYNC-XXXX</p>
+          <p id="media-hub-subtitle" class="text-sm font-semibold text-[#0A1A3A] mt-0.5">Contacto</p>
+          <p id="media-hub-meta" class="text-xs text-[#C5A059] font-mono mt-0.5">SYNC-XXXX</p>
         </div>
         <button id="close-media-hub-btn" type="button" class="h-8 w-8 rounded-full hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center font-bold text-sm cursor-pointer transition-colors">✕</button>
       </div>
@@ -848,6 +780,27 @@
         <button id="cancel-create-channel-btn" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1A3A] cursor-pointer">Cancelar</button>
         <button id="confirm-create-channel-btn" type="button" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] text-white font-bold text-xs shadow-xs cursor-pointer">Crear Canal</button>
       </div>
+    </div>
+  </div>
+
+  <div id="channel-admin-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-md flex flex-col gap-3 shadow-2xl border border-[rgba(197,160,89,0.3)] text-[#0A1A3A]">
+      <div class="flex items-center justify-between">
+        <h3 id="channel-admin-title" class="font-bold text-base font-title">Canal</h3>
+        <button id="close-channel-admin-btn" type="button" class="text-gray-400 hover:text-[#0A1A3A] text-sm cursor-pointer" aria-label="Cerrar">✕</button>
+      </div>
+      <div id="channel-admin-actions" class="flex flex-col gap-2"></div>
+      <div id="channel-admin-form" class="hidden flex flex-col gap-2">
+        <input id="channel-admin-name" type="text" maxlength="30" placeholder="Nombre" class="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs outline-none">
+        <input id="channel-admin-description" type="text" maxlength="100" placeholder="Descripción" class="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs outline-none">
+        <input id="channel-admin-sync" type="text" maxlength="16" placeholder="SYNC-0000" class="hidden w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs outline-none">
+        <p id="channel-admin-warning" class="hidden text-xs text-red-600"></p>
+        <div class="flex justify-end gap-2">
+          <button id="channel-admin-cancel" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#64748B] cursor-pointer">Volver</button>
+          <button id="channel-admin-save" type="button" class="px-4 py-2 rounded-xl bg-[#0877F9] text-white font-bold text-xs cursor-pointer">Guardar</button>
+        </div>
+      </div>
+      <p id="channel-admin-error" class="hidden text-xs text-red-600"></p>
     </div>
   </div>
 
@@ -954,6 +907,7 @@
   let currentUser = null;
   let currentToken = localStorage.getItem(TOKEN_KEY) || null;
   let activeContactSyncId = null;
+  let lastDmSyncId = null;
   let contactsMap = new Map();
   let socket = null;
   let isSocketAuthenticated = false;
@@ -1174,6 +1128,8 @@
   let currentReplyTo = null;
   let currentSearchMatches = [];
   let currentSearchIndex = -1;
+  let searchResultIds = [];
+  let searchTimer = null;
   let isRegisterMode = false;
 
   function showLinkActionPopover(url, event) {
@@ -1630,12 +1586,14 @@
 
   logoutBtn.addEventListener('click', () => {
     endCall(true);
-    clearVaultSession();
     localStorage.removeItem(TOKEN_KEY);
     SyncPrivateFiles.clear().catch(() => {});
     currentToken = null;
     currentUser = null;
     activeContactSyncId = null;
+    lastDmSyncId = null;
+    parkedThreads.clear();
+    if (chatMessages) chatMessages.dataset.threadKey = '';
     renderedMessageIds.clear();
     showAuth();
   });
@@ -2170,7 +2128,9 @@
   if (toggleDrawerBtn) toggleDrawerBtn.addEventListener('click', toggleInfoDrawer);
   if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', closeInfoDrawer);
   if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeInfoDrawer);
-  if (activeChatInfoTrigger) activeChatInfoTrigger.addEventListener('click', toggleInfoDrawer);
+  if (activeChatInfoTrigger) activeChatInfoTrigger.addEventListener('click', () => {
+    if (activeContactSyncId) openMediaHub();
+  });
   if (drawerTabImg) drawerTabImg.addEventListener('click', () => switchDrawerTab('img'));
   if (drawerTabDoc) drawerTabDoc.addEventListener('click', () => switchDrawerTab('doc'));
   if (drawerTabLink) drawerTabLink.addEventListener('click', () => switchDrawerTab('link'));
@@ -2430,6 +2390,7 @@
     chatSearchCount.textContent = '0 de 0';
     currentSearchMatches = [];
     currentSearchIndex = -1;
+    searchResultIds = [];
   }
 
   function clearChatSearchHighlights() {
@@ -2441,91 +2402,153 @@
     });
   }
 
-  function executeChatSearch() {
-    clearChatSearchHighlights();
-    currentSearchMatches = [];
-    currentSearchIndex = -1;
+  function markSearchText(element, query) {
+    const raw = element.dataset.rawText || element.textContent;
+    const safe = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = raw.split(new RegExp('(' + safe + ')', 'gi'));
+    element.innerHTML = '';
+    parts.forEach((part) => {
+      if (part.toLowerCase() === query) {
+        const mark = document.createElement('mark');
+        mark.className = 'search-match-active';
+        mark.textContent = part;
+        element.appendChild(mark);
+      } else {
+        element.appendChild(document.createTextNode(part));
+      }
+    });
+  }
 
+  async function showHistoryWindow(aroundId) {
+    if (historyLoading || !aroundId) return;
+    historyLoading = true;
+    const isChannel = Boolean(activeChannelId);
+    const key = isChannel ? 'channel:' + activeChannelId : 'dm:' + activeContactSyncId;
+    const base = isChannel
+      ? '/api/channels/' + encodeURIComponent(activeChannelId) + '/messages'
+      : '/api/messages/' + encodeURIComponent(activeContactSyncId);
+    try {
+      const res = await fetch(base + '?limit=' + HISTORY_PAGE + '&aroundId=' + encodeURIComponent(aroundId), {
+        headers: { Authorization: 'Bearer ' + currentToken }
+      });
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.messages)) return;
+      data.messages.forEach((msg) => renderedMessageIds.delete(msg.id));
+      activeConversationMessages = data.messages.slice();
+      chatMessages.replaceChildren(chatWelcome);
+      chatMessages.dataset.threadKey = key;
+      parkedThreads.delete(key);
+      data.messages.forEach((msg) => renderMessageBubble(msg, { scroll: false }));
+      renderHistoryButton(key, data.hasMore, data.messages[0] && data.messages[0].id);
+      renderNewerButton(key, data.hasMoreAfter, data.messages.at(-1) && data.messages.at(-1).id);
+      chatWelcome.classList.add('hidden');
+    } finally {
+      historyLoading = false;
+    }
+  }
+
+  function renderNewerButton(key, hasMoreAfter, afterId) {
+    const parent = destinationFor(key) || chatMessages;
+    const existing = parent.querySelector('.history-newer');
+    if (!hasMoreAfter) {
+      existing?.remove();
+      return;
+    }
+    const button = existing || document.createElement('button');
+    button.type = 'button';
+    button.className = 'history-more history-newer';
+    button.textContent = 'Mensajes más recientes';
+    button.onclick = () => loadNewerMessages(key, afterId);
+    if (!existing) parent.appendChild(button);
+  }
+
+  async function loadNewerMessages(key, afterId) {
+    if (historyLoading || !afterId) return;
+    historyLoading = true;
+    const isChannel = key.startsWith('channel:');
+    const base = isChannel
+      ? '/api/channels/' + encodeURIComponent(key.slice(8)) + '/messages'
+      : '/api/messages/' + encodeURIComponent(key.slice(3));
+    try {
+      const res = await fetch(base + '?limit=' + HISTORY_PAGE + '&afterId=' + encodeURIComponent(afterId), {
+        headers: { Authorization: 'Bearer ' + currentToken }
+      });
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.messages) || !data.messages.length) return;
+      const parent = destinationFor(key) || chatMessages;
+      activeConversationMessages = activeConversationMessages.concat(data.messages);
+      data.messages.forEach((msg) => renderMessageBubble(msg, { parent: parent, scroll: false }));
+      renderNewerButton(key, data.hasMoreAfter, data.messages.at(-1).id);
+    } finally {
+      historyLoading = false;
+    }
+  }
+
+  async function executeChatSearch() {
+    clearChatSearchHighlights();
+    searchResultIds = [];
+    currentSearchIndex = -1;
     const query = chatSearchInput.value.trim().toLowerCase();
-    if (!query) {
+    if (!query || (!activeContactSyncId && !activeChannelId)) {
       chatSearchCount.textContent = '0 de 0';
       return;
     }
-
-    const textElements = chatMessages.querySelectorAll('.msg-text-content');
-    textElements.forEach((el) => {
-      const raw = el.dataset.rawText || el.textContent;
-      if (raw.toLowerCase().includes(query)) {
-        const parts = raw.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
-        el.innerHTML = '';
-        parts.forEach((part) => {
-          if (part.toLowerCase() === query) {
-            const mark = document.createElement('mark');
-            mark.className = 'search-match';
-            mark.textContent = part;
-            el.appendChild(mark);
-            currentSearchMatches.push(mark);
-          } else {
-            el.appendChild(document.createTextNode(part));
-          }
-        });
-      } else {
-        el.textContent = raw;
+    const url = activeChannelId
+      ? '/api/channels/' + encodeURIComponent(activeChannelId) + '/search?q=' + encodeURIComponent(query)
+      : '/api/messages/' + encodeURIComponent(activeContactSyncId) + '/search?q=' + encodeURIComponent(query);
+    try {
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + currentToken } });
+      const data = await res.json();
+      searchResultIds = data.ok && Array.isArray(data.matches) ? data.matches.map((match) => match.id) : [];
+      if (!searchResultIds.length) {
+        chatSearchCount.textContent = '0 de 0';
+        return;
       }
-    });
-
-    const total = currentSearchMatches.length;
-    if (total > 0) {
-      currentSearchIndex = 0;
-      highlightActiveSearchMatch();
-    } else {
+      currentSearchIndex = searchResultIds.length - 1;
+      await focusSearchMatch();
+    } catch (error) {
       chatSearchCount.textContent = '0 de 0';
     }
   }
 
-  function highlightActiveSearchMatch() {
-    const total = currentSearchMatches.length;
-    if (total === 0) {
+  async function focusSearchMatch() {
+    const total = searchResultIds.length;
+    if (!total) {
       chatSearchCount.textContent = '0 de 0';
       return;
     }
-
-    currentSearchMatches.forEach((m, idx) => {
-      if (idx === currentSearchIndex) {
-        m.className = 'search-match-active';
-        m.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        m.className = 'search-match';
-      }
-    });
-
-    chatSearchCount.textContent = `${currentSearchIndex + 1} de ${total}`;
+    const id = searchResultIds[currentSearchIndex];
+    if (!document.getElementById('msg-' + id)) await showHistoryWindow(id);
+    clearChatSearchHighlights();
+    const text = document.querySelector('#msg-' + id + ' .msg-text-content');
+    const query = chatSearchInput.value.trim().toLowerCase();
+    if (text && query) markSearchText(text, query);
+    document.getElementById('msg-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    chatSearchCount.textContent = (currentSearchIndex + 1) + ' de ' + total;
   }
 
   function nextSearchMatch() {
-    const total = currentSearchMatches.length;
-    if (total === 0) return;
-    currentSearchIndex = (currentSearchIndex + 1) % total;
-    highlightActiveSearchMatch();
+    if (!searchResultIds.length) return;
+    currentSearchIndex = (currentSearchIndex + 1) % searchResultIds.length;
+    focusSearchMatch();
   }
 
   function prevSearchMatch() {
-    const total = currentSearchMatches.length;
-    if (total === 0) return;
-    currentSearchIndex = (currentSearchIndex - 1 + total) % total;
-    highlightActiveSearchMatch();
+    if (!searchResultIds.length) return;
+    currentSearchIndex = (currentSearchIndex - 1 + searchResultIds.length) % searchResultIds.length;
+    focusSearchMatch();
   }
 
   // SELECCIONAR CONTACTO & GESTIÓN DE LECTURA
   async function selectContact(syncId) {
     if (syncId === currentUser.syncId) return;
     activeContactSyncId = syncId;
+    lastDmSyncId = syncId;
     document.getElementById('app-container').dataset.hasActiveConversation = 'true';
     window.dispatchEvent(new Event('sync-engine-chat-opened'));
     document.getElementById('chat-header-bar')?.classList.remove('hidden');
     document.getElementById('input-container')?.classList.remove('hidden');
     activeChannelId = null;
-    renderedMessageIds.clear();
     cancelReply();
     closeChatSearch();
 
@@ -2559,32 +2582,20 @@
     updateDrawerContact(contact);
 
     chatWelcome.classList.add('hidden');
-    chatMessages.replaceChildren(chatWelcome);
+    const threadKey = 'dm:' + syncId;
+    if (chatMessages.dataset.threadKey !== threadKey) {
+      parkCurrentThread();
+      if (!showParkedThread(threadKey)) await loadConversationPage(syncId);
+    } else if (!chatMessages.querySelector('.msg-item')) {
+      await loadConversationPage(syncId);
+    } else {
+      anchorChatToBottom();
+    }
+    publishPresence();
 
     if (startCallBtn) startCallBtn.classList.remove('opacity-40', 'pointer-events-none');
     if (openMediaHubBtn) openMediaHubBtn.classList.remove('opacity-40', 'pointer-events-none');
-
-    try {
-      const res = await fetch('/api/messages/' + syncId, {
-        headers: { 'Authorization': 'Bearer ' + currentToken }
-      });
-      const data = await res.json();
-      if (data.ok && Array.isArray(data.messages)) {
-        activeConversationMessages = data.messages;
-        data.messages.forEach((msg) => {
-          renderMessageBubble(msg);
-        });
-        anchorChatToBottom();
-
-        // Configurar mensaje fijado
-        updatePinnedMessageUI(data.pinnedMessage || null);
-      }
-    } catch (e) {
-      console.warn('Error al cargar historial:', e);
-    }
-
     await renderOfflineMessages(syncId);
-    publishPresence();
 
     if (!chatMessages.querySelector('.msg-item')) {
       chatWelcome.classList.remove('hidden');
@@ -3154,19 +3165,18 @@
 
       const fromId = msg.fromId;
       const toId = msg.toId;
-      const isCurrentConversation = (
-        (fromId === activeContactSyncId && toId === currentUser.syncId) ||
-        (fromId === currentUser.syncId && toId === activeContactSyncId)
-      );
+      const peerId = fromId === currentUser.syncId ? toId : fromId;
+      const threadKey = 'dm:' + peerId;
+      const parent = destinationFor(threadKey);
+      const isCurrentConversation = parent === chatMessages;
 
-      if (isCurrentConversation) {
-        if (!activeConversationMessages.some(m => m.id === msg.id)) {
+      if (parent) {
+        if (!activeConversationMessages.some(m => m.id === msg.id) && isCurrentConversation) {
           activeConversationMessages.push(msg);
         }
-        renderMessageBubble(msg);
+        renderMessageBubble(msg, { parent: parent, scroll: isCurrentConversation });
 
-        // Si la ventana está activa y visible, marcar como leído de inmediato
-        if (fromId !== currentUser.syncId && document.visibilityState === 'visible') {
+        if (isCurrentConversation && fromId !== currentUser.syncId && document.visibilityState === 'visible') {
           socket.emit('mark-messages-read', { contactSyncId: activeContactSyncId });
         }
       }
@@ -3273,6 +3283,193 @@
 
   // RENDERIZADO DE BURBUJAS DE MENSAJE
   // Ancla el hilo al final cuando terminan de cargar imágenes y previsualizaciones
+  const HISTORY_PAGE = 40;
+  const parkedThreads = new Map();
+  let historyLoading = false;
+
+  function currentThreadKey() {
+    return chatMessages.dataset.threadKey || '';
+  }
+
+  function parkCurrentThread() {
+    const key = currentThreadKey();
+    if (!key || !chatMessages.querySelector('.msg-item, .history-more')) return;
+    let box = parkedThreads.get(key);
+    if (!box) {
+      box = document.createElement('div');
+      parkedThreads.set(key, box);
+    }
+    box.replaceChildren();
+    chatMessages.querySelectorAll('.msg-item, .history-more').forEach((node) => box.appendChild(node));
+    chatMessages.dataset.threadKey = '';
+  }
+
+  function showParkedThread(key) {
+    const box = parkedThreads.get(key);
+    if (!box || !box.childElementCount) return false;
+    chatMessages.replaceChildren(chatWelcome);
+    while (box.firstChild) chatMessages.appendChild(box.firstChild);
+    chatWelcome.classList.add('hidden');
+    chatMessages.dataset.threadKey = key;
+    anchorChatToBottom();
+    return true;
+  }
+
+  function destinationFor(key) {
+    if (currentThreadKey() === key) return chatMessages;
+    return parkedThreads.get(key) || null;
+  }
+
+  function renderHistoryButton(key, hasMore, before) {
+    const parent = destinationFor(key) || chatMessages;
+    const existing = parent.querySelector('.history-more');
+    if (!hasMore) {
+      existing?.remove();
+      return;
+    }
+    const button = existing || document.createElement('button');
+    button.type = 'button';
+    button.className = 'history-more';
+    button.textContent = 'Mensajes anteriores';
+    button.onclick = () => {
+      if (historyLoading) return;
+      if (key.startsWith('dm:')) loadConversationPage(key.slice(3), before);
+      else loadChannelPage(key.slice(8), before);
+    };
+    if (!existing) parent.insertBefore(button, parent.firstChild);
+  }
+
+  async function loadConversationPage(syncId, before) {
+    if (historyLoading) return;
+    historyLoading = true;
+    const key = 'dm:' + syncId;
+    try {
+      const url = '/api/messages/' + encodeURIComponent(syncId) + '?limit=' + HISTORY_PAGE + (before ? '&beforeId=' + encodeURIComponent(before) : '');
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + currentToken } });
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.messages)) return;
+      const parent = before ? (destinationFor(key) || chatMessages) : chatMessages;
+      const previousHeight = parent.scrollHeight;
+      const previousTop = parent.scrollTop;
+      if (!before) {
+        data.messages.forEach((msg) => renderedMessageIds.delete(msg.id));
+        activeConversationMessages = data.messages.slice();
+        chatMessages.replaceChildren(chatWelcome);
+        chatMessages.dataset.threadKey = key;
+        parkedThreads.delete(key);
+      } else {
+        activeConversationMessages = data.messages.concat(activeConversationMessages);
+      }
+      data.messages.forEach((msg) => renderMessageBubble(msg, { parent: parent, scroll: false, prepend: Boolean(before) }));
+      renderHistoryButton(key, data.hasMore, data.messages[0] && data.messages[0].id);
+      if (!before) updatePinnedMessageUI(data.pinnedMessage || null);
+      if (before && parent === chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight - previousHeight + previousTop;
+      } else if (!before) {
+        anchorChatToBottom();
+      }
+    } catch (error) {
+      console.warn('Error al cargar historial:', error);
+    } finally {
+      historyLoading = false;
+    }
+  }
+
+  async function loadChannelPage(channelId, before) {
+    if (historyLoading) return;
+    historyLoading = true;
+    const key = 'channel:' + channelId;
+    try {
+      const url = '/api/channels/' + encodeURIComponent(channelId) + '/messages?limit=' + HISTORY_PAGE + (before ? '&beforeId=' + encodeURIComponent(before) : '');
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + currentToken } });
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.messages)) return;
+      const parent = before ? (destinationFor(key) || chatMessages) : chatMessages;
+      const previousHeight = parent.scrollHeight;
+      const previousTop = parent.scrollTop;
+      if (!before) {
+        data.messages.forEach((msg) => renderedMessageIds.delete(msg.id));
+        activeConversationMessages = data.messages.slice();
+        chatMessages.replaceChildren(chatWelcome);
+        chatMessages.dataset.threadKey = key;
+        parkedThreads.delete(key);
+      } else {
+        activeConversationMessages = data.messages.concat(activeConversationMessages);
+      }
+      data.messages.forEach((msg) => renderMessageBubble(msg, { parent: parent, scroll: false, prepend: Boolean(before) }));
+      renderHistoryButton(key, data.hasMore, data.messages[0] && data.messages[0].id);
+      if (before && parent === chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight - previousHeight + previousTop;
+      } else if (!before) {
+        anchorChatToBottom();
+      }
+    } catch (error) {
+      console.warn('Error al cargar mensajes de canal:', error);
+    } finally {
+      historyLoading = false;
+    }
+  }
+
+  async function loadCallLog() {
+    const list = document.getElementById('se-calls-list');
+    if (!list || !currentToken) return;
+    list.replaceChildren();
+    try {
+      const res = await fetch('/api/calls?limit=40', { headers: { Authorization: 'Bearer ' + currentToken } });
+      const data = await res.json();
+      const calls = data.ok && Array.isArray(data.calls) ? data.calls : [];
+      if (!calls.length) {
+        const empty = document.createElement('p');
+        empty.className = 'se-calls-empty';
+        empty.textContent = 'Todavía no hay llamadas.';
+        list.appendChild(empty);
+        return;
+      }
+      calls.forEach((call) => {
+        const row = document.createElement('div');
+        row.className = 'se-call-row';
+        row.dataset.status = call.status || '';
+        const when = new Date(call.timestamp).toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        const label = call.status === 'missed' ? 'Perdida' : call.status === 'answered' ? 'Contestada' : call.status === 'rejected' ? 'Rechazada' : 'Sonando';
+        const direction = call.direction === 'out' ? 'Saliente' : 'Entrante';
+        const open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'se-call-open';
+        const name = document.createElement('span');
+        name.className = 'se-call-name';
+        name.textContent = call.peerName || call.peerSyncId;
+        const meta = document.createElement('span');
+        meta.className = 'se-call-meta';
+        meta.textContent = direction + ' · ' + label + ' · ' + when;
+        open.append(name, meta);
+        open.addEventListener('click', () => selectContact(call.peerSyncId));
+        const callBack = document.createElement('button');
+        callBack.type = 'button';
+        callBack.className = 'se-call-back';
+        callBack.textContent = '📞';
+        callBack.title = 'Devolver llamada';
+        callBack.setAttribute('aria-label', 'Devolver llamada a ' + (call.peerName || call.peerSyncId));
+        callBack.addEventListener('click', async () => {
+          await selectContact(call.peerSyncId);
+          startVoiceCall();
+        });
+        row.append(open, callBack);
+        list.appendChild(row);
+      });
+    } catch (error) {
+      const failed = document.createElement('p');
+      failed.className = 'se-calls-empty';
+      failed.textContent = 'No se pudo cargar el registro.';
+      list.appendChild(failed);
+    }
+  }
+
+  chatMessages.addEventListener('scroll', () => {
+    if (historyLoading || chatMessages.scrollTop > 48) return;
+    const button = chatMessages.querySelector('.history-more');
+    if (button) button.click();
+  });
+
   function anchorChatToBottom() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
     chatMessages.querySelectorAll('img').forEach((img) => {
@@ -3284,12 +3481,23 @@
     });
   }
 
-  function renderMessageBubble(msg) {
+  function renderMessageBubble(msg, options = {}) {
     if (!msg || !msg.id) return;
     if (renderedMessageIds.has(msg.id)) return;
     renderedMessageIds.add(msg.id);
+    const parent = options.parent || chatMessages;
+    const shouldScroll = options.scroll !== false && parent === chatMessages;
+    const place = (node) => {
+      if (options.prepend) {
+        const firstMessage = parent.querySelector('.msg-item');
+        parent.insertBefore(node, firstMessage);
+      } else {
+        parent.appendChild(node);
+      }
+      if (shouldScroll) anchorChatToBottom();
+    };
 
-    if (chatWelcome) chatWelcome.classList.add('hidden');
+    if (parent === chatMessages && chatWelcome) chatWelcome.classList.add('hidden');
 
     const senderSyncId = msg.senderSyncId || msg.fromId;
     const isLocal = Boolean(currentUser && senderSyncId === currentUser.syncId);
@@ -3357,8 +3565,7 @@
       `;
       wrapper.appendChild(headerEl);
       wrapper.appendChild(bubble);
-      chatMessages.appendChild(wrapper);
-      anchorChatToBottom();
+      place(wrapper);
       return;
     }
 
@@ -3751,9 +3958,7 @@
 
     wrapper.appendChild(headerEl);
     wrapper.appendChild(bubble);
-    chatMessages.appendChild(wrapper);
-
-    anchorChatToBottom();
+    place(wrapper);
   }
 
   function copyToClipboard(text, btn) {
@@ -4368,7 +4573,10 @@
   }
   if (chatSearchCloseBtn) chatSearchCloseBtn.addEventListener('click', closeChatSearch);
   if (chatSearchInput) {
-    chatSearchInput.addEventListener('input', executeChatSearch);
+    chatSearchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(executeChatSearch, 180);
+    });
     chatSearchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -4470,8 +4678,11 @@
       return;
     }
     const contact = contactsMap.get(activeContactSyncId);
-    if (mediaHubSubtitle) {
-      mediaHubSubtitle.textContent = contact ? contact.formattedName : activeContactSyncId;
+    if (mediaHubSubtitle) mediaHubSubtitle.textContent = contact ? contact.formattedName : activeContactSyncId;
+    const meta = document.getElementById('media-hub-meta');
+    if (meta) {
+      const status = contact && contact.isOnline ? 'En línea' : 'Desconectado';
+      meta.textContent = activeContactSyncId + ' · ' + status;
     }
     if (mediaHubModal) mediaHubModal.classList.remove('hidden');
     switchMediaHubTab(currentMediaHubTab || 'images');
@@ -4776,16 +4987,31 @@
 
   window.addEventListener('sync-engine-view-change', (event) => {
     const view = event.detail && event.detail.view;
-    if (view !== 'contacts' && view !== 'channels') return;
-    if (view === 'channels') loadChannels();
-    document.getElementById('app-container').dataset.hasActiveConversation = 'false';
-    activeContactSyncId = null;
-    activeChannelId = view === 'channels' ? null : activeChannelId;
-    renderedMessageIds.clear();
-    activeConversationMessages = [];
-    cancelReply();
-    closeChatSearch();
-    if (exportChatBtn) exportChatBtn.classList.add('hidden');
+    if (view === 'calls') {
+      loadCallLog();
+      return;
+    }
+    if (view === 'channels') {
+      loadChannels();
+      if (currentThreadKey().startsWith('dm:')) parkCurrentThread();
+      if (activeChannelId && showParkedThread('channel:' + activeChannelId)) {
+        document.getElementById('app-container').dataset.hasActiveConversation = 'true';
+        document.getElementById('chat-header-bar')?.classList.remove('hidden');
+        document.getElementById('input-container')?.classList.remove('hidden');
+      }
+      return;
+    }
+    if (view === 'chats' || view === 'contacts') {
+      if (currentThreadKey().startsWith('channel:')) parkCurrentThread();
+      if (lastDmSyncId && showParkedThread('dm:' + lastDmSyncId)) {
+        activeContactSyncId = lastDmSyncId;
+        activeChannelId = null;
+        document.getElementById('app-container').dataset.hasActiveConversation = 'true';
+        document.getElementById('chat-header-bar')?.classList.remove('hidden');
+        document.getElementById('input-container')?.classList.remove('hidden');
+        publishPresence();
+      }
+    }
   });
 
   const tabSidebarDms = document.getElementById('tab-sidebar-dms');
@@ -4856,18 +5082,88 @@
     });
   }
 
-  async function manageWorkspaceChannel(chan) {
-    const action = window.prompt(
-      `Administrar #${chan.name}\n1. Editar nombre/descripción\n2. Agregar participante por ID SYNC\n3. Retirar participante por ID SYNC\n4. Eliminar canal\n5. Otorgar administrador (solo creador)\n6. Retirar administrador (solo creador)\n\nEscribe del 1 al 6:`
-    );
-    if (!action) return;
+  let channelAdminTarget = null;
+  let channelAdminMode = '';
 
+  function setChannelAdminError(message) {
+    const error = document.getElementById('channel-admin-error');
+    if (!error) return;
+    error.textContent = message || '';
+    error.classList.toggle('hidden', !message);
+  }
+
+  function showChannelAdminForm(mode) {
+    channelAdminMode = mode;
+    const form = document.getElementById('channel-admin-form');
+    const actions = document.getElementById('channel-admin-actions');
+    const name = document.getElementById('channel-admin-name');
+    const description = document.getElementById('channel-admin-description');
+    const sync = document.getElementById('channel-admin-sync');
+    const warning = document.getElementById('channel-admin-warning');
+    const save = document.getElementById('channel-admin-save');
+    actions?.classList.add('hidden');
+    form?.classList.remove('hidden');
+    form?.classList.add('flex');
+    name?.classList.toggle('hidden', mode !== 'rename');
+    description?.classList.toggle('hidden', mode !== 'rename');
+    sync?.classList.toggle('hidden', mode === 'rename' || mode === 'delete');
+    warning?.classList.toggle('hidden', mode !== 'delete');
+    if (warning) warning.textContent = 'Se eliminará el canal y su historial. Esta acción no se puede deshacer.';
+    if (save) save.textContent = mode === 'delete' ? 'Eliminar canal' : 'Guardar';
+    if (name && channelAdminTarget) name.value = channelAdminTarget.name || '';
+    if (description && channelAdminTarget) description.value = channelAdminTarget.description || '';
+    if (sync) sync.value = '';
+    setChannelAdminError('');
+  }
+
+  function openChannelAdmin(chan) {
+    channelAdminTarget = chan;
+    channelAdminMode = '';
+    const modal = document.getElementById('channel-admin-modal');
+    const title = document.getElementById('channel-admin-title');
+    const actions = document.getElementById('channel-admin-actions');
+    const form = document.getElementById('channel-admin-form');
+    if (title) title.textContent = '#' + chan.name;
+    form?.classList.add('hidden');
+    actions?.classList.remove('hidden');
+    if (actions) {
+      const items = [
+        ['rename', 'Editar nombre y descripción'],
+        ['add', 'Agregar participante'],
+        ['remove', 'Retirar participante'],
+        ['grant', 'Otorgar administrador'],
+        ['revoke', 'Retirar administrador'],
+        ['delete', 'Eliminar canal']
+      ];
+      actions.replaceChildren();
+      items.forEach(([mode, label]) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'channel-admin-action' + (mode === 'delete' ? ' is-danger' : '');
+        button.textContent = label;
+        button.addEventListener('click', () => showChannelAdminForm(mode));
+        actions.appendChild(button);
+      });
+    }
+    setChannelAdminError('');
+    modal?.classList.remove('hidden');
+  }
+
+  function closeChannelAdmin() {
+    document.getElementById('channel-admin-modal')?.classList.add('hidden');
+    channelAdminTarget = null;
+    channelAdminMode = '';
+  }
+
+  async function saveChannelAdmin() {
+    const chan = channelAdminTarget;
+    if (!chan || !channelAdminMode) return;
     const request = async (url, options = {}) => {
       const res = await fetch(url, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + currentToken,
+          Authorization: 'Bearer ' + currentToken,
           ...(options.headers || {})
         }
       });
@@ -4875,41 +5171,32 @@
       if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo completar la operación');
       return data;
     };
-
+    const syncId = document.getElementById('channel-admin-sync')?.value.trim();
     try {
-      if (action.trim() === '1') {
-        const name = window.prompt('Nuevo nombre del canal:', chan.name);
-        if (name === null) return;
-        const description = window.prompt('Nueva descripción:', chan.description || '');
-        if (description === null) return;
-        await request(`/api/channels/${encodeURIComponent(chan.id)}`, {
+      if (channelAdminMode === 'rename') {
+        await request('/api/channels/' + encodeURIComponent(chan.id), {
           method: 'PUT',
-          body: JSON.stringify({ name, description })
+          body: JSON.stringify({
+            name: document.getElementById('channel-admin-name')?.value.trim(),
+            description: document.getElementById('channel-admin-description')?.value.trim()
+          })
         });
-      } else if (action.trim() === '2') {
-        const syncId = window.prompt('ID SYNC exacto del participante que deseas agregar:');
-        if (!syncId || !syncId.trim()) return;
-        await request(`/api/channels/${encodeURIComponent(chan.id)}/members`, {
+      } else if (channelAdminMode === 'add') {
+        if (!syncId) return setChannelAdminError('Escribe el ID SYNC.');
+        await request('/api/channels/' + encodeURIComponent(chan.id) + '/members', {
           method: 'POST',
-          body: JSON.stringify({ syncId: syncId.trim() })
+          body: JSON.stringify({ syncId: syncId })
         });
-      } else if (action.trim() === '3') {
-        const syncId = window.prompt('ID SYNC exacto del participante que deseas retirar:');
-        if (!syncId || !syncId.trim()) return;
-        await request(`/api/channels/${encodeURIComponent(chan.id)}/members/${encodeURIComponent(syncId.trim())}`, {
-          method: 'DELETE'
+      } else if (channelAdminMode === 'remove') {
+        if (!syncId) return setChannelAdminError('Escribe el ID SYNC.');
+        await request('/api/channels/' + encodeURIComponent(chan.id) + '/members/' + encodeURIComponent(syncId), { method: 'DELETE' });
+      } else if (channelAdminMode === 'grant' || channelAdminMode === 'revoke') {
+        if (!syncId) return setChannelAdminError('Escribe el ID SYNC.');
+        await request('/api/channels/' + encodeURIComponent(chan.id) + '/admins/' + encodeURIComponent(syncId), {
+          method: channelAdminMode === 'grant' ? 'POST' : 'DELETE'
         });
-      } else if (action.trim() === '5' || action.trim() === '6') {
-        const syncId = window.prompt(action.trim() === '5'
-          ? 'ID SYNC del usuario al que otorgarás administración:'
-          : 'ID SYNC del administrador al que retirarás permisos:');
-        if (!syncId || !syncId.trim()) return;
-        await request(`/api/channels/${encodeURIComponent(chan.id)}/admins/${encodeURIComponent(syncId.trim())}`, {
-          method: action.trim() === '5' ? 'POST' : 'DELETE'
-        });
-      } else if (action.trim() === '4') {
-        if (!window.confirm(`Eliminar #${chan.name} y su historial de mensajes? Esta acción no se puede deshacer.`)) return;
-        await request(`/api/channels/${encodeURIComponent(chan.id)}`, { method: 'DELETE' });
+      } else if (channelAdminMode === 'delete') {
+        await request('/api/channels/' + encodeURIComponent(chan.id), { method: 'DELETE' });
         if (activeChannelId === chan.id) {
           activeChannelId = null;
           document.getElementById('app-container').dataset.hasActiveConversation = 'false';
@@ -4917,15 +5204,19 @@
           document.getElementById('input-container')?.classList.add('hidden');
           chatMessages.replaceChildren(chatWelcome);
           chatWelcome.classList.remove('hidden');
+          chatMessages.dataset.threadKey = '';
         }
-      } else {
-        return;
       }
+      closeChannelAdmin();
       await loadChannels();
       triggerPopupNotification('Canales', 'Los cambios se guardaron correctamente.', '✓');
     } catch (error) {
-      window.alert('No se pudo administrar el canal: ' + error.message);
+      setChannelAdminError(error.message);
     }
+  }
+
+  function manageWorkspaceChannel(chan) {
+    openChannelAdmin(chan);
   }
 
   async function selectChannel(chan) {
@@ -4935,7 +5226,6 @@
     document.getElementById('app-container').dataset.hasActiveConversation = 'true';
     document.getElementById('chat-header-bar')?.classList.remove('hidden');
     document.getElementById('input-container')?.classList.remove('hidden');
-    renderedMessageIds.clear();
     cancelReply();
     closeChatSearch();
 
@@ -4953,30 +5243,20 @@
     activeChatStatus.innerHTML = '<span class="status-dot"></span><span>Todos los miembros</span>';
 
     chatWelcome.classList.add('hidden');
-    chatMessages.replaceChildren(chatWelcome);
+    const threadKey = 'channel:' + chan.id;
+    if (chatMessages.dataset.threadKey !== threadKey) {
+      parkCurrentThread();
+      if (!showParkedThread(threadKey)) await loadChannelPage(chan.id);
+    } else if (!chatMessages.querySelector('.msg-item')) {
+      await loadChannelPage(chan.id);
+    } else {
+      anchorChatToBottom();
+    }
 
     if (startCallBtn) startCallBtn.classList.add('opacity-40', 'pointer-events-none');
     if (openMediaHubBtn) openMediaHubBtn.classList.add('opacity-40', 'pointer-events-none');
     if (exportChatBtn) exportChatBtn.classList.add('hidden');
-
-    if (socket) {
-      socket.emit('join-channel', { channelId: chan.id });
-    }
-
-    try {
-      const res = await fetch(`/api/channels/${chan.id}/messages`, {
-        headers: { 'Authorization': 'Bearer ' + currentToken }
-      });
-      const data = await res.json();
-      if (data.ok && Array.isArray(data.messages)) {
-        activeConversationMessages = data.messages;
-        data.messages.forEach(msg => renderMessageBubble(msg));
-        anchorChatToBottom();
-      }
-    } catch (e) {
-      console.warn('Error al cargar mensajes de canal:', e);
-    }
-
+    if (socket) socket.emit('join-channel', { channelId: chan.id });
     chatTextarea.placeholder = `Enviar mensaje a #${chan.name}...`;
     chatTextarea.focus();
   }
@@ -5082,6 +5362,15 @@
   // Modal Crear Canal
   if (openCreateChannelBtn) openCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.remove('hidden'));
   if (closeCreateChannelBtn) closeCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.add('hidden'));
+  document.getElementById('close-channel-admin-btn')?.addEventListener('click', closeChannelAdmin);
+  document.getElementById('channel-admin-cancel')?.addEventListener('click', () => {
+    if (!channelAdminTarget) return closeChannelAdmin();
+    openChannelAdmin(channelAdminTarget);
+  });
+  document.getElementById('channel-admin-save')?.addEventListener('click', saveChannelAdmin);
+  document.querySelectorAll('.chat-more-menu button').forEach((button) => {
+    button.addEventListener('click', () => document.querySelector('.chat-more')?.removeAttribute('open'));
+  });
   if (cancelCreateChannelBtn) cancelCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.add('hidden'));
   if (confirmCreateChannelBtn) confirmCreateChannelBtn.addEventListener('click', handleCreateChannel);
 
@@ -5101,14 +5390,16 @@
 
     socket.on('channel-message-received', (msg) => {
       if (!msg) return;
-      if (activeChannelId === msg.channelId) {
-        if (!activeConversationMessages.some(m => m.id === msg.id)) {
+      const key = 'channel:' + msg.channelId;
+      const parent = destinationFor(key);
+      if (parent) {
+        if (parent === chatMessages && !activeConversationMessages.some(m => m.id === msg.id)) {
           activeConversationMessages.push(msg);
         }
-        renderMessageBubble(msg);
-      } else {
-        triggerPopupNotification(`Canal #${msg.channelId.replace('chan-', '')}`, `${msg.senderName}: ${msg.text || 'Archivo'}`, '💬');
+        renderMessageBubble(msg, { parent: parent, scroll: parent === chatMessages });
+        return;
       }
+      triggerPopupNotification(`Canal #${String(msg.channelId || '').replace('chan-', '')}`, `${msg.senderName}: ${msg.text || 'Archivo'}`, '💬');
     });
   }
 
@@ -5203,52 +5494,39 @@
     const button = event.target.closest('[data-se-view]');
     if (!button) return;
     const view = button.dataset.seView;
-    if (view === 'calls') { showCalls(); return; }
+    if (view === 'calls') {
+      showCalls();
+      window.dispatchEvent(new CustomEvent('sync-engine-view-change', { detail: { view } }));
+      return;
+    }
+    if (view === 'profile') {
+      document.getElementById('open-edit-profile-btn')?.click();
+      setActiveNav('profile');
+      return;
+    }
     showWorkspace();
     const dmsView = document.getElementById('sidebar-dms-view');
     const channelsView = document.getElementById('sidebar-channels-view');
     const chatHeader = document.getElementById('chat-header-bar');
     const messageComposer = document.getElementById('input-container');
-    const chatMessages = document.getElementById('chat-messages');
-    const chatWelcome = document.getElementById('chat-welcome');
-
+    window.dispatchEvent(new CustomEvent('sync-engine-view-change', { detail: { view } }));
+    const hasConversation = app.dataset.hasActiveConversation === 'true';
     if (view === 'channels') {
       dmsView?.classList.add('hidden');
       channelsView?.classList.remove('hidden');
-      if (chatHeader) chatHeader.classList.add('hidden');
-      if (messageComposer) messageComposer.classList.add('hidden');
-      window.dispatchEvent(new CustomEvent('sync-engine-view-change', { detail: { view } }));
-      if (chatMessages && chatWelcome) {
-        chatMessages.replaceChildren(chatWelcome);
-        chatWelcome.classList.remove('hidden');
-      }
-      document.querySelectorAll('#contacts-list .contact-item.is-active').forEach(item => item.classList.remove('is-active'));
       setActiveNav('channels');
-    } else if (view === 'profile') {
-      document.getElementById('open-edit-profile-btn')?.click();
-      setActiveNav('profile');
-    } else if (view === 'contacts' || view === 'chats') {
+    } else {
       dmsView?.classList.remove('hidden');
       channelsView?.classList.add('hidden');
       if (view === 'contacts') {
-        window.dispatchEvent(new CustomEvent('sync-engine-view-change', { detail: { view } }));
-        if (chatHeader) chatHeader.classList.add('hidden');
-        if (messageComposer) messageComposer.classList.add('hidden');
-        if (chatMessages && chatWelcome) {
-          chatMessages.replaceChildren(chatWelcome);
-          chatWelcome.classList.remove('hidden');
-        }
-        document.querySelectorAll('#contacts-list .contact-item.is-active').forEach(item => item.classList.remove('is-active'));
         document.body.classList.remove('mobile-view-chat');
         if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
-      } else {
-        const hasConversation = app.dataset.hasActiveConversation === 'true';
-        if (chatHeader) chatHeader.classList.toggle('hidden', !hasConversation);
-        if (messageComposer) messageComposer.classList.toggle('hidden', !hasConversation);
+        document.getElementById('contact-search-input')?.focus();
       }
       setActiveNav(view);
-      if (view === 'contacts') document.getElementById('contact-search-input')?.focus();
     }
+    if (chatHeader) chatHeader.classList.toggle('hidden', !hasConversation);
+    if (messageComposer) messageComposer.classList.toggle('hidden', !hasConversation);
   });
   themeButton?.addEventListener('click', () => {
     applyTheme(app.dataset.seTheme === 'energy' ? 'sync-blue' : 'energy');
@@ -5264,18 +5542,8 @@
     window.history.replaceState({}, '', url.toString());
   });
 
-  document.getElementById('se-return-to-chats')?.addEventListener('click', () => {
-    showWorkspace();
-    document.getElementById('tab-sidebar-dms')?.click();
-    setActiveNav('chats');
-  });
   document.getElementById('se-start-call-from-home')?.addEventListener('click', () => {
-    showWorkspace();
-    document.getElementById('tab-sidebar-dms')?.click();
-    setActiveNav('chats');
-    const start = document.getElementById('start-call-btn');
-    if (start) start.click();
-    else document.getElementById('contact-search-input')?.focus();
+    document.querySelector('[data-se-view="contacts"]')?.click();
   });
 })();
 </script>

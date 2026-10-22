@@ -10,32 +10,41 @@ let VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 let webPushConfigured = false;
 
 function configureWebPush(directory) {
-  const dir = directory || path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
-  let publicKey = String(process.env.VAPID_PUBLIC_KEY || "").trim();
-  let privateKey = String(process.env.VAPID_PRIVATE_KEY || "").trim();
-  if (!publicKey || !privateKey) {
-    const file = path.join(dir, "vapid.json");
-    try {
-      const stored = JSON.parse(fs.readFileSync(file, "utf8"));
-      publicKey = String(stored.publicKey || "");
-      privateKey = String(stored.privateKey || "");
-    } catch (_) {
-      publicKey = "";
-      privateKey = "";
-    }
+  try {
+    const dir = directory || path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
+    let publicKey = String(process.env.VAPID_PUBLIC_KEY || "").trim();
+    let privateKey = String(process.env.VAPID_PRIVATE_KEY || "").trim();
     if (!publicKey || !privateKey) {
-      const generated = webPush.generateVAPIDKeys();
-      publicKey = generated.publicKey;
-      privateKey = generated.privateKey;
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(file, JSON.stringify({ publicKey, privateKey }), { mode: 0o600 });
+      const file = path.join(dir, "vapid.json");
+      try {
+        const stored = JSON.parse(fs.readFileSync(file, "utf8"));
+        publicKey = String(stored.publicKey || "");
+        privateKey = String(stored.privateKey || "");
+      } catch (_) {
+        publicKey = "";
+        privateKey = "";
+      }
+      if (!publicKey || !privateKey) {
+        if (typeof webPush.generateVAPIDKeys !== "function") {
+          throw new Error("web-push no puede generar claves VAPID");
+        }
+        const generated = webPush.generateVAPIDKeys();
+        publicKey = generated.publicKey;
+        privateKey = generated.privateKey;
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(file, JSON.stringify({ publicKey, privateKey }), { mode: 0o600 });
+      }
     }
+    webPush.setVapidDetails(VAPID_EMAIL, publicKey, privateKey);
+    VAPID_PUBLIC_KEY = publicKey;
+    VAPID_PRIVATE_KEY = privateKey;
+    webPushConfigured = true;
+    return { publicKey, privateKey };
+  } catch (err) {
+    webPushConfigured = false;
+    console.warn("[WebPush] Notificaciones web deshabilitadas:", err.message);
+    return null;
   }
-  webPush.setVapidDetails(VAPID_EMAIL, publicKey, privateKey);
-  VAPID_PUBLIC_KEY = publicKey;
-  VAPID_PRIVATE_KEY = privateKey;
-  webPushConfigured = true;
-  return { publicKey, privateKey };
 }
 
 // Helper to send push notification to all stored subscriptions for a syncId
@@ -211,6 +220,43 @@ app.use((req, res, next) => {
     servePrivateFile(req, res, file);
   });
 });
+
+const liveClients = new Set();
+app.get("/dev/reload", (req, res) => {
+  if (process.env.LIVE_RELOAD !== "1") return res.status(404).end();
+  if (req.query.probe) return res.status(204).end();
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-store",
+    Connection: "keep-alive"
+  });
+  res.write("retry: 1000\n\n");
+  liveClients.add(res);
+  req.on("close", () => liveClients.delete(res));
+});
+
+if (process.env.LIVE_RELOAD === "1") {
+  let liveTimer = null;
+  let liveTarget = "css";
+  const notifyLiveReload = (target) => {
+    liveTarget = target === "page" ? "page" : liveTarget;
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => {
+      const payload = JSON.stringify({ target: liveTarget, version: Date.now() });
+      liveTarget = "css";
+      for (const client of liveClients) client.write(`data: ${payload}\n\n`);
+    }, 80);
+  };
+  const pageFiles = new Set(["index.html", "safe-content.js", "private-files.js"]);
+  fs.watch(path.join(__dirname, "public"), (_event, filename) => {
+    if (filename === "style.css") notifyLiveReload("css");
+    else if (pageFiles.has(filename)) notifyLiveReload("page");
+  });
+  app.use((req, res, next) => {
+    if (req.path === "/" || /\.(css|html|js)$/.test(req.path)) res.set("Cache-Control", "no-store");
+    next();
+  });
+}
 
 // Servir widget universal con cabeceras para iframe y paneles laterales de extensiones
 app.get(["/widget", "/widget.html", "/public/widget.html"], (req, res) => {
@@ -688,12 +734,24 @@ app.post("/api/contacts/add", requireAuth, (req, res) => {
 });
 
 // Rutas de Mensajería e Historial
+app.get("/api/messages/:contactSyncId/search", requireAuth, (req, res) => {
+  const result = db.searchMessagesBetween(req.user.syncId, req.params.contactSyncId, req.query.q);
+  res.json({ ok: true, total: result.total, matches: result.matches });
+});
+
 app.get("/api/messages/:contactSyncId", requireAuth, (req, res) => {
   const { contactSyncId } = req.params;
   const targetSyncId = contactSyncId.toUpperCase();
-  const messages = db.getMessagesBetween(req.user.syncId, targetSyncId);
+  const page = db.getMessagesPage(
+    req.user.syncId,
+    targetSyncId,
+    Number(req.query.limit) || 40,
+    typeof req.query.beforeId === "string" ? req.query.beforeId : "",
+    typeof req.query.aroundId === "string" ? req.query.aroundId : "",
+    typeof req.query.afterId === "string" ? req.query.afterId : ""
+  );
   const pinnedMessage = db.getPinnedMessage(req.user.syncId, targetSyncId);
-  res.json({ ok: true, messages: messages, pinnedMessage: pinnedMessage });
+  res.json({ ok: true, messages: page.messages, hasMore: page.hasMore, hasMoreAfter: page.hasMoreAfter, pinnedMessage: pinnedMessage });
 });
 
 // Endpoint para vaciar historial completo con un contacto
@@ -826,10 +884,31 @@ app.delete("/api/channels/:channelId", requireAuth, (req, res) => {
   }
 });
 
+app.get("/api/calls", requireAuth, (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ ok: true, calls: db.listCallsForUser(req.user.syncId, req.query.limit) });
+});
+
+app.get("/api/channels/:channelId/search", requireAuth, (req, res) => {
+  try {
+    const result = db.searchChannelMessages(req.params.channelId, req.user.syncId, req.query.q);
+    res.json({ ok: true, total: result.total, matches: result.matches });
+  } catch (err) {
+    res.status(403).json({ error: err.message });
+  }
+});
+
 app.get("/api/channels/:channelId/messages", requireAuth, (req, res) => {
   try {
-    const messages = db.getChannelMessages(req.params.channelId, req.user.syncId);
-    res.json({ ok: true, messages: messages });
+    const page = db.getChannelMessagePage(
+      req.params.channelId,
+      req.user.syncId,
+      Number(req.query.limit) || 40,
+      typeof req.query.beforeId === "string" ? req.query.beforeId : "",
+      typeof req.query.aroundId === "string" ? req.query.aroundId : "",
+      typeof req.query.afterId === "string" ? req.query.afterId : ""
+    );
+    res.json({ ok: true, messages: page.messages, hasMore: page.hasMore, hasMoreAfter: page.hasMoreAfter });
   } catch (err) {
     res.status(403).json({ error: err.message });
   }
