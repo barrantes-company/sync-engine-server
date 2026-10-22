@@ -227,40 +227,22 @@ const storage = multer.diskStorage({
   }
 });
 
-const MAX_STANDARD_UPLOAD_BYTES = 50 * 1024 * 1024;
-const MAX_PREMIUM_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024;
-
-function maxUploadBytesForPlan(plan) {
-  const normalized = String(plan || "free").trim().toLowerCase();
-  return normalized === "pro" || normalized === "enterprise"
-    ? MAX_PREMIUM_UPLOAD_BYTES
-    : MAX_STANDARD_UPLOAD_BYTES;
-}
-
-function uploadSingleFileForPlan(req, res, next) {
-  const maxBytes = maxUploadBytesForPlan(req.user && req.user.plan);
-  multer({
-    storage,
-    limits: {
-      fileSize: maxBytes,
-      files: 1,
-      fields: 8,
-      fieldSize: 64 * 1024,
-      parts: 12
-    },
-    fileFilter: (_req, file, cb) => {
-      if (!file.originalname || file.originalname.length > 255) {
-        return cb(new Error("Nombre de archivo inválido"));
-      }
-      cb(null, true);
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 2 * 1024 * 1024 * 1024,
+    files: 1,
+    fields: 8,
+    fieldSize: 64 * 1024,
+    parts: 12
+  },
+  fileFilter: (_req, file, cb) => {
+    if (!file.originalname || file.originalname.length > 255) {
+      return cb(new Error("Nombre de archivo inválido"));
     }
-  }).single("file")(req, res, (err) => {
-    if (err && err.code === "LIMIT_FILE_SIZE") {
-      return res.status(413).json({ error: "El archivo supera el límite del plan" });
-    }
-    return next(err);
-  });
-}
+    cb(null, true);
+  }
+});
 
 // Middleware de Autenticación
 function requireAuth(req, res, next) {
@@ -565,8 +547,7 @@ app.post("/api/user/profile", requireAuth, async (req, res) => {
   }
 });
 
-// La cuota real depende del plan: 50 MB en free, 2 GB en pro/enterprise.
-app.post("/api/upload", requireAuth, uploadSingleFileForPlan, async (req, res) => {
+app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No se proporcionó ningún archivo" });
@@ -672,59 +653,17 @@ app.get('/api/status', function (_req, res) {
       'double-check',
       'pinned-messages',
       'rich-links',
-      'plan-based-uploads',
+      'uploads',
       'h264-video',
       'fluid-layout',
       'lightbox',
-      'monetization-tiers',
       'encrypted-vault',
       'team-channels',
       'compliance-export'
     ],
-    uploadLimitBytes: MAX_STANDARD_UPLOAD_BYTES,
-    premiumUploadLimitBytes: MAX_PREMIUM_UPLOAD_BYTES,
+    uploadLimitBytes: 2 * 1024 * 1024 * 1024,
     onlineUsersCount: onlineUsers.size
   });
-});
-
-// ==== Endpoints de Monetización, Facturación y Planes ====
-app.get("/api/billing/plan", requireAuth, (req, res) => {
-  const user = db.getUserBySyncId(req.user.syncId);
-  if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
-  res.json({
-    ok: true,
-    plan: user.plan || "free",
-    role: user.role || "member",
-    planExpiresAt: user.planExpiresAt || null,
-    features: {
-      maxUploadBytes: user.plan === "enterprise" ? 2147483648 : (user.plan === "pro" ? 2147483648 : 52428800),
-      maxVoiceSeconds: user.plan === "free" ? 60 : 600,
-      encryptedVault: user.plan !== "free",
-      teamChannels: user.plan === "enterprise" || user.plan === "pro",
-      exportAudit: true,
-      hdCalling: user.plan !== "free"
-    }
-  });
-});
-
-app.post("/api/billing/upgrade", requireAuth, (req, res) => {
-  if (process.env.ALLOW_TEST_BILLING !== "true") {
-    return res.status(403).json({
-      error: "Los pagos en la app no están conectados. El plan no se ha cambiado."
-    });
-  }
-  const { plan, billingCycle, paymentDetails } = req.body || {};
-  try {
-    const result = db.upgradeUserPlan(req.user.syncId, plan, billingCycle, paymentDetails);
-    res.json({ ok: true, user: result.user, invoice: result.invoice });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.get("/api/billing/invoices", requireAuth, (req, res) => {
-  const invoices = db.getUserInvoices(req.user.syncId);
-  res.json({ ok: true, invoices: invoices });
 });
 
 // ==== Endpoints de Bóveda Cifrada Privada ====

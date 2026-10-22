@@ -24,8 +24,7 @@ function ensureDbFile() {
         { id: "chan-anuncios", name: "anuncios", description: "Comunicados oficiales de Workspace y Empresa", createdAt: Date.now(), isDefault: true }
       ],
       channelMessages: [],
-      vaultItems: {},
-      invoices: {}
+      vaultItems: {}
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf8");
   }
@@ -49,7 +48,7 @@ function readDb() {
     for (const key of ["users", "sessions", "messages", "files", "channels", "channelMessages", "calls", "organizations"]) {
       if (data[key] !== undefined && !Array.isArray(data[key])) throw new Error("Invalid database collection");
     }
-    for (const key of ["contacts", "pinnedMessages", "subscriptions", "mobilePushTokens", "vaultItems", "invoices"]) {
+    for (const key of ["contacts", "pinnedMessages", "subscriptions", "mobilePushTokens", "vaultItems"]) {
       if (data[key] !== undefined && (!data[key] || typeof data[key] !== "object" || Array.isArray(data[key]))) {
         throw new Error("Invalid database map");
       }
@@ -70,7 +69,6 @@ function readDb() {
     }
     if (!data.channelMessages) data.channelMessages = [];
     if (!data.vaultItems) data.vaultItems = {};
-    if (!data.invoices) data.invoices = {};
     if (!Array.isArray(data.calls)) data.calls = [];
     cachedDb = data;
     if (seedDevelopmentAdmin(cachedDb)) {
@@ -866,65 +864,6 @@ function removeMobilePushToken(syncId, token) {
   return true;
 }
 
-// ==== Planes, Suscripciones y Facturación ====
-function upgradeUserPlan(syncId, plan, billingCycle = "monthly", paymentDetails = {}) {
-  const db = readDb();
-  const sId = String(syncId).trim().toUpperCase();
-  const user = db.users.find((u) => u.syncId === sId);
-  if (!user) {
-    throw new Error("Usuario no encontrado");
-  }
-
-  const validPlans = ["free", "pro", "enterprise"];
-  if (!validPlans.includes(plan)) {
-    throw new Error("Plan no válido");
-  }
-
-  const days = billingCycle === "yearly" ? 365 : 30;
-  const planExpiresAt = Date.now() + days * 24 * 60 * 60 * 1000;
-
-  user.plan = plan;
-  user.planExpiresAt = planExpiresAt;
-  user.billingCycle = billingCycle;
-  user.updatedAt = Date.now();
-
-  // Registrar Factura
-  if (!db.invoices) db.invoices = {};
-  if (!db.invoices[sId]) db.invoices[sId] = [];
-
-  const invoiceAmount = plan === "pro" 
-    ? (billingCycle === "yearly" ? 89 : 9) 
-    : (plan === "enterprise" ? (billingCycle === "yearly" ? 228 : 24) : 0);
-
-  const invoice = {
-    id: "inv_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
-    syncId: sId,
-    plan: plan,
-    billingCycle: billingCycle,
-    amountUsd: invoiceAmount,
-    discountApplied: paymentDetails.discountApplied || 0,
-    paymentMethod: paymentDetails.method || "card",
-    cardLast4: paymentDetails.last4 || null,
-    status: "paid",
-    issuedAt: Date.now(),
-    expiresAt: planExpiresAt
-  };
-
-  db.invoices[sId].unshift(invoice);
-  writeDb(db);
-
-  return {
-    user: toPublicUser(user),
-    invoice: invoice
-  };
-}
-
-function getUserInvoices(syncId) {
-  const db = readDb();
-  const sId = String(syncId).trim().toUpperCase();
-  return (db.invoices && db.invoices[sId]) || [];
-}
-
 // ==== Bóveda Cifrada Privada (Encrypted Vault) ====
 const VAULT_KDF_ITERATIONS = 310000;
 
@@ -1417,9 +1356,6 @@ module.exports = {
   saveMobilePushToken,
   getMobilePushTokens,
   removeMobilePushToken,
-  // Nuevas capacidades de monetización y workspace
-  upgradeUserPlan,
-  getUserInvoices,
   getVaultItems,
   saveVaultItem,
   deleteVaultItem,

@@ -173,17 +173,8 @@
           <span class="font-mono text-[11px] text-[#C5A059]">TLS / AES-256</span>
         </div>
 
-        <!-- Zona 3: Plan SaaS, Bóveda, Identidad & Salir -->
+        <!-- Zona 3: Identidad y salir -->
         <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-
-          <!-- Botón de Plan y Monetización -->
-          <button id="header-plan-badge-btn" type="button" title="Gestionar Plan y Suscripción"
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[rgba(197,160,89,0.35)] bg-gradient-to-r from-[#FFFDF7] to-[#FEF3C7] hover:from-[#FEF3C7] hover:to-[#FDE68A] text-[#99793D] font-bold text-xs transition-all shadow-xs cursor-pointer">
-            <span id="header-plan-icon">⭐</span>
-            <span id="header-plan-name" class="tracking-wide uppercase font-mono">STARTER</span>
-            <span class="text-[9px] bg-[#C5A059] text-white px-1.5 py-0.5 rounded font-bold uppercase">SaaS</span>
-          </button>
-
           <!-- Botón Bóveda Cifrada Privada -->
           <button id="open-vault-btn" type="button" title="Bóveda Cifrada Privada & Notas Secretas"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-xs font-semibold text-[#0A1A3A] hover:text-[#C5A059] transition-colors cursor-pointer shadow-xs">
@@ -253,21 +244,6 @@
             </button>
           </div>
           <div id="channels-list" class="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-1 bg-white"></div>
-        </div>
-
-        <!-- Tarjeta Promocional SYNC PRO (Monetización) -->
-        <div id="sidebar-pro-card" class="m-2.5 p-3 rounded-2xl bg-gradient-to-br from-[#FFFDF7] to-[#FBF6E9] border border-[rgba(197,160,89,0.35)] shadow-xs flex flex-col gap-2 flex-shrink-0">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-[#99793D] flex items-center gap-1.5 font-title">
-              <img src="/src/assets/images/pro_tier_badge_1791287637745.jpg" alt="Pro" class="w-4 h-4 rounded-full object-cover">
-              <span>SYNC Pro Suite</span>
-            </span>
-            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#C5A059] text-white">2GB &amp; Bóveda</span>
-          </div>
-          <p class="text-[11px] text-[#64748B] leading-tight">Transferencias de 2 GB, Bóveda Cifrada y Transcripciones de chat.</p>
-          <button id="sidebar-upgrade-btn" type="button" class="w-full py-1.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs transition-all cursor-pointer">
-            Mejorar Plan desde $9/mes
-          </button>
         </div>
 
         <div id="edit-profile-modal" class="profile-settings-popover hidden" role="dialog" aria-modal="false" aria-labelledby="profile-settings-title">
@@ -852,164 +828,6 @@
       </div>
 
       <div id="media-hub-content" class="flex-1 overflow-y-auto p-4 sm:p-6 bg-white min-h-[300px]"></div>
-    </div>
-  </div>
-
-  <!-- MODAL: CENTRO DE MONETIZACIÓN, PLANES Y FACTURACIÓN -->
-  <div id="pricing-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-[rgba(197,160,89,0.3)] overflow-hidden text-[#0A1A3A] my-auto">
-
-      <!-- Cabecera de Precios -->
-      <div class="p-5 sm:p-6 border-b border-[rgba(197,160,89,0.2)] bg-gradient-to-r from-white via-[#FFFDF8] to-[#FAF7F0] flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#C5A059] to-[#99793D] text-white flex items-center justify-center font-bold text-lg shadow-sm">
-            💎
-          </div>
-          <div>
-            <h3 class="font-bold text-base sm:text-xl text-[#0A1A3A] font-title flex items-center gap-2">
-              <span>SYNC Workspace Suite · Planes &amp; Suscripciones</span>
-            </h3>
-            <p class="text-xs text-[#64748B] mt-0.5">Potencia tu privacidad, capacidad de transferencia y colaboración empresarial.</p>
-          </div>
-        </div>
-        <button id="close-pricing-modal-btn" type="button" aria-label="Cerrar modal de precios" class="h-8 w-8 rounded-full hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center font-bold text-sm cursor-pointer transition-colors">✕</button>
-      </div>
-
-      <!-- Selector de Ciclo de Facturación (Mensual / Anual) -->
-      <div class="px-6 pt-5 pb-2 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white">
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-semibold text-[#0A1A3A]">Plan actual:</span>
-          <span id="modal-current-plan-badge" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#F8FAFC] text-[#C5A059] border border-[rgba(197,160,89,0.3)]">STARTER</span>
-        </div>
-
-        <div class="flex items-center p-1 bg-[#F8FAFC] rounded-xl border border-[rgba(197,160,89,0.25)]">
-          <button id="billing-cycle-monthly" type="button" class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-[#0A1A3A] shadow-xs cursor-pointer">
-            Mensual
-          </button>
-          <button id="billing-cycle-yearly" type="button" class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all text-[#64748B] hover:text-[#0A1A3A] flex items-center gap-1.5 cursor-pointer">
-            <span>Anual</span>
-            <span class="text-[10px] font-extrabold px-1.5 py-0.2 rounded-md bg-[#10B981] text-white">-20% dto.</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Cuadrícula de 3 Planes -->
-      <div class="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 bg-white">
-
-        <!-- PLAN 1: STARTER (GRATIS) -->
-        <div class="pricing-tier-card flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between">
-              <h4 class="font-bold text-sm text-[#0A1A3A] font-title">Starter</h4>
-              <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Para Personas</span>
-            </div>
-            <div class="mt-3 flex items-baseline gap-1">
-              <span class="text-2xl font-extrabold font-mono text-[#0A1A3A]">$0</span>
-              <span class="text-xs text-[#64748B]">USD / siempre gratis</span>
-            </div>
-            <p class="text-[11px] text-[#64748B] mt-2 pb-3 border-b border-gray-100">Mensajería privada punto a punto y transferencias básicas.</p>
-            <ul class="mt-3 flex flex-col gap-2 text-xs text-[#0A1A3A]">
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Envíos de hasta 50 MB</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Mensajería E2E directa (1-a-1)</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Notas de voz hasta 1 minuto</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Doble check de lectura</li>
-              <li class="flex items-center gap-2 text-gray-400"><span>✕</span> Bóveda privada de notas</li>
-              <li class="flex items-center gap-2 text-gray-400"><span>✕</span> Canales de equipo</li>
-            </ul>
-          </div>
-          <button type="button" disabled class="mt-5 w-full py-2 rounded-xl bg-gray-100 text-gray-400 font-semibold text-xs cursor-default">
-            Plan Básico
-          </button>
-        </div>
-
-        <!-- PLAN 2: SYNC PRO (RECOMENDADO / DESTACADO) -->
-        <div class="pricing-tier-card is-featured flex flex-col justify-between">
-          <span class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-[#C5A059] to-[#99793D] text-white text-[10px] font-extrabold tracking-wider uppercase shadow-xs">
-            ⭐ Más Popular
-          </span>
-          <div>
-            <div class="flex items-center justify-between">
-              <h4 class="font-bold text-sm text-[#C5A059] font-title flex items-center gap-1.5">
-                <span>SYNC Pro</span>
-              </h4>
-              <span class="text-[10px] font-bold text-[#99793D] uppercase tracking-wider">Profesional</span>
-            </div>
-            <div class="mt-3 flex items-baseline gap-1">
-              <span id="price-pro-display" class="text-3xl font-extrabold font-mono text-[#0A1A3A]">$9</span>
-              <span id="price-pro-period" class="text-xs text-[#64748B]">USD / mes</span>
-            </div>
-            <p class="text-[11px] text-[#64748B] mt-2 pb-3 border-b border-[rgba(197,160,89,0.2)]">Máxima velocidad, 2GB sin compresión y bóveda confidencial.</p>
-            <ul class="mt-3 flex flex-col gap-2 text-xs text-[#0A1A3A]">
-              <li class="flex items-center gap-2 font-semibold text-[#0A1A3A]"><span class="text-[#C5A059]">★</span> Archivos pesados hasta 2 GB</li>
-              <li class="flex items-center gap-2 font-semibold text-[#0A1A3A]"><span class="text-[#C5A059]">★</span> Bóveda Cifrada Ilimitada</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Reproductor Waveform + Acelerador 2x</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Notas de voz HD ilimitadas (10 min)</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Transcripción y exportación certificada</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Llamadas WebRTC de alta fidelidad</li>
-            </ul>
-          </div>
-          <button id="select-plan-pro-btn" type="button" class="mt-5 w-full py-2.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-md transition-all cursor-pointer">
-            Elegir SYNC Pro
-          </button>
-        </div>
-
-        <!-- PLAN 3: ENTERPRISE & EQUIPOS -->
-        <div class="pricing-tier-card flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between">
-              <h4 class="font-bold text-sm text-[#0A1A3A] font-title">Enterprise</h4>
-              <span class="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Para Equipos</span>
-            </div>
-            <div class="mt-3 flex items-baseline gap-1">
-              <span id="price-ent-display" class="text-3xl font-extrabold font-mono text-[#0A1A3A]">$24</span>
-              <span id="price-ent-period" class="text-xs text-[#64748B]">USD / mes</span>
-            </div>
-            <p class="text-[11px] text-[#64748B] mt-2 pb-3 border-b border-gray-100">Colaboración departamental privada y auditoría legal completa.</p>
-            <ul class="mt-3 flex flex-col gap-2 text-xs text-[#0A1A3A]">
-              <li class="flex items-center gap-2 font-semibold"><span class="text-[#0A1A3A]">✓</span> Todo lo incluido en Pro</li>
-              <li class="flex items-center gap-2 font-semibold text-[#0072CE]"><span class="text-[#0072CE]">✓</span> Canales de Equipo ilimitados (#)</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Bóveda de Empresa compartida</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Roles de administrador y miembros</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> Registros de auditoría de cumplimiento</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> SLA 99.9% y soporte dedicado 24/7</li>
-            </ul>
-          </div>
-          <button id="select-plan-ent-btn" type="button" class="mt-5 w-full py-2 rounded-xl bg-[#0A1A3A] hover:bg-[#132A5A] text-white font-bold text-xs shadow-sm transition-all cursor-pointer">
-            Elegir Enterprise
-          </button>
-        </div>
-
-      </div>
-
-      <!-- Sección de Checkout / Pasarela Simulada & Cupones -->
-      <div id="checkout-section" class="p-6 border-t border-[rgba(197,160,89,0.2)] bg-[#F8FAFC] hidden">
-        <div class="max-w-2xl mx-auto flex flex-col gap-4">
-          <div class="flex items-center justify-between">
-            <h4 class="font-bold text-sm text-[#0A1A3A] font-title flex items-center gap-2">
-              <span>💳 Confirmar Suscripción a</span>
-              <span id="checkout-selected-plan-name" class="text-[#C5A059] font-mono">SYNC PRO</span>
-            </h4>
-            <span id="checkout-amount-tag" class="text-base font-extrabold font-mono text-[#0A1A3A]">$9.00 USD</span>
-          </div>
-
-          <p class="text-xs leading-relaxed text-[#64748B]">El cobro con tarjeta, PayPal o cripto no está conectado. Elegir un plan aquí no cambia la suscripción.</p>
-
-          <div class="flex items-center justify-end pt-2">
-            <button id="cancel-checkout-btn" type="button" class="text-xs text-[#64748B] hover:text-[#0A1A3A] font-semibold cursor-pointer">
-              Cerrar
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Historial de Facturas -->
-      <div class="p-4 border-t border-[rgba(197,160,89,0.18)] bg-white">
-        <h5 class="text-xs font-bold text-[#0A1A3A] font-title mb-2">Historial de Recibos y Facturas</h5>
-        <div id="invoices-list" class="max-h-28 overflow-y-auto flex flex-col gap-1.5 text-xs">
-          <p class="text-gray-400 italic text-[11px]">No hay transacciones registradas todavía.</p>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -4994,16 +4812,9 @@
   // Variables de Estado de la Suite
   let activeChannelId = '#anuncios';
   let workspaceChannels = [];
-  let userPlanData = null;
-  let activeSelectedTier = 'pro';
-  let currentBillingCycle = 'monthly';
-  let activeDiscountPercent = 0;
   let currentExportData = null;
 
   // Referencias DOM Suite
-  const headerPlanBadgeBtn = document.getElementById('header-plan-badge-btn');
-  const headerPlanIcon = document.getElementById('header-plan-icon');
-  const headerPlanName = document.getElementById('header-plan-name');
   const openVaultBtn = document.getElementById('open-vault-btn');
   const exportChatBtn = document.getElementById('export-chat-btn');
 
@@ -5028,29 +4839,6 @@
   const channelsCountBadge = document.getElementById('channels-count-badge');
   const channelsList = document.getElementById('channels-list');
   const openCreateChannelBtn = document.getElementById('open-create-channel-btn');
-  const sidebarProCard = document.getElementById('sidebar-pro-card');
-  const sidebarUpgradeBtn = document.getElementById('sidebar-upgrade-btn');
-
-  const pricingModal = document.getElementById('pricing-modal');
-  const closePricingModalBtn = document.getElementById('close-pricing-modal-btn');
-  const modalCurrentPlanBadge = document.getElementById('modal-current-plan-badge');
-  const billingCycleMonthly = document.getElementById('billing-cycle-monthly');
-  const billingCycleYearly = document.getElementById('billing-cycle-yearly');
-  const priceProDisplay = document.getElementById('price-pro-display');
-  const priceProPeriod = document.getElementById('price-pro-period');
-  const priceEntDisplay = document.getElementById('price-ent-display');
-  const priceEntPeriod = document.getElementById('price-ent-period');
-  const selectPlanProBtn = document.getElementById('select-plan-pro-btn');
-  const selectPlanEntBtn = document.getElementById('select-plan-ent-btn');
-  const checkoutSection = document.getElementById('checkout-section');
-  const checkoutSelectedPlanName = document.getElementById('checkout-selected-plan-name');
-  const checkoutAmountTag = document.getElementById('checkout-amount-tag');
-  const couponCodeInput = document.getElementById('coupon-code-input');
-  const applyCouponBtn = document.getElementById('apply-coupon-btn');
-  const couponMsg = document.getElementById('coupon-msg');
-  const cancelCheckoutBtn = document.getElementById('cancel-checkout-btn');
-  const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
-  const invoicesList = document.getElementById('invoices-list');
 
   const vaultModal = document.getElementById('vault-modal');
   const closeVaultModalBtn = document.getElementById('close-vault-modal-btn');
@@ -5074,180 +4862,6 @@
   const exportReportContent = document.getElementById('export-report-content');
   const downloadExportJsonBtn = document.getElementById('download-export-json-btn');
   const printExportBtn = document.getElementById('print-export-btn');
-
-  // 1. GESTIÓN DE PLANES Y MONETIZACIÓN (SAAS BILLING)
-  async function loadUserPlan() {
-    if (!currentToken) return;
-    try {
-      const res = await fetch('/api/billing/plan', {
-        headers: { 'Authorization': 'Bearer ' + currentToken }
-      });
-      const data = await res.json();
-      if (data.ok) {
-        userPlanData = data;
-        updateUserPlanUI(data);
-      }
-    } catch (e) {
-      console.warn('Error al consultar plan:', e);
-    }
-  }
-
-  function updateUserPlanUI(data) {
-    if (!data) return;
-    const plan = (data.plan || 'free').toUpperCase();
-    if (headerPlanName) headerPlanName.textContent = plan;
-    if (modalCurrentPlanBadge) modalCurrentPlanBadge.textContent = plan;
-
-    if (headerPlanIcon) {
-      headerPlanIcon.textContent = plan === 'ENTERPRISE' ? '🏢' : (plan === 'PRO' ? '⭐' : '🌱');
-    }
-
-    if (sidebarProCard) {
-      if (plan === 'PRO' || plan === 'ENTERPRISE') {
-        sidebarProCard.classList.add('hidden');
-      } else {
-        sidebarProCard.classList.remove('hidden');
-      }
-    }
-  }
-
-  function openPricingModal() {
-    if (!pricingModal) return;
-    loadUserPlan();
-    loadInvoices();
-    updatePricingDisplay();
-    if (checkoutSection) checkoutSection.classList.add('hidden');
-    pricingModal.classList.remove('hidden');
-  }
-
-  function updatePricingDisplay() {
-    if (currentBillingCycle === 'yearly') {
-      billingCycleYearly.className = 'px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-[#0A1A3A] shadow-xs cursor-pointer flex items-center gap-1.5';
-      billingCycleMonthly.className = 'px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all text-[#64748B] hover:text-[#0A1A3A] cursor-pointer';
-      if (priceProDisplay) priceProDisplay.textContent = '$89';
-      if (priceProPeriod) priceProPeriod.textContent = 'USD / año (ahorras 18%)';
-      if (priceEntDisplay) priceEntDisplay.textContent = '$228';
-      if (priceEntPeriod) priceEntPeriod.textContent = 'USD / año / usuario';
-    } else {
-      billingCycleMonthly.className = 'px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-[#0A1A3A] shadow-xs cursor-pointer';
-      billingCycleYearly.className = 'px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all text-[#64748B] hover:text-[#0A1A3A] flex items-center gap-1.5 cursor-pointer';
-      if (priceProDisplay) priceProDisplay.textContent = '$9';
-      if (priceProPeriod) priceProPeriod.textContent = 'USD / mes';
-      if (priceEntDisplay) priceEntDisplay.textContent = '$24';
-      if (priceEntPeriod) priceEntPeriod.textContent = 'USD / mes / usuario';
-    }
-  }
-
-  function initiateCheckout(tier) {
-    activeSelectedTier = tier;
-    if (!checkoutSection) return;
-    checkoutSection.classList.remove('hidden');
-    checkoutSelectedPlanName.textContent = tier === 'pro' ? 'SYNC PRO WORKSPACE' : 'SYNC ENTERPRISE SUITE';
-
-    const basePrice = tier === 'pro' ? (currentBillingCycle === 'yearly' ? 89 : 9) : (currentBillingCycle === 'yearly' ? 228 : 24);
-    const finalPrice = Math.max(0, basePrice * (1 - (activeDiscountPercent / 100)));
-    checkoutAmountTag.textContent = `$${finalPrice.toFixed(2)} USD`;
-    checkoutSection.scrollIntoView({ behavior: 'smooth' });
-  }
-
-  async function applyCoupon() {
-    const code = couponCodeInput.value.trim();
-    if (!code) return;
-    try {
-      const res = await fetch('/api/billing/apply-coupon', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + currentToken
-        },
-        body: JSON.stringify({ code })
-      });
-      const data = await res.json();
-      if (data.ok && data.valid) {
-        activeDiscountPercent = data.discountPercent;
-        couponMsg.textContent = `✓ Descuento del ${data.discountPercent}% aplicado`;
-        couponMsg.className = 'text-xs text-emerald-600 font-semibold';
-        couponMsg.classList.remove('hidden');
-        initiateCheckout(activeSelectedTier);
-      } else {
-        couponMsg.textContent = data.error || 'Cupón inválido';
-        couponMsg.className = 'text-xs text-red-500 font-semibold';
-        couponMsg.classList.remove('hidden');
-      }
-    } catch (err) {
-      couponMsg.textContent = 'Error al validar cupón';
-      couponMsg.className = 'text-xs text-red-500 font-semibold';
-      couponMsg.classList.remove('hidden');
-    }
-  }
-
-  async function processPayment() {
-    confirmPaymentBtn.disabled = true;
-    confirmPaymentBtn.innerHTML = '<span>Comprobando activación...</span>';
-
-    try {
-      const selectedMethod = document.querySelector('input[name="payment-method"]:checked')?.value || 'card';
-      const res = await fetch('/api/billing/upgrade', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + currentToken
-        },
-        body: JSON.stringify({
-          plan: activeSelectedTier,
-          billingCycle: currentBillingCycle,
-          paymentDetails: {
-            method: selectedMethod,
-            discountApplied: activeDiscountPercent
-          }
-        })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'No se pudo completar el pago');
-      }
-
-      userPlanData = { ok: true, plan: data.user.plan };
-      updateUserPlanUI(userPlanData);
-      triggerPopupNotification('¡Suscripción Activada!', `Ahora cuentas con el plan ${data.user.plan.toUpperCase()}`, '💎');
-      loadInvoices();
-      checkoutSection.classList.add('hidden');
-      setTimeout(() => {
-        pricingModal.classList.add('hidden');
-      }, 1200);
-    } catch (err) {
-      triggerPopupNotification('Error en pago', err.message, '⚠️');
-    } finally {
-      confirmPaymentBtn.disabled = false;
-      confirmPaymentBtn.innerHTML = '<span>Activar plan</span>';
-    }
-  }
-
-  async function loadInvoices() {
-    if (!invoicesList) return;
-    try {
-      const res = await fetch('/api/billing/invoices', {
-        headers: { 'Authorization': 'Bearer ' + currentToken }
-      });
-      const data = await res.json();
-      if (data.ok && Array.isArray(data.invoices) && data.invoices.length > 0) {
-        invoicesList.innerHTML = data.invoices.map(inv => `
-          <div class="p-2 rounded-lg bg-[#F8FAFC] border border-gray-100 flex items-center justify-between">
-            <div>
-              <span class="font-bold text-[#0A1A3A] uppercase font-mono">${inv.plan}</span>
-              <span class="text-gray-400 text-[10px] ml-1">(${new Date(inv.issuedAt).toLocaleDateString()})</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="font-mono font-bold text-[#C5A059]">$${inv.amountUsd} USD</span>
-              <span class="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">PAGADO</span>
-            </div>
-          </div>
-        `).join('');
-      }
-    } catch (e) {
-      console.warn('Error al cargar facturas:', e);
-    }
-  }
 
   // 2. GESTIÓN DE BÓVEDA CIFRADA PRIVADA
   const VAULT_KDF_ITERATIONS = 310000;
@@ -5770,30 +5384,6 @@
     URL.revokeObjectURL(url);
   }
 
-  // VINCULACIÓN DE LISTENERS SUITE SAAS
-  if (headerPlanBadgeBtn) headerPlanBadgeBtn.addEventListener('click', openPricingModal);
-  if (sidebarUpgradeBtn) sidebarUpgradeBtn.addEventListener('click', openPricingModal);
-  if (closePricingModalBtn) closePricingModalBtn.addEventListener('click', () => pricingModal.classList.add('hidden'));
-
-  if (billingCycleMonthly) {
-    billingCycleMonthly.addEventListener('click', () => {
-      currentBillingCycle = 'monthly';
-      updatePricingDisplay();
-    });
-  }
-  if (billingCycleYearly) {
-    billingCycleYearly.addEventListener('click', () => {
-      currentBillingCycle = 'yearly';
-      updatePricingDisplay();
-    });
-  }
-
-  if (selectPlanProBtn) selectPlanProBtn.addEventListener('click', () => initiateCheckout('pro'));
-  if (selectPlanEntBtn) selectPlanEntBtn.addEventListener('click', () => initiateCheckout('enterprise'));
-  if (applyCouponBtn) applyCouponBtn.addEventListener('click', applyCoupon);
-  if (cancelCheckoutBtn) cancelCheckoutBtn.addEventListener('click', () => checkoutSection.classList.add('hidden'));
-  if (confirmPaymentBtn) confirmPaymentBtn.addEventListener('click', processPayment);
-
   // Bóveda
   if (openVaultBtn) {
     openVaultBtn.addEventListener('click', unlockVault);
@@ -5848,7 +5438,6 @@
   showApp = async function() {
     await originalShowApp();
     loadChannels();
-    loadUserPlan();
     window.dispatchEvent(new CustomEvent('sync-engine-app-ready'));
   };
 

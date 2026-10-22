@@ -1619,28 +1619,6 @@ header.sticky {
   border: 1px solid rgba(197, 160, 89, 0.28);
 }
 
-/* 6.3 Tarjetas de Precios y Monetización */
-.pricing-tier-card {
-  border-radius: 20px;
-  padding: 20px;
-  border: 1px solid rgba(197, 160, 89, 0.22);
-  background: #FFFFFF;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  display: flex;
-  flex-direction: column;
-}
-.pricing-tier-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-  border-color: #C5A059;
-}
-.pricing-tier-card.is-featured {
-  border: 2px solid #C5A059;
-  background: linear-gradient(180deg, #FFFDF8 0%, #FFFFFF 100%);
-  position: relative;
-  box-shadow: 0 8px 24px rgba(197, 160, 89, 0.16);
-}
-
 /* 6.4 Items de la Bóveda Cifrada */
 .vault-item-card {
   padding: 14px;
@@ -1743,7 +1721,6 @@ header.sticky {
     filter: drop-shadow(0 0 5px rgba(0, 199, 242, .25));
   }
 
-  #app-container > header.sticky #header-plan-badge-btn,
   #app-container > header.sticky #open-vault-btn,
   #app-container > header.sticky > div > div:nth-child(2) {
     display: none !important;
@@ -1844,10 +1821,6 @@ header.sticky {
   #channels-list {
     padding: 8px 10px max(18px, env(safe-area-inset-bottom, 0px)) !important;
     background: #F5F8FD !important;
-  }
-
-  #sidebar-pro-card {
-    display: none !important;
   }
 
   #sidebar-panel > div:last-child {
@@ -2385,8 +2358,6 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
 
 /* SYNC ENGINE — retirar accesos duplicados de la vista principal.
    Los módulos y sus capacidades se conservan; solo se ocultan sus duplicados visuales. */
-#app-container #sidebar-pro-card,
-#app-container #header-plan-badge-btn,
 #app-container #open-vault-btn,
 #app-container #info-drawer-panel,
 #app-container #toggle-drawer-btn {
@@ -2605,13 +2576,13 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
   outline-offset: 3px;
 }
 
-#header-plan-badge-btn, #open-vault-btn, #logout-btn,
-#add-contact-btn, #sidebar-upgrade-btn, #auth-submit-btn {
+#open-vault-btn, #logout-btn,
+#add-contact-btn, #auth-submit-btn {
   position: relative;
   overflow: hidden;
 }
-#header-plan-badge-btn::before, #open-vault-btn::before, #logout-btn::before,
-#add-contact-btn::before, #sidebar-upgrade-btn::before, #auth-submit-btn::before {
+#open-vault-btn::before, #logout-btn::before,
+#add-contact-btn::before, #auth-submit-btn::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -2620,8 +2591,8 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
   transition: transform .7s var(--se-ease);
   pointer-events: none;
 }
-#header-plan-badge-btn:hover::before, #open-vault-btn:hover::before, #logout-btn:hover::before,
-#add-contact-btn:hover::before, #sidebar-upgrade-btn:hover::before, #auth-submit-btn:hover::before {
+#open-vault-btn:hover::before, #logout-btn:hover::before,
+#add-contact-btn:hover::before, #auth-submit-btn:hover::before {
   transform: translateX(120%);
 }
 
