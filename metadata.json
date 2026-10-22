@@ -1,9 +1,0 @@
-{
-  "name": "SYNC ENGINE | Mensajería Privada & Workspace",
-  "description": "Private messaging, real-time synchronization, and workspace platform.",
-  "prompt": "SYNC ENGINE Private Messaging & Workspace",
-  "framework": "node",
-  "capabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}

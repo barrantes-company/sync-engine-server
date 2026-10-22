@@ -590,22 +590,42 @@ function saveTextMessage(fromId, toId, text, customId = null, replyTo = null, li
   });
 }
 
-function updateMessageReaction(messageId, userSyncId, emoji) {
+function pairOwnsMessage(msg, userA, userB) {
+  const a = String(userA || "").trim().toUpperCase();
+  const b = String(userB || "").trim().toUpperCase();
+  const from = String(msg && msg.fromId || "").trim().toUpperCase();
+  const to = String(msg && msg.toId || "").trim().toUpperCase();
+  return Boolean(a && b && a !== b && ((from === a && to === b) || (from === b && to === a)));
+}
+
+function updateMessageReaction(messageId, userSyncId, emoji, conversationUserId) {
   const db = readDb();
   const msg = db.messages.find((m) => m.id === messageId);
-  if (msg) {
-    if (!msg.reactions || typeof msg.reactions !== 'object') {
-      msg.reactions = {};
-    }
-    if (msg.reactions[userSyncId] === emoji) {
-      delete msg.reactions[userSyncId];
-    } else {
-      msg.reactions[userSyncId] = emoji;
-    }
-    writeDb(db);
-    return msg.reactions;
+  if (!msg || msg.deletedForEveryone) {
+    throw new Error("Mensaje no encontrado");
   }
-  return { [userSyncId]: emoji };
+
+  const actor = String(userSyncId || "").trim().toUpperCase();
+  const peer = String(conversationUserId || "").trim().toUpperCase();
+  if (!pairOwnsMessage(msg, actor, peer)) {
+    throw new Error("No tienes permisos para reaccionar a este mensaje");
+  }
+
+  const cleanEmoji = String(emoji || "").trim();
+  if (!cleanEmoji || cleanEmoji.length > 32 || /[\u0000-\u001F<>]/.test(cleanEmoji)) {
+    throw new Error("Reacción no válida");
+  }
+
+  if (!msg.reactions || typeof msg.reactions !== "object" || Array.isArray(msg.reactions)) {
+    msg.reactions = {};
+  }
+  if (msg.reactions[actor] === cleanEmoji) {
+    delete msg.reactions[actor];
+  } else {
+    msg.reactions[actor] = cleanEmoji;
+  }
+  writeDb(db);
+  return msg.reactions;
 }
 
 function updateMessageStatus(messageId, status) {
@@ -654,11 +674,15 @@ function markMessagesAsRead(senderSyncId, receiverSyncId) {
   return updatedIds;
 }
 
-function deleteMessageForEveryone(messageId, senderSyncId) {
+function deleteMessageForEveryone(messageId, senderSyncId, peerSyncId) {
   const db = readDb();
   const msg = db.messages.find((m) => m.id === messageId);
   if (!msg) return null;
-  if (msg.fromId !== senderSyncId) {
+  const sender = String(senderSyncId || "").trim().toUpperCase();
+  const peer = String(peerSyncId || "").trim().toUpperCase();
+  const from = String(msg.fromId || "").trim().toUpperCase();
+  const to = String(msg.toId || "").trim().toUpperCase();
+  if (from !== sender || (peer && to !== peer)) {
     throw new Error("No tienes permisos para eliminar este mensaje");
   }
 
@@ -684,15 +708,23 @@ function getPinnedMessage(user1Id, user2Id) {
   const msgId = db.pinnedMessages[key];
   if (!msgId) return null;
   const msg = db.messages.find((m) => m.id === msgId);
-  return msg || null;
+  if (!msg || msg.deletedForEveryone || !pairOwnsMessage(msg, user1Id, user2Id)) {
+    delete db.pinnedMessages[key];
+    writeDb(db);
+    return null;
+  }
+  return msg;
 }
 
 function setPinnedMessage(user1Id, user2Id, messageId) {
   const db = readDb();
   const key = getConversationKey(user1Id, user2Id);
   const msg = db.messages.find((m) => m.id === messageId);
-  if (!msg) {
+  if (!msg || msg.deletedForEveryone) {
     throw new Error("Mensaje no encontrado");
+  }
+  if (!pairOwnsMessage(msg, user1Id, user2Id)) {
+    throw new Error("No tienes permisos para fijar este mensaje en esa conversación");
   }
   db.pinnedMessages[key] = messageId;
   writeDb(db);
@@ -872,7 +904,7 @@ function upgradeUserPlan(syncId, plan, billingCycle = "monthly", paymentDetails 
     amountUsd: invoiceAmount,
     discountApplied: paymentDetails.discountApplied || 0,
     paymentMethod: paymentDetails.method || "card",
-    cardLast4: paymentDetails.last4 || "4242",
+    cardLast4: paymentDetails.last4 || null,
     status: "paid",
     issuedAt: Date.now(),
     expiresAt: planExpiresAt
@@ -1337,8 +1369,8 @@ function exportConversation(syncId, contactSyncId) {
       id: m.id,
       timestamp: m.timestamp,
       dateFormatted: new Date(m.timestamp).toLocaleString(),
-      fromSyncId: m.fromSyncId,
-      toSyncId: m.toSyncId,
+      fromSyncId: m.fromId,
+      toSyncId: m.toId,
       type: m.type,
       text: m.text,
       status: m.status,

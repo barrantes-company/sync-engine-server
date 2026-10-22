@@ -992,48 +992,11 @@
             <span id="checkout-amount-tag" class="text-base font-extrabold font-mono text-[#0A1A3A]">$9.00 USD</span>
           </div>
 
-          <!-- Cupón de Descuento -->
-          <div class="flex items-center gap-2">
-            <input type="text" id="coupon-code-input" placeholder="Cupón (ej. SYNC2026, LAUNCH50)..." maxlength="15"
-              class="w-full sm:w-64 px-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] uppercase font-mono outline-none">
-            <button id="apply-coupon-btn" type="button" class="px-3 py-1.5 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0A1A3A] text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap">
-              Aplicar
-            </button>
-            <span id="coupon-msg" class="text-xs text-emerald-600 font-semibold hidden"></span>
-          </div>
+          <p class="text-xs leading-relaxed text-[#64748B]">El cobro con tarjeta, PayPal o cripto no está conectado. Elegir un plan aquí no cambia la suscripción.</p>
 
-          <!-- Selector de Método de Pago -->
-          <div class="grid grid-cols-3 gap-2">
-            <label class="p-2.5 rounded-xl bg-white border border-[rgba(197,160,89,0.3)] flex items-center justify-center gap-2 cursor-pointer hover:border-[#C5A059] text-xs font-bold text-[#0A1A3A]">
-              <input type="radio" name="payment-method" value="card" checked class="accent-[#C5A059]">
-              <span>💳 Tarjeta</span>
-            </label>
-            <label class="p-2.5 rounded-xl bg-white border border-[rgba(197,160,89,0.3)] flex items-center justify-center gap-2 cursor-pointer hover:border-[#C5A059] text-xs font-bold text-[#0A1A3A]">
-              <input type="radio" name="payment-method" value="crypto" class="accent-[#C5A059]">
-              <span>⚡ USDC / Crypto</span>
-            </label>
-            <label class="p-2.5 rounded-xl bg-white border border-[rgba(197,160,89,0.3)] flex items-center justify-center gap-2 cursor-pointer hover:border-[#C5A059] text-xs font-bold text-[#0A1A3A]">
-              <input type="radio" name="payment-method" value="paypal" class="accent-[#C5A059]">
-              <span>🅿️ PayPal</span>
-            </label>
-          </div>
-
-          <!-- Formulario Simulado de Tarjeta -->
-          <div id="card-fields" class="p-3 bg-white rounded-xl border border-[rgba(197,160,89,0.2)] flex flex-col gap-2">
-            <input type="text" placeholder="Número de tarjeta (4242 •••• •••• 4242)" value="•••• •••• •••• 4242" readonly
-              class="w-full px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-[#0A1A3A] font-mono">
-            <div class="flex gap-2">
-              <input type="text" placeholder="MM/AA" value="12/28" readonly class="w-1/2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-[#0A1A3A] font-mono">
-              <input type="text" placeholder="CVC" value="888" readonly class="w-1/2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-[#0A1A3A] font-mono">
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between pt-2">
+          <div class="flex items-center justify-end pt-2">
             <button id="cancel-checkout-btn" type="button" class="text-xs text-[#64748B] hover:text-[#0A1A3A] font-semibold cursor-pointer">
-              Cancelar
-            </button>
-            <button id="confirm-payment-btn" type="button" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-2">
-              <span>🔒 Pagar y Activar Inmediatamente</span>
+              Cerrar
             </button>
           </div>
         </div>
@@ -5220,7 +5183,7 @@
 
   async function processPayment() {
     confirmPaymentBtn.disabled = true;
-    confirmPaymentBtn.innerHTML = '<span>⏳ Procesando pago seguro...</span>';
+    confirmPaymentBtn.innerHTML = '<span>Comprobando activación...</span>';
 
     try {
       const selectedMethod = document.querySelector('input[name="payment-method"]:checked')?.value || 'card';
@@ -5235,8 +5198,7 @@
           billingCycle: currentBillingCycle,
           paymentDetails: {
             method: selectedMethod,
-            discountApplied: activeDiscountPercent,
-            last4: '4242'
+            discountApplied: activeDiscountPercent
           }
         })
       });
@@ -5257,7 +5219,7 @@
       triggerPopupNotification('Error en pago', err.message, '⚠️');
     } finally {
       confirmPaymentBtn.disabled = false;
-      confirmPaymentBtn.innerHTML = '<span>🔒 Pagar y Activar Inmediatamente</span>';
+      confirmPaymentBtn.innerHTML = '<span>Activar plan</span>';
     }
   }
 
@@ -5769,7 +5731,7 @@
     exportReportContent.innerHTML = `
       <div class="p-4 bg-white rounded-2xl border border-gray-200 flex flex-col gap-2">
         <div class="flex items-center justify-between border-b pb-2">
-          <span class="font-bold text-xs text-[#0A1A3A] font-title">CERTIFICADO DE CONVERSACIÓN CIFRADA</span>
+          <span class="font-bold text-xs text-[#0A1A3A] font-title">EXPORTACIÓN DE CONVERSACIÓN</span>
           <span class="text-[10px] text-[#C5A059] font-mono">${exp.securitySeal}</span>
         </div>
         <p class="text-[11px] text-gray-600">Fecha de emisión: ${new Date(exp.exportTimestamp).toLocaleString()}</p>

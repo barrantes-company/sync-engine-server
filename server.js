@@ -227,22 +227,40 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 2 * 1024 * 1024 * 1024,
-    files: 1,
-    fields: 8,
-    fieldSize: 64 * 1024,
-    parts: 12
-  },
-  fileFilter: (_req, file, cb) => {
-    if (!file.originalname || file.originalname.length > 255) {
-      return cb(new Error("Nombre de archivo inválido"));
+const MAX_STANDARD_UPLOAD_BYTES = 50 * 1024 * 1024;
+const MAX_PREMIUM_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024;
+
+function maxUploadBytesForPlan(plan) {
+  const normalized = String(plan || "free").trim().toLowerCase();
+  return normalized === "pro" || normalized === "enterprise"
+    ? MAX_PREMIUM_UPLOAD_BYTES
+    : MAX_STANDARD_UPLOAD_BYTES;
+}
+
+function uploadSingleFileForPlan(req, res, next) {
+  const maxBytes = maxUploadBytesForPlan(req.user && req.user.plan);
+  multer({
+    storage,
+    limits: {
+      fileSize: maxBytes,
+      files: 1,
+      fields: 8,
+      fieldSize: 64 * 1024,
+      parts: 12
+    },
+    fileFilter: (_req, file, cb) => {
+      if (!file.originalname || file.originalname.length > 255) {
+        return cb(new Error("Nombre de archivo inválido"));
+      }
+      cb(null, true);
     }
-    cb(null, true);
-  }
-});
+  }).single("file")(req, res, (err) => {
+    if (err && err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "El archivo supera el límite del plan" });
+    }
+    return next(err);
+  });
+}
 
 // Middleware de Autenticación
 function requireAuth(req, res, next) {
@@ -547,8 +565,8 @@ app.post("/api/user/profile", requireAuth, async (req, res) => {
   }
 });
 
-// Endpoint de Subida de Documentos y Archivos Pesados (hasta 2 GB sin compresión)
-app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
+// La cuota real depende del plan: 50 MB en free, 2 GB en pro/enterprise.
+app.post("/api/upload", requireAuth, uploadSingleFileForPlan, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No se proporcionó ningún archivo" });
@@ -654,7 +672,7 @@ app.get('/api/status', function (_req, res) {
       'double-check',
       'pinned-messages',
       'rich-links',
-      'multimedia-2gb',
+      'plan-based-uploads',
       'h264-video',
       'fluid-layout',
       'lightbox',
@@ -663,7 +681,8 @@ app.get('/api/status', function (_req, res) {
       'team-channels',
       'compliance-export'
     ],
-    uploadLimitBytes: 2147483648,
+    uploadLimitBytes: MAX_STANDARD_UPLOAD_BYTES,
+    premiumUploadLimitBytes: MAX_PREMIUM_UPLOAD_BYTES,
     onlineUsersCount: onlineUsers.size
   });
 });
@@ -689,6 +708,11 @@ app.get("/api/billing/plan", requireAuth, (req, res) => {
 });
 
 app.post("/api/billing/upgrade", requireAuth, (req, res) => {
+  if (process.env.ALLOW_TEST_BILLING !== "true") {
+    return res.status(403).json({
+      error: "Los pagos en la app no están conectados. El plan no se ha cambiado."
+    });
+  }
   const { plan, billingCycle, paymentDetails } = req.body || {};
   try {
     const result = db.upgradeUserPlan(req.user.syncId, plan, billingCycle, paymentDetails);
@@ -701,22 +725,6 @@ app.post("/api/billing/upgrade", requireAuth, (req, res) => {
 app.get("/api/billing/invoices", requireAuth, (req, res) => {
   const invoices = db.getUserInvoices(req.user.syncId);
   res.json({ ok: true, invoices: invoices });
-});
-
-app.post("/api/billing/apply-coupon", requireAuth, (req, res) => {
-  const { code } = req.body || {};
-  const cleanCode = String(code || "").trim().toUpperCase();
-  const coupons = {
-    "SYNC2026": 25,
-    "LAUNCH50": 50,
-    "BARRANTES": 30,
-    "VIP": 20
-  };
-  if (coupons[cleanCode]) {
-    res.json({ ok: true, valid: true, discountPercent: coupons[cleanCode], code: cleanCode });
-  } else {
-    res.status(400).json({ ok: false, valid: false, error: "Código promocional no válido o caducado" });
-  }
 });
 
 // ==== Endpoints de Bóveda Cifrada Privada ====
@@ -1269,7 +1277,7 @@ io.on("connection", function (socket) {
 
     const targetSyncId = String(payload.toSyncId).trim().toUpperCase();
     try {
-      const updated = db.deleteMessageForEveryone(payload.messageId, sender.syncId);
+      const updated = db.deleteMessageForEveryone(payload.messageId, sender.syncId, targetSyncId);
       if (updated) {
         const eventData = {
           messageId: payload.messageId,
@@ -1359,27 +1367,31 @@ io.on("connection", function (socket) {
     if (!sender || !payload || !payload.messageId || !payload.toSyncId || !payload.emoji) return;
 
     const targetSyncId = String(payload.toSyncId).trim().toUpperCase();
-    const updatedReactions = db.updateMessageReaction(payload.messageId, sender.syncId, payload.emoji);
+    try {
+      const updatedReactions = db.updateMessageReaction(payload.messageId, sender.syncId, payload.emoji, targetSyncId);
 
-    const eventData = {
-      messageId: payload.messageId,
-      fromSyncId: sender.syncId,
-      emoji: payload.emoji,
-      reactions: updatedReactions
-    };
+      const eventData = {
+        messageId: payload.messageId,
+        fromSyncId: sender.syncId,
+        emoji: payload.emoji,
+        reactions: updatedReactions
+      };
 
-    const targetSockets = onlineUsers.get(targetSyncId);
-    if (targetSockets && targetSockets.size > 0) {
-      targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("message-reaction-updated", eventData);
-      });
-    }
+      const targetSockets = onlineUsers.get(targetSyncId);
+      if (targetSockets && targetSockets.size > 0) {
+        targetSockets.forEach((sockId) => {
+          io.to(sockId).emit("message-reaction-updated", eventData);
+        });
+      }
 
-    const senderSockets = onlineUsers.get(sender.syncId);
-    if (senderSockets && senderSockets.size > 0) {
-      senderSockets.forEach((sockId) => {
-        io.to(sockId).emit("message-reaction-updated", eventData);
-      });
+      const senderSockets = onlineUsers.get(sender.syncId);
+      if (senderSockets && senderSockets.size > 0) {
+        senderSockets.forEach((sockId) => {
+          io.to(sockId).emit("message-reaction-updated", eventData);
+        });
+      }
+    } catch (err) {
+      socket.emit("error-message", { message: err.message });
     }
   });
 
