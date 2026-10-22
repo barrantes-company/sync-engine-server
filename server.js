@@ -212,6 +212,47 @@ app.use((req, res, next) => {
   });
 });
 
+const liveClients = new Set();
+app.get("/dev/reload", (req, res) => {
+  if (process.env.LIVE_RELOAD !== "1") return res.status(404).end();
+  if (req.query.probe) return res.status(204).end();
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-store",
+    Connection: "keep-alive"
+  });
+  res.write("retry: 1000\n\n");
+  liveClients.add(res);
+  req.on("close", () => liveClients.delete(res));
+});
+
+if (process.env.LIVE_RELOAD === "1") {
+  const liveTargets = [
+    ["public/style.css", "css"],
+    ["public/index.html", "page"],
+    ["public/safe-content.js", "page"],
+    ["public/private-files.js", "page"]
+  ];
+  let liveTimer = null;
+  let liveTarget = "css";
+  const notifyLiveReload = (target) => {
+    liveTarget = target === "page" ? "page" : liveTarget;
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => {
+      const payload = JSON.stringify({ target: liveTarget, version: Date.now() });
+      liveTarget = "css";
+      for (const client of liveClients) client.write(`data: ${payload}\n\n`);
+    }, 80);
+  };
+  for (const [file, target] of liveTargets) {
+    fs.watch(path.join(__dirname, file), () => notifyLiveReload(target));
+  }
+  app.use((req, res, next) => {
+    if (/\.(css|html|js)$/.test(req.path)) res.set("Cache-Control", "no-store");
+    next();
+  });
+}
+
 // Servir widget universal con cabeceras para iframe y paneles laterales de extensiones
 app.get(["/widget", "/widget.html", "/public/widget.html"], (req, res) => {
   res.setHeader("X-Frame-Options", "SAMEORIGIN");

@@ -4,7 +4,10 @@ const { spawn } = require('child_process');
 
 const children = [
   spawn(process.execPath, ['scripts/watch-css.js'], { stdio: 'inherit' }),
-  spawn(process.execPath, ['server.js'], { stdio: 'inherit' })
+  spawn(process.execPath, ['server.js'], {
+    stdio: 'inherit',
+    env: { ...process.env, LIVE_RELOAD: '1' }
+  })
 ];
 
 function stop() {
