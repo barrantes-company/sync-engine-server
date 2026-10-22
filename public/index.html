@@ -163,14 +163,12 @@
           <span class="hidden md:inline text-xs text-[#64748B] font-medium">Workspace Privado</span>
         </div>
 
-        <!-- Zona 2: Centro de Seguridad & Protocolo Cifrado -->
+        <!-- Zona 2: estado de la sesión -->
         <div class="hidden lg:flex items-center gap-3 text-xs font-medium text-[#64748B]">
           <span class="flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
-            <span>Red Cifrada E2E</span>
+            <span>Sesión autenticada</span>
           </span>
-          <span class="text-gray-300">·</span>
-          <span class="font-mono text-[11px] text-[#C5A059]">TLS / AES-256</span>
         </div>
 
         <!-- Zona 3: Identidad y salir -->
@@ -360,7 +358,7 @@
                 </button>
 
                 <!-- Botón Exportar Transcripción / Auditoría -->
-                <button id="export-chat-btn" type="button" title="Exportar Transcripción y Certificado de Seguridad" aria-label="Exportar conversación"
+                <button id="export-chat-btn" type="button" title="Exportar la conversación" aria-label="Exportar conversación"
                   class="icon-btn h-9 px-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] hover:text-[#C5A059] border border-[rgba(197,160,89,0.25)] flex items-center gap-1.5 text-xs font-semibold shadow-xs transition-all cursor-pointer">
                   <span>📜</span>
                   <span class="hidden xl:inline">Exportar</span>
@@ -912,15 +910,15 @@
     </div>
   </div>
 
-  <!-- MODAL: EXPORTAR TRANSCRIPCIÓN & AUDITORÍA -->
+  <!-- MODAL: EXPORTAR CONVERSACIÓN -->
   <div id="export-report-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
     <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[rgba(197,160,89,0.3)] overflow-hidden text-[#0A1A3A]">
       <div class="p-5 border-b border-[rgba(197,160,89,0.2)] flex items-center justify-between bg-white">
         <div>
           <h3 class="font-bold text-base sm:text-lg text-[#0A1A3A] font-title flex items-center gap-2">
-            <span>📜 Certificado de Transcripción &amp; Auditoría</span>
+            <span>Exportar conversación</span>
           </h3>
-          <p id="export-modal-subtitle" class="text-xs text-[#C5A059] font-mono mt-0.5">Sello Criptográfico E2E</p>
+          <p id="export-modal-subtitle" class="text-xs text-[#C5A059] font-mono mt-0.5">Copia del historial guardado</p>
         </div>
         <button id="close-export-modal-btn" type="button" aria-label="Cerrar modal de exportación" class="h-8 w-8 rounded-full hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center font-bold text-sm cursor-pointer transition-colors">✕</button>
       </div>
@@ -5346,18 +5344,17 @@
       <div class="p-4 bg-white rounded-2xl border border-gray-200 flex flex-col gap-2">
         <div class="flex items-center justify-between border-b pb-2">
           <span class="font-bold text-xs text-[#0A1A3A] font-title">EXPORTACIÓN DE CONVERSACIÓN</span>
-          <span class="text-[10px] text-[#C5A059] font-mono">${exp.securitySeal}</span>
+          <span class="text-[10px] text-[#64748B]">${new Date(exp.exportedAt || exp.exportTimestamp).toLocaleString()}</span>
         </div>
-        <p class="text-[11px] text-gray-600">Fecha de emisión: ${new Date(exp.exportTimestamp).toLocaleString()}</p>
         <p class="text-[11px] text-gray-600">Participantes: ${exp.participants.requester.formattedName || exp.participants.requester.syncId} ↔ ${exp.participants.contact.formattedName || exp.participants.contact.syncId}</p>
-        <p class="text-[11px] text-gray-600">Total de mensajes verificados: <strong class="text-[#0A1A3A] font-bold">${exp.totalMessages}</strong></p>
+        <p class="text-[11px] text-gray-600">Mensajes incluidos: <strong class="text-[#0A1A3A] font-bold">${exp.totalMessages}</strong></p>
       </div>
       <div class="flex flex-col gap-1.5 max-h-64 overflow-y-auto mt-2">
         ${exp.messages.map(m => `
           <div class="p-2.5 bg-white rounded-xl border border-gray-100 text-[11px] flex flex-col gap-0.5">
             <div class="flex items-center justify-between text-[10px] text-gray-400 font-mono">
               <span>[${m.dateFormatted}]</span>
-              <span class="uppercase">${m.status || 'verified'}</span>
+              <span class="uppercase">${escapeHtml(m.status || 'enviado')}</span>
             </div>
             <div>
               <strong class="text-[#C5A059]">${m.fromSyncId}:</strong>

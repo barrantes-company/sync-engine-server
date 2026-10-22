@@ -102,8 +102,10 @@ async function sendMobilePushNotification(syncId, payload) {
 // ==== End of Firebase Cloud Messaging ====
 const fs = require("fs");
 const crypto = require("crypto");
+const dns = require("dns").promises;
 const http = require("http");
 const https = require("https");
+const net = require("net");
 const os = require("os");
 const path = require("path");
 const express = require("express");
@@ -141,7 +143,7 @@ app.disable("x-powered-by");
 app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(self), geolocation=()");
   next();
 });
 
@@ -348,12 +350,86 @@ app.get('/api/notifications/vapid-public-key', requireAuth, (_req, res) => {
   res.json({ ok: true, configured: webPushConfigured, publicKey: webPushConfigured ? VAPID_PUBLIC_KEY : null });
 });
 
-function isBlockedMetadataHost(hostname) {
-  const host = String(hostname || "").toLowerCase().replace(/[\[\]]/g, "");
-  if (host === "localhost" || host.endsWith(".localhost") || host === "metadata.google.internal") return true;
-  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(host)) return true;
-  const match = host.match(/^172\.(\d+)\./);
-  return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
+function ipv4Number(address) {
+  const parts = address.split(".").map(Number);
+  return (((parts[0] * 16777216) + (parts[1] * 65536) + (parts[2] * 256) + parts[3]) >>> 0);
+}
+
+function isBlockedPreviewAddress(address) {
+  const raw = String(address || "").trim().toLowerCase().replace(/^\[|\]$/g, "");
+  if (raw.startsWith("::ffff:")) return isBlockedPreviewAddress(raw.slice(7));
+  const version = net.isIP(raw);
+  if (version === 4) {
+    const value = ipv4Number(raw);
+    const inside = (start, prefix) => {
+      const mask = prefix === 0 ? 0 : ((0xffffffff << (32 - prefix)) >>> 0);
+      return (value & mask) >>> 0 === (start & mask) >>> 0;
+    };
+    return inside(0, 8) || inside(0x0a000000, 8) || inside(0x7f000000, 8) ||
+      inside(0xa9fe0000, 16) || inside(0xac100000, 12) || inside(0xc0a80000, 16) ||
+      inside(0x64400000, 10) || inside(0xc0000000, 24) || inside(0xc0000200, 24) ||
+      inside(0xc6120000, 15) || inside(0xc6336400, 24) || inside(0xcb007100, 24) ||
+      inside(0xe0000000, 4);
+  }
+  if (version === 6) {
+    const head = raw.split(":")[0];
+    const prefix = Number.parseInt(head || "0", 16);
+    if (raw === "::" || raw === "::1") return true;
+    if (prefix >= 0xfc00 && prefix <= 0xfdff) return true;
+    if (prefix >= 0xfe80 && prefix <= 0xfebf) return true;
+    if (prefix >= 0xff00) return true;
+    return raw.startsWith("2001:db8");
+  }
+  return true;
+}
+
+function literalIpv4(hostname) {
+  if (net.isIP(hostname) === 4) return hostname;
+  if (/^0x[0-9a-f]+$/i.test(hostname)) {
+    const value = Number.parseInt(hostname, 16);
+    if (value >= 0 && value <= 0xffffffff) {
+      return [(value >>> 24) & 255, (value >>> 16) & 255, (value >>> 8) & 255, value & 255].join(".");
+    }
+  }
+  if (/^\d+$/.test(hostname)) {
+    const value = Number(hostname);
+    if (Number.isSafeInteger(value) && value >= 0 && value <= 0xffffffff) {
+      return [(value >>> 24) & 255, (value >>> 16) & 255, (value >>> 8) & 255, value & 255].join(".");
+    }
+  }
+  return "";
+}
+
+function isBlockedPreviewHost(hostname) {
+  const host = String(hostname || "").toLowerCase().replace(/[\[\]]/g, "").replace(/\.$/, "");
+  if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
+      host === "metadata.google.internal" || host.endsWith(".internal")) return true;
+  const literal = literalIpv4(host);
+  if (literal) return isBlockedPreviewAddress(literal);
+  if (host.includes(":")) return isBlockedPreviewAddress(host);
+  return false;
+}
+
+async function previewDestinationIsBlocked(hostname) {
+  if (isBlockedPreviewHost(hostname)) return true;
+  if (net.isIP(hostname)) return isBlockedPreviewAddress(hostname);
+  let records;
+  try {
+    records = await dns.lookup(hostname, { all: true, verbatim: true });
+  } catch (_) {
+    return true;
+  }
+  return records.length === 0 || records.some((record) => isBlockedPreviewAddress(record.address));
+}
+
+function previewFallback(parsed) {
+  return {
+    url: parsed.href,
+    domain: parsed.hostname,
+    title: parsed.hostname,
+    description: null,
+    image: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(parsed.hostname)}&sz=128`
+  };
 }
 
 // Extractor de Metadatos OpenGraph y Favicon para Rich Link Cards
@@ -362,83 +438,75 @@ async function fetchUrlMetadata(text) {
   const match = text.match(/https?:\/\/[^\s<>"']+/i);
   if (!match) return null;
 
-  const targetUrl = match[0];
+  let parsed;
   try {
-    const parsed = new URL(targetUrl);
-    if (!['http:', 'https:'].includes(parsed.protocol) || isBlockedMetadataHost(parsed.hostname)) return null;
-    const domain = parsed.hostname;
-    const defaultFavicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+    parsed = new URL(match[0]);
+  } catch (_) {
+    return null;
+  }
+  if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) return null;
+  if (await previewDestinationIsBlocked(parsed.hostname)) return null;
+  const fallback = previewFallback(parsed);
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
-
-    const response = await fetch(targetUrl, {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3500);
+  try {
+    const response = await fetch(parsed.href, {
+      redirect: "manual",
       signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-      }
+      headers: { "Accept": "text/html,application/xhtml+xml" }
     });
-    clearTimeout(timeout);
+    if (response.status >= 300 && response.status < 400) return fallback;
+    if (!response.ok || !response.body) return fallback;
+    const contentType = String(response.headers.get("content-type") || "");
+    if (contentType && !/text\/html|application\/xhtml\+xml/i.test(contentType)) return fallback;
 
-    if (!response.ok) {
-      return {
-        url: targetUrl,
-        domain: domain,
-        title: domain,
-        description: null,
-        image: defaultFavicon
-      };
+    const reader = response.body.getReader();
+    const chunks = [];
+    let received = 0;
+    while (received < 262144) {
+      const step = await reader.read();
+      if (step.done) break;
+      received += step.value.length;
+      chunks.push(step.value);
     }
+    await reader.cancel().catch(() => {});
+    const html = Buffer.concat(chunks).subarray(0, 262144).toString("utf8");
 
-    const html = await response.text();
-
-    // og:title o <title>
     const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
                          html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-
-    // og:description o description
     const ogDescMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
                         html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i) ||
                         html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
-
-    // og:image
     const ogImgMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
                        html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
 
-    const title = ogTitleMatch ? ogTitleMatch[1] : (titleMatch ? titleMatch[1] : domain);
+    const title = ogTitleMatch ? ogTitleMatch[1] : (titleMatch ? titleMatch[1] : parsed.hostname);
     let image = ogImgMatch ? ogImgMatch[1] : null;
-
     if (image && !image.startsWith("http://") && !image.startsWith("https://")) {
-      image = new URL(image, targetUrl).href;
+      image = new URL(image, parsed.href).href;
     }
-    if (!image) {
-      image = defaultFavicon;
+    if (image) {
+      try {
+        const imageUrl = new URL(image);
+        if (imageUrl.username || imageUrl.password || isBlockedPreviewHost(imageUrl.hostname)) image = null;
+      } catch (_) {
+        image = null;
+      }
     }
-
-    const description = ogDescMatch ? ogDescMatch[1] : null;
 
     return {
-      url: targetUrl,
-      domain: domain,
-      title: title ? title.trim() : domain,
-      description: description ? description.trim() : null,
-      image: image
+      url: parsed.href,
+      domain: parsed.hostname,
+      title: title ? title.trim().slice(0, 180) : parsed.hostname,
+      description: ogDescMatch && ogDescMatch[1] ? ogDescMatch[1].trim().slice(0, 280) : null,
+      image: image || fallback.image
     };
-  } catch (err) {
-    try {
-      const parsed = new URL(targetUrl);
-      return {
-        url: targetUrl,
-        domain: parsed.hostname,
-        title: parsed.hostname,
-        description: null,
-        image: `https://www.google.com/s2/favicons?domain=${parsed.hostname}&sz=128`
-      };
-    } catch (e) {
-      return null;
-    }
+  } catch (_) {
+    return fallback;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -1599,6 +1667,8 @@ if (typeof module !== "undefined") {
   module.exports.server = server;
   module.exports.io = io;
   module.exports.deliverPubSubEvent = deliverPubSubEvent;
+  module.exports.isBlockedPreviewHost = isBlockedPreviewHost;
+  module.exports.isBlockedPreviewAddress = isBlockedPreviewAddress;
 }
 
 if (process.env.RENDER_EXTERNAL_URL) {

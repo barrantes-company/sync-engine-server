@@ -61,4 +61,45 @@ test('conversation export uses the stored participant ids', () => {
   assert.equal(exported.messages[0].fromSyncId, 'SYNC-1001');
   assert.equal(exported.messages[0].toSyncId, 'SYNC-1002');
   assert.equal(exported.messages[0].text, 'exportable');
+  assert.equal(exported.securitySeal, undefined);
+  assert.equal(exported.participants.requester.plan, undefined);
+});
+
+test('history limits stay inside one conversation', () => {
+  const db = freshDb();
+  const other = db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'conservar');
+  const stored = db.readDb();
+  for (let i = 0; i < 5001; i += 1) {
+    stored.messages.push({
+      id: 'bulk-' + i,
+      fromId: 'SYNC-3003',
+      toId: 'SYNC-4004',
+      type: 'text',
+      text: 'lleno',
+      timestamp: i
+    });
+  }
+  db.writeDb(stored);
+  db.saveTextMessage('SYNC-3003', 'SYNC-4004', 'ultimo');
+  const messages = db.readDb().messages;
+  assert.equal(messages.some((message) => message.id === other.id), true);
+  assert.equal(messages.filter((message) => message.fromId === 'SYNC-3003').length, 5000);
+});
+
+test('new passwords require 8 characters and old hashes upgrade on login', () => {
+  const db = freshDb();
+  assert.throws(() => db.registerUser('nueva', 'corta', 'Nueva'), /8/);
+  const created = db.registerUser('nueva', 'correcta', 'Nueva');
+  assert.equal(created.plan, undefined);
+  const legacy = db.readDb();
+  const user = legacy.users.find((item) => item.username === 'nueva');
+  user.passwordIterations = 10000;
+  user.passwordHash = require('node:crypto').pbkdf2Sync('correcta', user.salt, 10000, 64, 'sha512').toString('hex');
+  const oldHash = user.passwordHash;
+  db.writeDb(legacy);
+  const session = db.loginUser('nueva', 'correcta');
+  assert.equal(session.user.syncId, created.syncId);
+  const upgraded = db.readDb().users.find((item) => item.username === 'nueva');
+  assert.equal(upgraded.passwordIterations, 210000);
+  assert.notEqual(upgraded.passwordHash, oldHash);
 });

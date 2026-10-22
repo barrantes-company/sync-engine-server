@@ -140,9 +140,11 @@ function formatFullName(syncId, cleanName) {
   return `${syncId} - ${cleanName}`;
 }
 
-function hashPassword(password, salt) {
-  return crypto.pbkdf2Sync(password, salt, 10000, 64, "sha512").toString("hex");
+function hashPassword(password, salt, iterations = 10000) {
+  return crypto.pbkdf2Sync(password, salt, iterations, 64, "sha512").toString("hex");
 }
+
+const PASSWORD_ITERATIONS = 210000;
 
 function seedDevelopmentAdmin(data) {
   const isDevelopment = process.env.NODE_ENV === "development" &&
@@ -174,9 +176,9 @@ function seedDevelopmentAdmin(data) {
     cleanDisplayName: cleanDisplayName,
     formattedName: formatFullName("SYNC-0000", cleanDisplayName),
     salt: salt,
-    passwordHash: hashPassword(process.env.SEED_DEVELOPMENT_ADMIN_PASSWORD, salt),
+    passwordHash: hashPassword(process.env.SEED_DEVELOPMENT_ADMIN_PASSWORD, salt, PASSWORD_ITERATIONS),
+    passwordIterations: PASSWORD_ITERATIONS,
     createdAt: Date.now(),
-    plan: "pro",
     role: "admin"
   });
   if (!data.contacts["SYNC-0000"]) {
@@ -204,9 +206,7 @@ function toPublicUser(user) {
     cleanDisplayName: user.cleanDisplayName,
     formattedName: user.formattedName || formatFullName(user.syncId, user.cleanDisplayName),
     avatarUrl: user.avatarUrl || null,
-    plan: user.plan || "free",
-    role: user.role || "member",
-    planExpiresAt: user.planExpiresAt || null
+    role: user.role || "member"
   };
 }
 
@@ -219,8 +219,8 @@ function registerUser(username, password, rawDisplayName) {
   if (cleanUsername.length < 3) {
     throw new Error("El usuario debe tener al menos 3 caracteres");
   }
-  if (String(password).length < 4) {
-    throw new Error("La contraseña debe tener al menos 4 caracteres");
+  if (String(password).length < 8) {
+    throw new Error("La contraseña debe tener al menos 8 caracteres");
   }
 
   const db = readDb();
@@ -233,7 +233,7 @@ function registerUser(username, password, rawDisplayName) {
   const cleanDisplayName = removeEmojis(rawDisplayName || username);
   const formattedName = formatFullName(syncId, cleanDisplayName);
   const salt = crypto.randomBytes(16).toString("hex");
-  const passwordHash = hashPassword(password, salt);
+  const passwordHash = hashPassword(password, salt, PASSWORD_ITERATIONS);
 
   const newUser = {
     id: crypto.randomUUID ? crypto.randomUUID() : "usr_" + Date.now(),
@@ -243,6 +243,7 @@ function registerUser(username, password, rawDisplayName) {
     formattedName: formattedName,
     salt: salt,
     passwordHash: passwordHash,
+    passwordIterations: PASSWORD_ITERATIONS,
     createdAt: Date.now()
   };
 
@@ -269,12 +270,17 @@ function loginUser(username, password) {
     throw new Error("Credenciales inválidas");
   }
 
-  const hash = hashPassword(password, user.salt);
+  const iterations = Number(user.passwordIterations) || 10000;
+  const hash = hashPassword(password, user.salt, iterations);
   const storedHash = String(user.passwordHash || "");
   const hashBuffer = Buffer.from(hash, "hex");
   const storedHashBuffer = Buffer.from(storedHash, "hex");
   if (hashBuffer.length !== storedHashBuffer.length || !crypto.timingSafeEqual(hashBuffer, storedHashBuffer)) {
     throw new Error("Credenciales inválidas");
+  }
+  if (iterations < PASSWORD_ITERATIONS) {
+    user.passwordIterations = PASSWORD_ITERATIONS;
+    user.passwordHash = hashPassword(password, user.salt, PASSWORD_ITERATIONS);
   }
 
   const token = crypto.randomBytes(32).toString("hex");
@@ -525,6 +531,16 @@ function canReadFile(fileId, userId) {
     (message.fromId === userId || message.toId === userId));
 }
 
+function trimIndexed(items, limit, matches) {
+  const newestFirst = [];
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    if (matches(items[index])) newestFirst.push(index);
+  }
+  if (newestFirst.length <= limit) return items;
+  const drop = new Set(newestFirst.slice(limit));
+  return items.filter((_, index) => !drop.has(index));
+}
+
 function saveMessage(msgData) {
   const db = readDb();
   const fromId = String(msgData.fromId).trim().toUpperCase();
@@ -561,10 +577,10 @@ function saveMessage(msgData) {
   };
 
   db.messages.push(newMsg);
-
-  if (db.messages.length > 5000) {
-    db.messages = db.messages.slice(-5000);
-  }
+  db.messages = trimIndexed(db.messages, 5000, (message) =>
+    (message.fromId === fromId && message.toId === toId) ||
+    (message.fromId === toId && message.toId === fromId)
+  );
 
   writeDb(db);
   return newMsg;
@@ -1277,10 +1293,7 @@ function saveChannelMessage(channelId, senderSyncId, payload) {
   };
 
   db.channelMessages.push(message);
-  // Mantener histórico limitado a 1500 mensajes por performance
-  if (db.channelMessages.length > 1500) {
-    db.channelMessages = db.channelMessages.slice(-1500);
-  }
+  db.channelMessages = trimIndexed(db.channelMessages, 1500, (item) => item.channelId === resolvedChannelId);
   writeDb(db);
   return message;
 }
@@ -1298,7 +1311,6 @@ function exportConversation(syncId, contactSyncId) {
   return {
     exportedAt: new Date().toISOString(),
     exportTimestamp: Date.now(),
-    securitySeal: "SYNC-E2E-" + crypto.randomBytes(8).toString("hex").toUpperCase(),
     participants: {
       requester: user ? toPublicUser(user) : { syncId: sId },
       contact: contact ? toPublicUser(contact) : { syncId: cId }
