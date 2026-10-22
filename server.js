@@ -4,25 +4,38 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const webPush = require('web-push');
 const { cert, getApps, initializeApp } = require('firebase-admin/app');
 const { getMessaging } = require('firebase-admin/messaging');
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
-const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@syncengine.local';
+const VAPID_EMAIL = process.env.VAPID_EMAIL || "mailto:admin@syncengine.local";
+let VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
+let VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 let webPushConfigured = false;
-try {
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-    throw new Error("VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY no están configuradas");
+
+function configureWebPush(directory) {
+  const dir = directory || path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
+  let publicKey = String(process.env.VAPID_PUBLIC_KEY || "").trim();
+  let privateKey = String(process.env.VAPID_PRIVATE_KEY || "").trim();
+  if (!publicKey || !privateKey) {
+    const file = path.join(dir, "vapid.json");
+    try {
+      const stored = JSON.parse(fs.readFileSync(file, "utf8"));
+      publicKey = String(stored.publicKey || "");
+      privateKey = String(stored.privateKey || "");
+    } catch (_) {
+      publicKey = "";
+      privateKey = "";
+    }
+    if (!publicKey || !privateKey) {
+      const generated = webPush.generateVAPIDKeys();
+      publicKey = generated.publicKey;
+      privateKey = generated.privateKey;
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(file, JSON.stringify({ publicKey, privateKey }), { mode: 0o600 });
+    }
   }
-  webPush.setVapidDetails(
-    VAPID_EMAIL,
-    VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY
-  );
+  webPush.setVapidDetails(VAPID_EMAIL, publicKey, privateKey);
+  VAPID_PUBLIC_KEY = publicKey;
+  VAPID_PRIVATE_KEY = privateKey;
   webPushConfigured = true;
-} catch (err) {
-  const message = process.env.NODE_ENV === "production"
-    ? "[Push] Web Push deshabilitado; el servidor continuará sin notificaciones push."
-    : "[Push] Web Push deshabilitado: configure claves VAPID válidas.";
-  console.warn(message, err.message);
+  return { publicKey, privateKey };
 }
 
 // Helper to send push notification to all stored subscriptions for a syncId
@@ -81,9 +94,12 @@ async function sendMobilePushNotification(syncId, payload) {
         token,
         data: {
           title: String(payload.title || "SYNC ENGINE").slice(0, 120),
-          body: String(payload.body || "").slice(0, 240),
+          body: String(payload.body || "Tienes un aviso nuevo").slice(0, 240),
           type: String(payload.type || "message"),
-          syncId: String(syncId)
+          syncId: String(syncId),
+          fromSyncId: String(payload.fromSyncId || ""),
+          channelId: String(payload.channelId || ""),
+          url: String(payload.data && payload.data.url || "/")
         },
         android: { priority: "high" }
       });
@@ -116,6 +132,8 @@ const selfsigned = require("selfsigned");
 const db = require("./db");
 const { safeUrl } = require("./public/safe-content");
 const { deliver } = require("./pubsub-routing");
+
+configureWebPush();
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = "0.0.0.0";
@@ -725,36 +743,13 @@ app.get('/api/status', function (_req, res) {
       'h264-video',
       'fluid-layout',
       'lightbox',
-      'encrypted-vault',
+      'web-push',
       'team-channels',
       'compliance-export'
     ],
     uploadLimitBytes: 2 * 1024 * 1024 * 1024,
     onlineUsersCount: onlineUsers.size
   });
-});
-
-// ==== Endpoints de Bóveda Cifrada Privada ====
-app.get("/api/vault", requireAuth, (req, res) => {
-  res.setHeader("Cache-Control", "private, no-store");
-  const items = db.getVaultItems(req.user.syncId);
-  res.json({ ok: true, items: items });
-});
-
-app.post("/api/vault", requireAuth, (req, res) => {
-  res.setHeader("Cache-Control", "private, no-store");
-  try {
-    const item = db.saveVaultItem(req.user.syncId, req.body);
-    res.json({ ok: true, item: item });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.delete("/api/vault/:itemId", requireAuth, (req, res) => {
-  res.setHeader("Cache-Control", "private, no-store");
-  const success = db.deleteVaultItem(req.user.syncId, req.params.itemId);
-  res.json({ ok: true, deleted: success });
 });
 
 // ==== Endpoints de Canales de Espacio de Trabajo ====
@@ -924,6 +919,68 @@ if (sslOptions) {
 // Registro de Usuarios Online: Map<syncId, Set<socketId>>
 const onlineUsers = new Map();
 const socketToUser = new Map();
+const socketPresence = new Map();
+
+function recipientIsFocused(sessions, focus = {}) {
+  const contactSyncId = focus.contactSyncId ? String(focus.contactSyncId).trim().toUpperCase() : "";
+  const channelId = focus.channelId ? String(focus.channelId).trim() : "";
+  return sessions.some((session) => {
+    if (!session || !session.visible) return false;
+    if (contactSyncId) return session.contactSyncId === contactSyncId;
+    if (channelId) return session.channelId === channelId;
+    return false;
+  });
+}
+
+function shouldDeliverPush(syncId, focus = {}) {
+  const sockets = onlineUsers.get(String(syncId || "").trim().toUpperCase());
+  if (!sockets || sockets.size === 0) return true;
+  const sessions = [];
+  for (const socketId of sockets) sessions.push(socketPresence.get(socketId) || { visible: false });
+  const visibleFocus = focus.type === "channel"
+    ? { channelId: focus.channelId }
+    : { contactSyncId: focus.contactSyncId || focus.fromSyncId };
+  return !recipientIsFocused(sessions, visibleFocus);
+}
+
+function pushBody(type, text, fileData) {
+  if (type === "audio") return "Nota de voz";
+  if (type === "file") {
+    const name = fileData && fileData.name ? String(fileData.name).slice(0, 80) : "";
+    return name ? `Archivo: ${name}` : "Archivo";
+  }
+  const value = String(text || "").trim();
+  if (!value) return "Nuevo mensaje";
+  return value.length > 140 ? `${value.slice(0, 137)}…` : value;
+}
+
+function buildPushPayload({ title, body, type, fromSyncId, channelId, url }) {
+  const kind = type || "message";
+  return {
+    title: String(title || "SYNC ENGINE").slice(0, 120),
+    body: String(body || "Tienes un aviso nuevo").slice(0, 240),
+    icon: "/assets/logo.png",
+    badge: "/assets/logo.png",
+    tag: kind === "call" ? "sync-call" : `sync-${kind}-${fromSyncId || channelId || "inbox"}`,
+    data: {
+      type: kind,
+      url: url || "/",
+      fromSyncId: fromSyncId || "",
+      channelId: channelId || ""
+    },
+    type: kind,
+    fromSyncId: fromSyncId || "",
+    channelId: channelId || ""
+  };
+}
+
+function deliverPush(syncId, payload) {
+  if (!shouldDeliverPush(syncId, payload.data || payload)) return Promise.resolve();
+  return Promise.allSettled([
+    sendPushNotification(syncId, payload),
+    sendMobilePushNotification(syncId, payload)
+  ]);
+}
 
 function deliverPubSubEvent(payload) {
   return deliver(payload, socketToUser, io, (socketId, user) => {
@@ -936,6 +993,7 @@ function deliverPubSubEvent(payload) {
 function clearSocketIdentity(socket) {
   const previous = socketToUser.get(socket.id);
   socketToUser.delete(socket.id);
+  socketPresence.delete(socket.id);
   delete socket.data.authToken;
   if (previous) {
     const sockets = onlineUsers.get(previous.syncId);
@@ -978,9 +1036,17 @@ io.on("connection", function (socket) {
     onlineUsers.get(syncId).add(socket.id);
 
     socket.emit("authenticated", { user: user });
-
-    // Notificar a contactos sobre estado online
     broadcastUserStatus(syncId, true);
+  });
+
+  socket.on("client-presence", function (payload) {
+    const sender = socketToUser.get(socket.id);
+    if (!sender || !payload || typeof payload !== "object") return;
+    socketPresence.set(socket.id, {
+      visible: payload.visible !== false && payload.visible !== "false",
+      contactSyncId: payload.contactSyncId ? String(payload.contactSyncId).trim().toUpperCase() : "",
+      channelId: payload.channelId ? String(payload.channelId).trim() : ""
+    });
   });
 
   socket.on("clipboard-sync", function (payload) {
@@ -1054,6 +1120,17 @@ io.on("connection", function (socket) {
       io.to("channel:" + channelId).emit("channel-message-received", msg);
       if (rawChannelId !== channelId) {
         io.to("channel:" + rawChannelId).emit("channel-message-received", msg);
+      }
+      const preview = pushBody(type, text, fileData);
+      for (const recipientId of db.listChannelRecipientSyncIds(channelId, sender.syncId)) {
+        deliverPush(recipientId, buildPushPayload({
+          title: `#${(channel && channel.name) || channelId}`,
+          body: `${sender.cleanDisplayName || sender.syncId}: ${preview}`,
+          type: "channel",
+          fromSyncId: sender.syncId,
+          channelId: channelId,
+          url: `/?openChannel=${encodeURIComponent(channelId)}`
+        })).catch((error) => console.warn("[Push] Falló el aviso de canal:", error.message));
       }
     } catch (err) {
       socket.emit("error-message", { message: err.message });
@@ -1166,22 +1243,15 @@ io.on("connection", function (socket) {
       });
     }
 
-    if (!isTargetOnline && !isRetry) {
-      const pushPayload = {
-        title: `Nuevo mensaje de ${sender.formattedName}`,
-        body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
-        icon: '/assets/logo.png',
-        data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
-      };
-      sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
-    }
-
     if (!isRetry) {
-      sendMobilePushNotification(targetSyncId, {
-        title: `Nuevo mensaje de ${sender.formattedName}`,
-        body: (text && text.length > 100) ? text.slice(0, 97) + "..." : (text || "Tienes un mensaje nuevo"),
-        type: "message"
-      }).catch(e => console.warn("[FCM] Falló el aviso de mensaje:", e.message));
+      const fromSyncId = sender.syncId;
+      deliverPush(targetSyncId, buildPushPayload({
+        title: `Nuevo mensaje de ${sender.formattedName || fromSyncId}`,
+        body: pushBody(msgType, text, fileData),
+        type: "message",
+        fromSyncId: fromSyncId,
+        url: `/?openChat=${encodeURIComponent(fromSyncId)}`
+      })).catch((error) => console.warn("[Push] Falló el aviso de mensaje:", error.message));
     }
 
     if (sender) {
@@ -1409,12 +1479,15 @@ io.on("connection", function (socket) {
 
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
-    db.recordCall(sender.syncId, targetSyncId, !(targetSockets && targetSockets.size > 0));
-    sendMobilePushNotification(targetSyncId, {
-      title: "Llamada entrante",
-      body: `Llamada de ${sender.formattedName || sender.syncId}`,
-      type: "call"
-    }).catch(e => console.warn("[FCM] Falló el aviso de llamada:", e.message));
+    const reachable = Boolean(targetSockets && targetSockets.size > 0);
+    db.recordCall(sender.syncId, targetSyncId, !reachable);
+    deliverPush(targetSyncId, buildPushPayload({
+      title: reachable ? "Llamada entrante" : "Llamada perdida",
+      body: `${reachable ? "Llamada" : "Llamada perdida"} de ${sender.formattedName || sender.syncId}`,
+      type: "call",
+      fromSyncId: sender.syncId,
+      url: `/?openChat=${encodeURIComponent(sender.syncId)}`
+    })).catch((error) => console.warn("[Push] Falló el aviso de llamada:", error.message));
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
@@ -1425,11 +1498,6 @@ io.on("connection", function (socket) {
         });
       });
     } else {
-      sendMobilePushNotification(targetSyncId, {
-        title: "Llamada entrante",
-        body: `Llamada de ${sender.formattedName || sender.syncId}`,
-        type: "call"
-      }).catch(e => console.warn("[FCM] Falló el aviso de llamada:", e.message));
       socket.emit("call-unavailable", {
         toSyncId: targetSyncId,
         message: "El contacto no se encuentra en línea para recibir llamadas"
@@ -1669,6 +1737,8 @@ if (typeof module !== "undefined") {
   module.exports.deliverPubSubEvent = deliverPubSubEvent;
   module.exports.isBlockedPreviewHost = isBlockedPreviewHost;
   module.exports.isBlockedPreviewAddress = isBlockedPreviewAddress;
+  module.exports.configureWebPush = configureWebPush;
+  module.exports.recipientIsFocused = recipientIsFocused;
 }
 
 if (process.env.RENDER_EXTERNAL_URL) {

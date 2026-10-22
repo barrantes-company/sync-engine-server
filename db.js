@@ -23,8 +23,7 @@ function ensureDbFile() {
         { id: "chan-general", name: "general", description: "Espacio general de sincronización y equipo", createdAt: Date.now(), isDefault: true },
         { id: "chan-anuncios", name: "anuncios", description: "Comunicados oficiales de Workspace y Empresa", createdAt: Date.now(), isDefault: true }
       ],
-      channelMessages: [],
-      vaultItems: {}
+      channelMessages: []
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf8");
   }
@@ -48,7 +47,7 @@ function readDb() {
     for (const key of ["users", "sessions", "messages", "files", "channels", "channelMessages", "calls", "organizations"]) {
       if (data[key] !== undefined && !Array.isArray(data[key])) throw new Error("Invalid database collection");
     }
-    for (const key of ["contacts", "pinnedMessages", "subscriptions", "mobilePushTokens", "vaultItems"]) {
+    for (const key of ["contacts", "pinnedMessages", "subscriptions", "mobilePushTokens"]) {
       if (data[key] !== undefined && (!data[key] || typeof data[key] !== "object" || Array.isArray(data[key]))) {
         throw new Error("Invalid database map");
       }
@@ -68,7 +67,6 @@ function readDb() {
       ];
     }
     if (!data.channelMessages) data.channelMessages = [];
-    if (!data.vaultItems) data.vaultItems = {};
     if (!Array.isArray(data.calls)) data.calls = [];
     cachedDb = data;
     if (seedDevelopmentAdmin(cachedDb)) {
@@ -781,7 +779,9 @@ function clearMessagesBetween(user1Id, user2Id) {
 }
 
 function savePushSubscription(syncId, subscription, userAgent = "") {
-  if (!syncId || !subscription || !subscription.endpoint) return false;
+  if (!syncId || !subscription || typeof subscription.endpoint !== "string" || !subscription.endpoint.startsWith("https://")) return false;
+  const keys = subscription.keys || {};
+  if (typeof keys.p256dh !== "string" || typeof keys.auth !== "string" || !keys.p256dh || !keys.auth) return false;
   const db = readDb();
   if (!db.subscriptions) db.subscriptions = {};
   const sId = String(syncId).trim().toUpperCase();
@@ -790,7 +790,7 @@ function savePushSubscription(syncId, subscription, userAgent = "") {
   const existingIdx = db.subscriptions[sId].findIndex((s) => s.endpoint === subscription.endpoint);
   const subData = {
     endpoint: subscription.endpoint,
-    keys: subscription.keys || {},
+    keys: { p256dh: keys.p256dh, auth: keys.auth },
     userAgent: userAgent || "",
     updatedAt: Date.now()
   };
@@ -880,138 +880,6 @@ function removeMobilePushToken(syncId, token) {
   return true;
 }
 
-// ==== Bóveda Cifrada Privada (Encrypted Vault) ====
-const VAULT_KDF_ITERATIONS = 310000;
-
-/**
- * Validates the browser-generated encryption envelope without interpreting its contents.
- * AES-GCM ciphertext contains its authentication tag as the final 16 bytes.
- * @param {object} encryptedContent
- * @returns {boolean}
- */
-function isValidVaultEnvelope(encryptedContent) {
-  if (!encryptedContent || typeof encryptedContent !== "object" || Array.isArray(encryptedContent) ||
-      encryptedContent.version !== 1 || encryptedContent.algorithm !== "AES-GCM" ||
-      encryptedContent.kdf !== "PBKDF2" || encryptedContent.hash !== "SHA-256" ||
-      encryptedContent.iterations !== VAULT_KDF_ITERATIONS) return false;
-
-  const fields = ["salt", "iv", "ciphertext"];
-  if (fields.some((field) => typeof encryptedContent[field] !== "string" ||
-      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encryptedContent[field]))) {
-    return false;
-  }
-
-  const salt = Buffer.from(encryptedContent.salt, "base64");
-  const iv = Buffer.from(encryptedContent.iv, "base64");
-  const ciphertext = Buffer.from(encryptedContent.ciphertext, "base64");
-  return salt.length === 16 && iv.length === 12 && ciphertext.length >= 16 &&
-    ciphertext.length <= 1024 * 1024 && salt.toString("base64") === encryptedContent.salt &&
-    iv.toString("base64") === encryptedContent.iv && ciphertext.toString("base64") === encryptedContent.ciphertext;
-}
-
-/**
- * Copies only the supported envelope fields so extra client data is never stored.
- * @param {object} encryptedContent
- * @returns {object|null}
- */
-function normalizeVaultEnvelope(encryptedContent) {
-  if (!isValidVaultEnvelope(encryptedContent)) return null;
-  return {
-    version: encryptedContent.version,
-    algorithm: encryptedContent.algorithm,
-    kdf: encryptedContent.kdf,
-    hash: encryptedContent.hash,
-    iterations: encryptedContent.iterations,
-    salt: encryptedContent.salt,
-    iv: encryptedContent.iv,
-    ciphertext: encryptedContent.ciphertext
-  };
-}
-
-function getVaultItems(syncId) {
-  const db = readDb();
-  const sId = String(syncId).trim().toUpperCase();
-  return ((db.vaultItems && db.vaultItems[sId]) || [])
-    .filter((item) => isValidVaultEnvelope(item.encryptedContent))
-    .map((item) => ({
-      id: item.id,
-      title: item.title,
-      category: item.category,
-      encryptedContent: normalizeVaultEnvelope(item.encryptedContent),
-      hint: item.hint,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt
-    }));
-}
-
-function saveVaultItem(syncId, itemData) {
-  if (!itemData || typeof itemData !== "object" || Array.isArray(itemData) ||
-      Object.prototype.hasOwnProperty.call(itemData, "secretContent") ||
-      Object.prototype.hasOwnProperty.call(itemData, "secret")) {
-    throw new Error("Solo se aceptan secretos cifrados en el cliente");
-  }
-
-  const db = readDb();
-  const sId = String(syncId).trim().toUpperCase();
-  if (!db.vaultItems) db.vaultItems = {};
-  if (!db.vaultItems[sId]) db.vaultItems[sId] = [];
-
-  const { id, title, category, encryptedContent, hint } = itemData;
-  const allowedCategories = ["password", "note", "api-key", "financial"];
-  const safeEncryptedContent = normalizeVaultEnvelope(encryptedContent);
-  if (typeof title !== "string" || !title.trim() || title.length > 100 ||
-      !allowedCategories.includes(category) || !safeEncryptedContent ||
-      (hint != null && (typeof hint !== "string" || hint.length > 80))) {
-    throw new Error("Metadatos o payload cifrado de bóveda no válidos");
-  }
-
-  const existingIdx = id ? db.vaultItems[sId].findIndex((i) =>
-    i.id === id && isValidVaultEnvelope(i.encryptedContent)) : -1;
-  const now = Date.now();
-  const safeHint = hint ? hint : null;
-
-  if (existingIdx >= 0) {
-    const existing = db.vaultItems[sId][existingIdx];
-    db.vaultItems[sId][existingIdx] = {
-      id: existing.id,
-      title: String(title).slice(0, 100),
-      category: category,
-      encryptedContent: safeEncryptedContent,
-      hint: safeHint,
-      createdAt: existing.createdAt,
-      updatedAt: now
-    };
-    writeDb(db);
-    return db.vaultItems[sId][existingIdx];
-  } else {
-    const newItem = {
-      id: "vlt_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
-      title: String(title).slice(0, 100),
-      category: category,
-      encryptedContent: safeEncryptedContent,
-      hint: safeHint,
-      createdAt: now,
-      updatedAt: now
-    };
-    db.vaultItems[sId].unshift(newItem);
-    writeDb(db);
-    return newItem;
-  }
-}
-
-function deleteVaultItem(syncId, itemId) {
-  const db = readDb();
-  const sId = String(syncId).trim().toUpperCase();
-  if (!db.vaultItems || !db.vaultItems[sId]) return false;
-  const prevLen = db.vaultItems[sId].length;
-  db.vaultItems[sId] = db.vaultItems[sId].filter((i) => i.id !== itemId);
-  if (db.vaultItems[sId].length !== prevLen) {
-    writeDb(db);
-    return true;
-  }
-  return false;
-}
-
 // ==== Canales de Espacio de Trabajo (Workspace Channels) ====
 /**
  * Returns only the channels visible to the registered user.
@@ -1072,6 +940,16 @@ function isChannelMember(channelId, userSyncId) {
   if (String(channel.creatorSyncId || "").trim().toUpperCase() === normalizedUserId) return true;
   return Array.isArray(channel.memberSyncIds) &&
     channel.memberSyncIds.some((memberId) => String(memberId).trim().toUpperCase() === normalizedUserId);
+}
+
+
+function listChannelRecipientSyncIds(channelId, exceptSyncId) {
+  const channel = findChannel(channelId);
+  if (!channel) return [];
+  const except = String(exceptSyncId || "").trim().toUpperCase();
+  return readDb().users
+    .map((user) => user.syncId)
+    .filter((syncId) => syncId && syncId !== except && isChannelMember(channel.id, syncId));
 }
 
 function createWorkspaceChannel(name, description, creatorSyncId) {
@@ -1368,12 +1246,10 @@ module.exports = {
   saveMobilePushToken,
   getMobilePushTokens,
   removeMobilePushToken,
-  getVaultItems,
-  saveVaultItem,
-  deleteVaultItem,
   getWorkspaceChannels,
   findChannel,
   isChannelMember,
+  listChannelRecipientSyncIds,
   createWorkspaceChannel,
   updateWorkspaceChannel,
   grantWorkspaceChannelAdmin,

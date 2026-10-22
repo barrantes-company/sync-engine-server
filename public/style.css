@@ -1619,20 +1619,6 @@ header.sticky {
   border: 1px solid rgba(197, 160, 89, 0.28);
 }
 
-/* 6.4 Items de la Bóveda Cifrada */
-.vault-item-card {
-  padding: 14px;
-  border-radius: 16px;
-  background: #F8FAFC;
-  border: 1px solid rgba(197, 160, 89, 0.2);
-  transition: all 0.15s ease;
-}
-.vault-item-card:hover {
-  background: #FFFFFF;
-  border-color: #C5A059;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
-}
-
 /* 6.5 Canales de Equipo */
 .channel-item {
   padding: 8px 12px;
@@ -1721,7 +1707,6 @@ header.sticky {
     filter: drop-shadow(0 0 5px rgba(0, 199, 242, .25));
   }
 
-  #app-container > header.sticky #open-vault-btn,
   #app-container > header.sticky > div > div:nth-child(2) {
     display: none !important;
   }
@@ -2358,7 +2343,6 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
 
 /* SYNC ENGINE — retirar accesos duplicados de la vista principal.
    Los módulos y sus capacidades se conservan; solo se ocultan sus duplicados visuales. */
-#app-container #open-vault-btn,
 #app-container #info-drawer-panel,
 #app-container #toggle-drawer-btn {
   display: none !important;
@@ -2576,12 +2560,12 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
   outline-offset: 3px;
 }
 
-#open-vault-btn, #logout-btn,
+#logout-btn,
 #add-contact-btn, #auth-submit-btn {
   position: relative;
   overflow: hidden;
 }
-#open-vault-btn::before, #logout-btn::before,
+#logout-btn::before,
 #add-contact-btn::before, #auth-submit-btn::before {
   content: "";
   position: absolute;
@@ -2591,7 +2575,7 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
   transition: transform .7s var(--se-ease);
   pointer-events: none;
 }
-#open-vault-btn:hover::before, #logout-btn:hover::before,
+#logout-btn:hover::before,
 #add-contact-btn:hover::before, #auth-submit-btn:hover::before {
   transform: translateX(120%);
 }

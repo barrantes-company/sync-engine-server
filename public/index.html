@@ -173,13 +173,6 @@
 
         <!-- Zona 3: Identidad y salir -->
         <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-          <!-- Botón Bóveda Cifrada Privada -->
-          <button id="open-vault-btn" type="button" title="Bóveda Cifrada Privada & Notas Secretas"
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[rgba(197,160,89,0.25)] text-xs font-semibold text-[#0A1A3A] hover:text-[#C5A059] transition-colors cursor-pointer shadow-xs">
-            <span>🔒</span>
-            <span class="hidden sm:inline">Bóveda</span>
-          </button>
-
           <!-- Identidad Formateada & Estado -->
           <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] shadow-sm">
             <img id="header-user-avatar" class="w-6 h-6 rounded-full object-cover avatar-circle hidden" alt="Avatar">
@@ -826,58 +819,6 @@
       </div>
 
       <div id="media-hub-content" class="flex-1 overflow-y-auto p-4 sm:p-6 bg-white min-h-[300px]"></div>
-    </div>
-  </div>
-
-  <!-- MODAL: BÓVEDA CIFRADA PRIVADA & NOTAS CONFIDENCIALES -->
-  <div id="vault-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[rgba(197,160,89,0.3)] overflow-hidden text-[#0A1A3A]">
-
-      <div class="p-4 sm:p-5 border-b border-[rgba(197,160,89,0.2)] bg-gradient-to-r from-white to-[#F8FAFC] flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <img src="/src/assets/images/workspace_vault_shield_1791287622307.jpg" alt="Vault" class="w-10 h-10 rounded-2xl object-cover shadow-sm">
-          <div>
-            <h3 class="font-bold text-base sm:text-lg text-[#0A1A3A] font-title flex items-center gap-2">
-              <span>Bóveda Cifrada Privada</span>
-            </h3>
-            <p class="text-xs text-[#64748B]">AES-GCM local: la clave maestra no se envía ni se guarda. El servidor sí ve título, categoría y pista; los registros antiguos sin cifrado local no se mostrarán.</p>
-          </div>
-        </div>
-        <button id="close-vault-modal-btn" type="button" aria-label="Cerrar bóveda" class="h-8 w-8 rounded-full hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center font-bold text-sm cursor-pointer transition-colors">✕</button>
-      </div>
-
-      <!-- Formulario para Agregar Elemento -->
-      <div class="p-4 border-b border-[rgba(197,160,89,0.18)] bg-[#F8FAFC] flex flex-col gap-2.5">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-[#0A1A3A] font-title">+ Nuevo Registro Confidencial</span>
-          <span class="text-[10px] text-[#C5A059] font-mono">Bóveda Zero-Knowledge</span>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <input type="text" id="vault-title-input" placeholder="Título (ej. Servidor AWS, Llave Privada)..." maxlength="60"
-            class="px-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] outline-none">
-          <select id="vault-category-select" title="Categoría del registro confidencial" aria-label="Categoría del registro confidencial" class="px-3 py-1.5 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] outline-none cursor-pointer">
-            <option value="password">🔑 Contraseña / Credencial</option>
-            <option value="note">📝 Nota Cifrada</option>
-            <option value="api-key">⚡ Token / Clave API</option>
-            <option value="financial">💳 Dato Financiero / Billetera</option>
-          </select>
-        </div>
-        <textarea id="vault-secret-input" rows="2" placeholder="Contenido secreto a proteger (se almacena cifrado)..."
-          class="w-full px-3 py-2 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] outline-none font-mono resize-none"></textarea>
-        <div class="flex items-center justify-between">
-          <input type="text" id="vault-hint-input" placeholder="Pista recordatoria pública (opcional)..." maxlength="50"
-            class="w-2/3 px-3 py-1 rounded-xl bg-white border border-[rgba(197,160,89,0.2)] text-[11px] text-[#64748B] outline-none">
-          <button id="save-vault-item-btn" type="button" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] text-white font-bold text-xs shadow-xs cursor-pointer">
-            Guardar en Bóveda
-          </button>
-        </div>
-      </div>
-
-      <!-- Lista de Registros en Bóveda -->
-      <div id="vault-items-container" class="p-4 sm:p-5 overflow-y-auto flex-1 flex flex-col gap-2.5 bg-white">
-        <p class="text-xs text-[#64748B] text-center py-6">Cargando registros cifrados...</p>
-      </div>
-
     </div>
   </div>
 
@@ -2643,6 +2584,7 @@
     }
 
     await renderOfflineMessages(syncId);
+    publishPresence();
 
     if (!chatMessages.querySelector('.msg-item')) {
       chatWelcome.classList.remove('hidden');
@@ -3039,6 +2981,16 @@
     activeCallModal.classList.add('hidden');
   }
 
+  function publishPresence() {
+    if (!socket || !socket.connected || !isSocketAuthenticated) return;
+    socket.emit('client-presence', {
+      visible: document.visibilityState !== 'hidden',
+      contactSyncId: activeContactSyncId || '',
+      channelId: activeChannelId || ''
+    });
+  }
+  document.addEventListener('visibilitychange', publishPresence);
+
   // SOCKET.IO & LISTENERS
   function initSocket() {
     if (socket) {
@@ -3087,6 +3039,10 @@
       socket.emit('join-channel', { channelId: currentChan });
       if (activeContactSyncId) selectContact(activeContactSyncId);
       flushOfflineMessages();
+      publishPresence();
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        enablePushNotifications().catch(() => {});
+      }
     });
 
     socket.on('auth-error', () => {
@@ -4786,8 +4742,11 @@
       if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
         const notifData = event.data.data || {};
         const fromSyncId = notifData.fromSyncId;
-        if (fromSyncId) {
-          selectContact(notifData.fromSyncId);
+        if (notifData.channelId && typeof selectChannel === 'function') {
+          const channel = (workspaceChannels || []).find((item) => item.id === notifData.channelId);
+          if (channel) selectChannel(channel);
+        } else if (fromSyncId) {
+          selectContact(fromSyncId);
         }
         if (event.data.action === 'reply' && event.data.reply && fromSyncId) {
           if (socket && socket.connected && currentUser) {
@@ -4804,16 +4763,15 @@
   }
 
   // =========================================================================
-  // SUITE SAAS: MONETIZACIÓN, BÓVEDA CIFRADA, CANALES Y EXPORTACIÓN
+  // CANALES Y EXPORTACIÓN
   // =========================================================================
 
   // Variables de Estado de la Suite
-  let activeChannelId = '#anuncios';
+  let activeChannelId = null;
   let workspaceChannels = [];
   let currentExportData = null;
 
   // Referencias DOM Suite
-  const openVaultBtn = document.getElementById('open-vault-btn');
   const exportChatBtn = document.getElementById('export-chat-btn');
 
   window.addEventListener('sync-engine-view-change', (event) => {
@@ -4838,16 +4796,6 @@
   const channelsList = document.getElementById('channels-list');
   const openCreateChannelBtn = document.getElementById('open-create-channel-btn');
 
-  const vaultModal = document.getElementById('vault-modal');
-  const closeVaultModalBtn = document.getElementById('close-vault-modal-btn');
-  const vaultTitleInput = document.getElementById('vault-title-input');
-  const vaultCategorySelect = document.getElementById('vault-category-select');
-  const vaultSecretInput = document.getElementById('vault-secret-input');
-  const vaultHintInput = document.getElementById('vault-hint-input');
-  const saveVaultItemBtn = document.getElementById('save-vault-item-btn');
-  const vaultItemsContainer = document.getElementById('vault-items-container');
-  let vaultMasterPassphrase = null;
-
   const createChannelModal = document.getElementById('create-channel-modal');
   const closeCreateChannelBtn = document.getElementById('close-create-channel-btn');
   const cancelCreateChannelBtn = document.getElementById('cancel-create-channel-btn');
@@ -4860,259 +4808,6 @@
   const exportReportContent = document.getElementById('export-report-content');
   const downloadExportJsonBtn = document.getElementById('download-export-json-btn');
   const printExportBtn = document.getElementById('print-export-btn');
-
-  // 2. GESTIÓN DE BÓVEDA CIFRADA PRIVADA
-  const VAULT_KDF_ITERATIONS = 310000;
-  const vaultTextEncoder = new TextEncoder();
-  const vaultTextDecoder = new TextDecoder();
-
-  function vaultBytesToBase64(bytes) {
-    let binary = '';
-    bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
-    return btoa(binary);
-  }
-
-  function vaultBase64ToBytes(value) {
-    const binary = atob(value);
-    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
-  }
-
-  /**
-   * Derives a non-extractable AES-256-GCM key from the local master passphrase.
-   * @param {string} passphrase
-   * @param {Uint8Array} salt
-   * @returns {Promise<CryptoKey>}
-   */
-  async function deriveVaultKey(passphrase, salt) {
-    const material = await crypto.subtle.importKey(
-      'raw', vaultTextEncoder.encode(passphrase), 'PBKDF2', false, ['deriveKey']
-    );
-    return crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt, iterations: VAULT_KDF_ITERATIONS, hash: 'SHA-256' },
-      material,
-      { name: 'AES-GCM', length: 256 },
-      false,
-      ['encrypt', 'decrypt']
-    );
-  }
-
-  /**
-   * Encrypts secret text locally; Web Crypto appends the GCM authentication tag.
-   * @param {string} secret
-   * @param {string} passphrase
-   * @returns {Promise<object>}
-   */
-  async function encryptVaultSecret(secret, passphrase) {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const key = await deriveVaultKey(passphrase, salt);
-    const ciphertext = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv, tagLength: 128 }, key, vaultTextEncoder.encode(secret)
-    );
-    return {
-      version: 1,
-      algorithm: 'AES-GCM',
-      kdf: 'PBKDF2',
-      hash: 'SHA-256',
-      iterations: VAULT_KDF_ITERATIONS,
-      salt: vaultBytesToBase64(salt),
-      iv: vaultBytesToBase64(iv),
-      ciphertext: vaultBytesToBase64(new Uint8Array(ciphertext))
-    };
-  }
-
-  /**
-   * Authenticates and decrypts one item in browser memory only.
-   * @param {object} encryptedContent
-   * @param {string} passphrase
-   * @returns {Promise<string>}
-   */
-  async function decryptVaultSecret(encryptedContent, passphrase) {
-    if (!encryptedContent || encryptedContent.version !== 1 ||
-        encryptedContent.algorithm !== 'AES-GCM' || encryptedContent.kdf !== 'PBKDF2' ||
-        encryptedContent.hash !== 'SHA-256' || encryptedContent.iterations !== VAULT_KDF_ITERATIONS) {
-      throw new Error('Formato de cifrado de bóveda no compatible');
-    }
-    const salt = vaultBase64ToBytes(encryptedContent.salt);
-    const iv = vaultBase64ToBytes(encryptedContent.iv);
-    const ciphertext = vaultBase64ToBytes(encryptedContent.ciphertext);
-    if (salt.length !== 16 || iv.length !== 12 || ciphertext.length < 16) {
-      throw new Error('Payload cifrado de bóveda no válido');
-    }
-    const key = await deriveVaultKey(passphrase, salt);
-    const plaintext = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv, tagLength: 128 }, key, ciphertext
-    );
-    return vaultTextDecoder.decode(plaintext);
-  }
-
-  function clearVaultSession() {
-    vaultMasterPassphrase = null;
-    if (vaultSecretInput) vaultSecretInput.value = '';
-    if (vaultItemsContainer) vaultItemsContainer.replaceChildren();
-    if (vaultModal) vaultModal.classList.add('hidden');
-  }
-
-  /**
-   * Prompts locally for the master passphrase and unlocks the vault for this view.
-   * @returns {Promise<void>}
-   */
-  async function unlockVault() {
-    if (!window.isSecureContext || !window.crypto || !window.crypto.subtle) {
-      alert('El cifrado de la bóveda requiere una conexión HTTPS segura.');
-      return;
-    }
-    const passphrase = window.prompt('Introduce tu clave maestra de la bóveda. No se envía ni se guarda en el servidor.');
-    if (passphrase === null) return;
-    if (passphrase.length < 12) {
-      alert('La clave maestra debe tener al menos 12 caracteres.');
-      return;
-    }
-    vaultMasterPassphrase = passphrase;
-    vaultModal.classList.remove('hidden');
-    await loadVaultItems();
-  }
-
-  async function loadVaultItems() {
-    if (!vaultItemsContainer) return;
-    vaultItemsContainer.innerHTML = '<p class="text-xs text-[#64748B] text-center py-4">Cargando registros cifrados...</p>';
-    try {
-      const res = await fetch('/api/vault', {
-        headers: { 'Authorization': 'Bearer ' + currentToken }
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok || !Array.isArray(data.items)) {
-        throw new Error(data.error || 'No se pudo cargar la bóveda');
-      }
-      const items = await Promise.all(data.items.map(async (item) => ({
-        ...item,
-        secretContent: await decryptVaultSecret(item.encryptedContent, vaultMasterPassphrase)
-      })));
-      renderVaultItems(items);
-    } catch (e) {
-      vaultMasterPassphrase = null;
-      vaultSecretInput.value = '';
-      vaultItemsContainer.innerHTML = '<p class="text-xs text-red-500 text-center py-4">No se pudo cargar o descifrar la bóveda. Comprueba la conexión, el formato y la clave maestra.</p>';
-    }
-  }
-
-  function renderVaultItems(items) {
-    if (!vaultItemsContainer) return;
-    vaultItemsContainer.innerHTML = '';
-    if (items.length === 0) {
-      vaultItemsContainer.innerHTML = `
-        <div class="p-8 text-center text-[#64748B]">
-          <span class="text-3xl mb-1 block">🔐</span>
-          <p class="text-xs font-bold text-[#0A1A3A]">Bóveda Vacía</p>
-          <p class="text-[11px] text-[#64748B] mt-1">Guarda notas, credenciales y claves confidenciales con cifrado zero-knowledge.</p>
-        </div>
-      `;
-      return;
-    }
-
-    items.forEach((item) => {
-      const card = document.createElement('div');
-      card.className = 'vault-item-card flex flex-col gap-2';
-
-      const catIcons = { password: '🔑', note: '📝', 'api-key': '⚡', financial: '💳' };
-      const icon = catIcons[item.category] || '🔒';
-
-      card.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2 min-w-0">
-            <span class="text-base">${icon}</span>
-            <div class="min-w-0">
-              <h5 class="text-xs font-bold text-[#0A1A3A] truncate font-title">${escapeHtml(item.title)}</h5>
-              <span class="text-[10px] text-[#C5A059] uppercase font-mono">${item.category}</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-1">
-            <button type="button" class="btn-copy-secret px-2 py-1 rounded-lg bg-white hover:bg-gray-100 text-[#0A1A3A] text-[11px] font-semibold border border-gray-200 cursor-pointer shadow-xs">
-              📋 Copiar
-            </button>
-            <button type="button" class="btn-delete-secret px-2 py-1 rounded-lg hover:bg-red-50 text-red-500 text-[11px] cursor-pointer">
-              🗑
-            </button>
-          </div>
-        </div>
-        <div class="p-2 rounded-xl bg-white border border-gray-100 font-mono text-xs flex items-center justify-between">
-          <span class="secret-text tracking-widest text-[#0A1A3A]">••••••••••••</span>
-          <button type="button" class="btn-toggle-secret text-[10px] text-[#C5A059] font-bold cursor-pointer">Mostrar</button>
-        </div>
-        ${item.hint ? `<p class="text-[10px] text-gray-400 italic">Pista: ${escapeHtml(item.hint)}</p>` : ''}
-      `;
-
-      let isRevealed = false;
-      const secretSpan = card.querySelector('.secret-text');
-      const toggleBtn = card.querySelector('.btn-toggle-secret');
-      toggleBtn.addEventListener('click', () => {
-        isRevealed = !isRevealed;
-        secretSpan.textContent = isRevealed ? item.secretContent : '••••••••••••';
-        toggleBtn.textContent = isRevealed ? 'Ocultar' : 'Mostrar';
-      });
-
-      const copyBtn = card.querySelector('.btn-copy-secret');
-      copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(item.secretContent).then(() => {
-          triggerPopupNotification('Bóveda', 'Contenido confidencial copiado', '📋');
-          copyBtn.textContent = '✓ Copiado';
-          setTimeout(() => { copyBtn.textContent = '📋 Copiar'; }, 1500);
-        });
-      });
-
-      const delBtn = card.querySelector('.btn-delete-secret');
-      delBtn.addEventListener('click', async () => {
-        if (confirm(`¿Eliminar "${item.title}" de tu bóveda?`)) {
-          await fetch(`/api/vault/${item.id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + currentToken }
-          });
-          loadVaultItems();
-        }
-      });
-
-      vaultItemsContainer.appendChild(card);
-    });
-  }
-
-  async function handleSaveVaultItem() {
-    const title = vaultTitleInput.value.trim();
-    const secret = vaultSecretInput.value.trim();
-    const category = vaultCategorySelect.value;
-    const hint = vaultHintInput.value.trim();
-
-    if (!title || !secret || !vaultMasterPassphrase) {
-      alert('Desbloquea la bóveda e indica un título y contenido para el registro.');
-      return;
-    }
-
-    saveVaultItemBtn.disabled = true;
-    try {
-      const encryptedContent = await encryptVaultSecret(secret, vaultMasterPassphrase);
-      const res = await fetch('/api/vault', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + currentToken
-        },
-        body: JSON.stringify({ title, category, hint, encryptedContent })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'Error al guardar');
-      }
-
-      vaultTitleInput.value = '';
-      vaultSecretInput.value = '';
-      vaultHintInput.value = '';
-      triggerPopupNotification('Bóveda', 'Registro confidencial guardado', '🔒');
-      loadVaultItems();
-    } catch (err) {
-      alert('Error: ' + err.message);
-    } finally {
-      saveVaultItemBtn.disabled = false;
-    }
-  }
 
   // 3. GESTIÓN DE CANALES DE EQUIPO
   async function loadChannels() {
@@ -5235,6 +4930,7 @@
 
   async function selectChannel(chan) {
     activeChannelId = chan.id;
+    publishPresence();
     activeContactSyncId = null;
     document.getElementById('app-container').dataset.hasActiveConversation = 'true';
     document.getElementById('chat-header-bar')?.classList.remove('hidden');
@@ -5381,13 +5077,6 @@
     URL.revokeObjectURL(url);
   }
 
-  // Bóveda
-  if (openVaultBtn) {
-    openVaultBtn.addEventListener('click', unlockVault);
-  }
-  if (closeVaultModalBtn) closeVaultModalBtn.addEventListener('click', clearVaultSession);
-  if (saveVaultItemBtn) saveVaultItemBtn.addEventListener('click', handleSaveVaultItem);
-
   // La navegación lateral principal controla las vistas; se eliminó el selector duplicado.
 
   // Modal Crear Canal
@@ -5434,7 +5123,23 @@
   const originalShowApp = showApp;
   showApp = async function() {
     await originalShowApp();
-    loadChannels();
+    await loadChannels();
+    const params = new URLSearchParams(window.location.search);
+    const openChat = (params.get('openChat') || '').trim().toUpperCase();
+    const openChannel = (params.get('openChannel') || '').trim();
+    if (openChat) {
+      await selectContact(openChat);
+    } else if (openChannel) {
+      const channel = workspaceChannels.find((item) => item.id === openChannel || item.name === openChannel.replace(/^#/, ''));
+      document.querySelector('[data-se-view="channels"]')?.click();
+      if (channel) await selectChannel(channel);
+    }
+    if (openChat || openChannel) {
+      params.delete('openChat');
+      params.delete('openChannel');
+      const next = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (next ? '?' + next : '') + window.location.hash);
+    }
     window.dispatchEvent(new CustomEvent('sync-engine-app-ready'));
   };
 
