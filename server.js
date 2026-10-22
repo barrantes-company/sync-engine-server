@@ -10,32 +10,41 @@ let VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 let webPushConfigured = false;
 
 function configureWebPush(directory) {
-  const dir = directory || path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
-  let publicKey = String(process.env.VAPID_PUBLIC_KEY || "").trim();
-  let privateKey = String(process.env.VAPID_PRIVATE_KEY || "").trim();
-  if (!publicKey || !privateKey) {
-    const file = path.join(dir, "vapid.json");
-    try {
-      const stored = JSON.parse(fs.readFileSync(file, "utf8"));
-      publicKey = String(stored.publicKey || "");
-      privateKey = String(stored.privateKey || "");
-    } catch (_) {
-      publicKey = "";
-      privateKey = "";
-    }
+  try {
+    const dir = directory || path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
+    let publicKey = String(process.env.VAPID_PUBLIC_KEY || "").trim();
+    let privateKey = String(process.env.VAPID_PRIVATE_KEY || "").trim();
     if (!publicKey || !privateKey) {
-      const generated = webPush.generateVAPIDKeys();
-      publicKey = generated.publicKey;
-      privateKey = generated.privateKey;
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(file, JSON.stringify({ publicKey, privateKey }), { mode: 0o600 });
+      const file = path.join(dir, "vapid.json");
+      try {
+        const stored = JSON.parse(fs.readFileSync(file, "utf8"));
+        publicKey = String(stored.publicKey || "");
+        privateKey = String(stored.privateKey || "");
+      } catch (_) {
+        publicKey = "";
+        privateKey = "";
+      }
+      if (!publicKey || !privateKey) {
+        if (typeof webPush.generateVAPIDKeys !== "function") {
+          throw new Error("web-push no puede generar claves VAPID");
+        }
+        const generated = webPush.generateVAPIDKeys();
+        publicKey = generated.publicKey;
+        privateKey = generated.privateKey;
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(file, JSON.stringify({ publicKey, privateKey }), { mode: 0o600 });
+      }
     }
+    webPush.setVapidDetails(VAPID_EMAIL, publicKey, privateKey);
+    VAPID_PUBLIC_KEY = publicKey;
+    VAPID_PRIVATE_KEY = privateKey;
+    webPushConfigured = true;
+    return { publicKey, privateKey };
+  } catch (err) {
+    webPushConfigured = false;
+    console.warn("[WebPush] Notificaciones web deshabilitadas:", err.message);
+    return null;
   }
-  webPush.setVapidDetails(VAPID_EMAIL, publicKey, privateKey);
-  VAPID_PUBLIC_KEY = publicKey;
-  VAPID_PRIVATE_KEY = privateKey;
-  webPushConfigured = true;
-  return { publicKey, privateKey };
 }
 
 // Helper to send push notification to all stored subscriptions for a syncId
