@@ -32,7 +32,7 @@ final class FcmRegistration {
                 .addOnFailureListener(error -> Log.w(TAG, "No se pudo obtener el token FCM.", error));
     }
 
-    /** Envía el nuevo token recibido del servicio Firebase y lo almacena en Firestore y backend. */
+    /** Envía el nuevo token recibido del servicio Firebase: prioriza el backend y guarda en Firestore si hay sesión Firebase. */
     static void register(Context context, String fcmToken) {
         Context app = context.getApplicationContext();
         if (fcmToken == null || fcmToken.isEmpty()) {
@@ -40,26 +40,26 @@ final class FcmRegistration {
         }
         AppSettings.saveFcmToken(app, fcmToken);
 
-        // Guardar en Firestore bajo el documento del usuario (campo fcmToken)
-        saveTokenToFirestore(app, fcmToken, null);
-
+        // 1. Prioridad: Registrar el token FCM en el servidor oficial SYNC ENGINE
         String authToken = AppSettings.token(app);
         String url = WidgetUrls.defaultUrl(app);
-        if (authToken.isEmpty() || !WidgetUrls.isWidgetUrl(url)) {
-            return;
+        if (!authToken.isEmpty() && WidgetUrls.isWidgetUrl(url)) {
+            new Thread(() -> {
+                try {
+                    ApiClient.registerFcmToken(WidgetUrls.origin(url), authToken, fcmToken);
+                } catch (Exception exception) {
+                    Log.w(TAG, "No se pudo registrar el token FCM en el servidor.", exception);
+                }
+            }).start();
         }
-        new Thread(() -> {
-            try {
-                ApiClient.registerFcmToken(WidgetUrls.origin(url), authToken, fcmToken);
-            } catch (Exception exception) {
-                Log.w(TAG, "No se pudo registrar el token FCM en el servidor.", exception);
-            }
-        }).start();
+
+        // 2. Secundario: Guardar en Firestore solo si hay sesión válida de Firebase Auth
+        saveTokenToFirestore(app, fcmToken, null);
     }
 
     /**
      * Guarda el token FCM en Cloud Firestore bajo el documento del usuario.
-     * Si no se especifica explicitUserId, usa el UID de FirebaseAuth o el usuario de AppSettings.
+     * Si no hay sesión válida en FirebaseAuth, se omite para evitar errores de permisos.
      */
     static void saveTokenToFirestore(Context context, String fcmToken, String explicitUserId) {
         if (FirebaseApp.getApps(context).isEmpty() || fcmToken == null || fcmToken.isEmpty()) {
@@ -69,12 +69,11 @@ final class FcmRegistration {
         if (userId == null || userId.isEmpty()) {
             if (FirebaseAuth.getInstance().getCurrentUser() != null) {
                 userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            } else {
-                userId = AppSettings.userName(context);
             }
         }
-        if (userId == null || userId.isEmpty()) {
-            userId = "anonymous";
+        if (userId == null || userId.isEmpty() || "anonymous".equalsIgnoreCase(userId)) {
+            Log.d(TAG, "No hay sesión en FirebaseAuth; se omite guardado directo en Firestore.");
+            return;
         }
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -92,11 +91,11 @@ final class FcmRegistration {
     /** Llamado cuando el usuario se autentica en la app para asociar el token FCM a su cuenta. */
     static void onUserAuthenticated(Context context, String userId) {
         Context app = context.getApplicationContext();
+        registerCurrentDevice(app);
         String currentToken = AppSettings.fcmToken(app);
-        if (currentToken != null && !currentToken.isEmpty()) {
+        if (currentToken != null && !currentToken.isEmpty() && FirebaseAuth.getInstance().getCurrentUser() != null) {
             saveTokenToFirestore(app, currentToken, userId);
         }
-        registerCurrentDevice(app);
     }
 
     /** Retira el token del servidor antes de cerrar sesión para no enviar avisos a otra persona. */

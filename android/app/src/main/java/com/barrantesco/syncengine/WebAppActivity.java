@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -44,7 +45,16 @@ public final class WebAppActivity extends Activity {
                 }
             }
         });
-        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onPermissionRequest(final PermissionRequest request) {
+                runOnUiThread(() -> {
+                    if (request != null && request.getResources() != null) {
+                        request.grant(request.getResources());
+                    }
+                });
+            }
+        });
         setContentView(webView);
 
         // Solicitar permisos de notificación en Android 13+

@@ -740,6 +740,59 @@ function removePushSubscription(syncId, endpoint) {
   return false;
 }
 
+// ==== Tokens Push Móviles Android (FCM) ====
+/**
+ * Registra o renueva un token FCM asociado al usuario.
+ * @param {string} syncId Identificador del usuario.
+ * @param {string} token Token de registro de Firebase.
+ * @returns {boolean} true cuando el token queda almacenado.
+ */
+function saveMobilePushToken(syncId, token) {
+  if (!syncId || typeof token !== "string" || token.length < 20 || token.length > 4096) return false;
+  const db = readDb();
+  if (!db.mobilePushTokens) db.mobilePushTokens = {};
+  const sId = String(syncId).trim().toUpperCase();
+  const tokens = db.mobilePushTokens[sId] || (db.mobilePushTokens[sId] = []);
+  const existing = tokens.find((item) => item.token === token);
+  if (existing) {
+    existing.updatedAt = Date.now();
+  } else {
+    tokens.push({ token: token, updatedAt: Date.now() });
+  }
+  writeDb(db);
+  return true;
+}
+
+/**
+ * Devuelve los tokens Android del usuario.
+ * @param {string} syncId Identificador del usuario.
+ * @returns {Array<{token:string,updatedAt:number}>}
+ */
+function getMobilePushTokens(syncId) {
+  if (!syncId) return [];
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  return (db.mobilePushTokens && db.mobilePushTokens[sId]) || [];
+}
+
+/**
+ * Elimina el token FCM de un usuario.
+ * @param {string} syncId Identificador del usuario.
+ * @param {string} token Token a eliminar.
+ * @returns {boolean} true si el token estaba registrado.
+ */
+function removeMobilePushToken(syncId, token) {
+  if (!syncId || !token) return false;
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  if (!db.mobilePushTokens || !Array.isArray(db.mobilePushTokens[sId])) return false;
+  const current = db.mobilePushTokens[sId];
+  db.mobilePushTokens[sId] = current.filter((item) => item.token !== token);
+  if (db.mobilePushTokens[sId].length === current.length) return false;
+  writeDb(db);
+  return true;
+}
+
 // ==== Planes, Suscripciones y Facturación ====
 function upgradeUserPlan(syncId, plan, billingCycle = "monthly", paymentDetails = {}) {
   const db = readDb();
@@ -1258,6 +1311,9 @@ module.exports = {
   savePushSubscription,
   getPushSubscriptions,
   removePushSubscription,
+  saveMobilePushToken,
+  getMobilePushTokens,
+  removeMobilePushToken,
   // Nuevas capacidades de monetización y workspace
   upgradeUserPlan,
   getUserInvoices,

@@ -35,9 +35,86 @@ function storeSubscription(syncId, subscription) {
   }
 }
 
-// Helper to send push notification to all stored subscriptions for a syncId
+// ==== FCM Mobile Push Setup ====
+let firebaseAdmin = null;
+try {
+  const adminModule = "firebase-admin";
+  firebaseAdmin = require(adminModule);
+  if (!firebaseAdmin.apps.length) {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      firebaseAdmin.initializeApp({
+        credential: firebaseAdmin.credential.cert(sa)
+      });
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      firebaseAdmin.initializeApp({
+        credential: firebaseAdmin.credential.applicationDefault()
+      });
+    }
+  }
+} catch (e) {
+  // firebase-admin no instalado o no configurado aún; punto de envío desacoplado
+}
+
+async function sendFcmNotification(syncId, payload) {
+  const tokens = db.getMobilePushTokens ? db.getMobilePushTokens(syncId) : [];
+  if (!tokens || tokens.length === 0) return;
+
+  const dataPayload = {};
+  if (payload.data) {
+    for (const [k, v] of Object.entries(payload.data)) {
+      if (v !== undefined && v !== null) {
+        dataPayload[k] = String(v);
+      }
+    }
+  }
+  const fromSyncId = dataPayload.fromSyncId || "";
+  if (!dataPayload.conversationId && fromSyncId) {
+    dataPayload.conversationId = fromSyncId;
+  }
+  if (!dataPayload.title && payload.title) dataPayload.title = String(payload.title);
+  if (!dataPayload.body && payload.body) dataPayload.body = String(payload.body);
+
+  if (firebaseAdmin && firebaseAdmin.apps && firebaseAdmin.apps.length > 0) {
+    const registrationTokens = tokens.map((t) => t.token);
+    try {
+      const response = await firebaseAdmin.messaging().sendEachForMulticast({
+        tokens: registrationTokens,
+        notification: {
+          title: payload.title || "SYNC ENGINE",
+          body: payload.body || "Nuevo mensaje recibido"
+        },
+        data: dataPayload
+      });
+      if (response && response.responses) {
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success && resp.error) {
+            const code = resp.error.code;
+            if (code === "messaging/registration-token-not-registered" ||
+                code === "messaging/invalid-registration-token") {
+              db.removeMobilePushToken(syncId, registrationTokens[idx]);
+            }
+          }
+        });
+      }
+    } catch (err) {
+      console.warn("[FCM] Error al enviar notificación:", err.message);
+    }
+  } else {
+    if (process.env.NODE_ENV !== "test") {
+      console.log(`[FCM] Notificación preparada para ${syncId} (${tokens.length} token(s)):`, payload.title);
+    }
+  }
+}
+
+// Helper to send push notification to all stored subscriptions (Web Push & FCM) for a syncId
 async function sendPushNotification(syncId, payload) {
+  const fcmPromise = sendFcmNotification(syncId, payload).catch(err => {
+    console.warn("[FCM] Falló envío:", err.message);
+  });
+
   if (!webPushConfigured) {
+    await fcmPromise;
     return;
   }
   const dbData = db.readDb();
@@ -52,7 +129,7 @@ async function sendPushNotification(syncId, payload) {
       }
     })
   );
-  await Promise.all(promises);
+  await Promise.all([...promises, fcmPromise]);
 }
 
 // Extend send-private-message logic for offline push notification
@@ -545,6 +622,28 @@ app.post("/api/save-subscription", requireAuth, asyncHandler(async (req, res) =>
     return res.status(500).json({ ok: false, error: "Error interno al guardar la suscripción" });
   }
 }));
+
+/** Registra un token FCM Android en la cuenta autenticada. */
+app.post("/api/mobile/push-token", requireAuth, (req, res) => {
+  const token = req.body?.token;
+  if (typeof token !== "string" || token.length < 20 || token.length > 4096) {
+    return res.status(400).json({ ok: false, error: "Token FCM inválido" });
+  }
+  if (!db.saveMobilePushToken(req.user.syncId, token)) {
+    return res.status(400).json({ ok: false, error: "No se pudo registrar el dispositivo" });
+  }
+  return res.status(201).json({ ok: true });
+});
+
+/** Retira el token FCM de la cuenta autenticada (p. ej. al cerrar sesión). */
+app.delete("/api/mobile/push-token", requireAuth, (req, res) => {
+  const token = req.body?.token;
+  if (typeof token !== "string" || !token) {
+    return res.status(400).json({ ok: false, error: "Token FCM requerido" });
+  }
+  db.removeMobilePushToken(req.user.syncId, token);
+  return res.json({ ok: true });
+});
 
 // Rutas de Usuario y Perfil
 app.post("/api/user/profile", requireAuth, asyncHandler(async (req, res) => {
