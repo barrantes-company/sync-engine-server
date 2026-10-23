@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SYNC ENGINE</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="popup.js" defer></script>
+</head>
+<body>
+  <main class="popup">
+    <header class="brand">
+      <img src="icons/icon-48.png" alt="">
+      <div>
+        <p class="eyebrow">BARRANTES CO.</p>
+        <h1>SYNC ENGINE</h1>
+      </div>
+    </header>
+    <p class="description">Configura la dirección de tu espacio de trabajo para abrirlo desde Chrome.</p>
+    <form id="workspace-form">
+      <label for="workspace-url">Dirección del espacio</label>
+      <input id="workspace-url" name="workspace-url" type="url" placeholder="https://tu-dominio.com" required>
+      <button type="submit">Guardar dirección</button>
+    </form>
+    <button id="open-workspace" class="open-button" type="button" disabled>Abrir espacio de trabajo</button>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+  </main>
+</body>
+</html>

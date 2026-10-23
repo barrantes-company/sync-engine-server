@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_navy">#0A1A3A</color>
+    <color name="widget_text">#FFFFFF</color>
+    <color name="widget_text_secondary">#C5D0E3</color>
+    <color name="widget_accent">#6DD8FF</color>
+    <color name="widget_border">#28406A</color>
+    <color name="text_primary">#1B263B</color>
+    <color name="text_secondary">#53627A</color>
+</resources>

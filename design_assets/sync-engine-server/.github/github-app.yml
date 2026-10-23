@@ -1,0 +1,10 @@
+instructions: |-
+   Este es el servidor backend para la aplicación SYNC ENGINE, una plataforma de mensajería privada y workspace.
+  - El stack tecnológico es Node.js con Express.
+  - La comunicación en tiempo real se gestiona con WebSockets.
+  - Prefiere el uso de funciones asíncronas (async/await) para todas las operaciones de I/O.
+  - Los nombres de las ramas para nuevas funcionalidades deben seguir el formato 'feat/descripcion-corta'.
+  - Asegúrate de que todo el código esté bien documentado con comentarios JSDoc.
+automation:
+  auto_issue_session: true
+  remote_control: false

@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "SYNC ENGINE - Universal Widget",
+  "version": "1.0.0",
+  "description": "Widget Web Universal y panel lateral en tiempo real para SYNC ENGINE con sincronización e interfaz Material You.",
+  "permissions": [
+    "notifications",
+    "sidePanel",
+    "storage"
+  ],
+  "action": {
+    "default_title": "SYNC ENGINE",
+    "default_icon": {
+      "16": "public/icons/icon-192.png",
+      "48": "public/icons/icon-192.png",
+      "128": "public/icons/icon-512.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "public/widget.html"
+  },
+  "background": {
+    "service_worker": "extension_worker.js"
+  },
+  "icons": {
+    "16": "public/icons/icon-192.png",
+    "48": "public/icons/icon-192.png",
+    "128": "public/icons/icon-512.png"
+  }
+}

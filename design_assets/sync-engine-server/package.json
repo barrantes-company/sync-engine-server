@@ -1,0 +1,31 @@
+{
+  "name": "sync-engine-server",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "webpack --config webpack.config.js",
+    "lint": "node --check server.js db.js extension_worker.js",
+    "test": "node tests/p0-01.test.js && node tests/p0-02.test.js && node tests/widget.test.js && node --test tests/widget-summary.test.js",
+    "security-audit": "npm audit"
+  },
+  "dependencies": {
+    "@google-cloud/pubsub": "4.9.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.10.0",
+    "multer": "^2.4.0",
+    "selfsigned": "^5.5.0",
+    "socket.io": "^4.8.4",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4",
+    "webpack": "^5.111.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-node-externals": "^3.0.0"
+  }
+}

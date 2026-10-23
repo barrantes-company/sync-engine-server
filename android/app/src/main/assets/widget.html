@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>SYNC ENGINE | Widget</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/widget.css?v=20261009-widget-final">
+  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" defer></script>
+  <script src="/widget.js?v=20261009-widget-final" defer></script>
+</head>
+<body>
+  <main class="widget-card" id="widget-container" aria-labelledby="widget-title">
+    <span class="edge-sweep" aria-hidden="true"></span>
+    <header class="widget-header">
+      <div class="widget-brand">
+        <img class="widget-brand-image" src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="">
+        <span class="brand-light" aria-hidden="true"></span>
+        <span id="widget-title">SYNC<span>ENGINE</span></span>
+      </div>
+      <div class="header-actions">
+        <div class="sync-status" id="sync-status" data-state="offline" title="Estado de conexión en tiempo real">
+          <span class="sync-dot" aria-hidden="true"></span><span id="sync-label">Sin conexión</span>
+        </div>
+        <span id="unread-count" class="unread-badge" aria-live="polite" aria-label="0 mensajes sin leer">0</span>
+        <label class="visually-hidden" for="mode-selector">Modo del widget</label>
+        <select id="mode-selector" class="mode-selector" aria-label="Seleccionar modo del widget">
+          <option value="mode-1" data-widget-mode="mode-1">Glance Matrix</option>
+          <option value="mode-2" data-widget-mode="mode-2">Smart Banking</option>
+          <option value="mode-3" data-widget-mode="mode-3">OLED Minimal</option>
+          <option value="mode-4" data-widget-mode="mode-4">Glance Neón</option>
+          <option value="mode-5" data-widget-mode="mode-5">Sincronizador</option>
+          <option value="mode-6" data-widget-mode="mode-6">Rendimiento</option>
+          <option value="mode-7" data-widget-mode="mode-7">Reloj Holo</option>
+          <option value="mode-8" data-widget-mode="mode-8">Bóveda Aegis</option>
+          <option value="mode-9" data-widget-mode="mode-9">Material Hub</option>
+          <option value="mode-10" data-widget-mode="mode-10">Stealth Dot</option>
+        </select>
+      </div>
+    </header>
+
+    <section class="mode-stage" aria-live="polite">
+      <article class="mode-view" data-mode-view="mode-1" aria-label="Glance Matrix">
+        <div class="mode-caption">MATRIX / LIVE TERMINAL</div>
+        <div class="matrix-clock" data-bind="clock">--:--</div>
+        <div class="matrix-date" data-bind="date">Sincronizando…</div>
+        <div class="matrix-console" aria-label="Estado de sincronización">
+          <span>&gt; sync-engine --status</span><strong><i class="mode-state-dot"></i><span data-bind="sync">OFFLINE</span></strong>
+          <span>&gt; events --pending</span><strong data-bind="messages">0</strong>
+          <span class="matrix-cursor" aria-hidden="true">_</span>
+        </div>
+      </article>
+
+      <article class="mode-view" data-mode-view="mode-2" aria-label="Smart Banking">
+        <div class="mode-caption">SYNC FINANCE <span class="secure-label">● PROTECCIÓN ACTIVA</span></div>
+        <div class="finance-balance"><small>BALANCE LOCAL</small><strong data-bind="balance">--</strong></div>
+        <div class="finance-footer"><span>Datos financieros no conectados</span><span class="finance-shield" aria-label="Protección activa">◆</span></div>
+      </article>
+
+      <article class="mode-view" data-mode-view="mode-3" aria-label="OLED Minimal">
+        <div class="oled-clock" data-bind="clock">--:--</div>
+        <div class="oled-date" data-bind="date">Sincronizando…</div>
+        <div class="oled-mark"><i class="mode-state-dot"></i> <span data-bind="sync">OFFLINE</span></div>
+      </article>
+
+      <article class="mode-view" data-mode-view="mode-4" aria-label="Glance Neón">
+        <div class="mode-caption">GLANCE NEÓN</div>
+        <div class="neon-weather"><span class="weather-symbol" data-bind="weather-icon">☁</span><strong data-bind="temperature">--°</strong></div>
+        <div class="neon-place"><span aria-hidden="true">⌖</span> <span data-bind="location">Ubicación local</span></div>
+        <div class="neon-clock" data-bind="clock">--:--</div>
+      </article>
+
+      <article class="mode-view" data-mode-view="mode-5" aria-label="Sincronizador de directorios">
+        <div class="mode-caption">SINCRONIZADOR <span class="sync-mini"><i class="mode-state-dot"></i><span data-bind="sync">OFFLINE</span></span></div>
+        <p class="folder-summary">Accesos a carpetas del dispositivo</p>
+        <div class="folder-list">
+          <button type="button" data-widget-action="open-files" data-directory="documents"><span>▤</span><span>Documentos</span><b>↗</b></button>
+          <button type="button" data-widget-action="open-files" data-directory="downloads"><span>⇩</span><span>Descargas</span><b>↗</b></button>
+          <button type="button" data-widget-action="open-files" data-directory="desktop"><span>▦</span><span>Escritorio</span><b>↗</b></button>
+        </div>
+      </article>
+
+      <article class="mode-view" data-mode-view="mode-6" aria-label="Rendimiento y hardware">
+        <div class="mode-caption">RENDIMIENTO <span class="hardware-state" data-bind="hardware-state">ESPERANDO HOST</span></div>
+        <div class="metric-row"><span>CPU</span><div class="metric-track"><i data-metric-bar="cpu"></i></div><b data-bind="cpu">--</b></div>
+        <div class="metric-row"><span>RAM</span><div class="metric-track"><i data-metric-bar="memory"></i></div><b data-bind="memory">--</b></div>
+        <div class="metric-row"><span>BATERÍA</span><div class="metric-track battery-track"><i data-metric-bar="battery"></i></div><b data-bind="battery">--</b></div>
+        <div class="battery-state" data-bind="battery-state">Conecte una fuente de métricas autorizada</div>
+      </article>
+
+      <article class="mode-view" data-mode-view="mode-7" aria-label="Reloj Holo">
+        <div class="holo-ring" aria-hidden="true"></div>
+        <div class="holo-face"><strong data-bind="clock">--:--</strong><span data-bind="date">Sincronizando…</span></div>
+        <span class="holo-tag">LOCAL TIME · LIMA</span>
+      </article>
+
+      <article class="mode-view" data-mode-view="mode-8" aria-label="Bóveda Aegis">
+        <div class="aegis-lock" aria-hidden="true">⬡</div>
+        <div class="mode-caption">BÓVEDA AEGIS</div>
+        <strong class="aegis-state">INTEGRIDAD LOCAL</strong>
+        <span class="aegis-algorithm">HMAC · SHA-256</span>
+        <code id="integrity-fingerprint" class="integrity-fingerprint">Firma efímera pendiente</code>
+        <button type="button" class="integrity-button" data-widget-action="vault-integrity">Verificar integridad</button>
+      </article>
+
+      <!-- Nuevo Modo 9: Material Hub (Estilo Android Moderno / Chat Glass) -->
+      <article class="mode-view" data-mode-view="mode-9" aria-label="Material Hub">
+        <div class="material-clock-group">
+          <div class="material-clock" data-bind="clock">--:--</div>
+          <div class="material-date" data-bind="date">Sincronizando…</div>
+        </div>
+        <div class="material-panel">
+          <div class="material-metrics">
+            <button type="button" data-widget-action="open-chat" class="material-pill unread-pill" aria-label="Abrir mensajes">
+              <span class="material-icon">💬</span>
+              <strong data-bind="messages">0</strong>
+            </button>
+            <button type="button" data-widget-action="calls" class="material-pill call-pill" aria-label="Abrir llamadas">
+              <span class="material-icon">📞</span>
+              <strong data-bind="calls">0</strong>
+            </button>
+          </div>
+          <div class="material-status">
+            <i class="mode-state-dot"></i>
+            <span data-bind="sync">OFFLINE</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Nuevo Modo 10: Stealth Dot (Ultra compacto, tipo isla dinámica) -->
+      <article class="mode-view" data-mode-view="mode-10" aria-label="Stealth Dot">
+        <button type="button" data-widget-action="open-chat" class="stealth-trigger">
+          <i class="mode-state-dot"></i>
+          <span class="stealth-badge" data-bind="messages">0</span>
+        </button>
+      </article>
+    </section>
+
+    <nav class="quick-actions" aria-label="Acciones rápidas">
+      <button type="button" data-widget-action="mute-audio" aria-label="Silenciar audio"><span aria-hidden="true">◖</span><small>Silenciar</small></button>
+      <button type="button" data-widget-action="suspend" aria-label="Suspender dispositivo"><span aria-hidden="true">Ⅱ</span><small>Suspender</small></button>
+      <button type="button" data-widget-action="screen-off" aria-label="Apagar pantalla"><span aria-hidden="true">◐</span><small>Pantalla</small></button>
+      <button type="button" data-widget-action="open-chat" aria-label="Abrir Nexo Chat"><span aria-hidden="true">◌</span><small>Nexo Chat</small></button>
+      <button type="button" data-widget-action="open-vault" aria-label="Abrir bóveda"><span aria-hidden="true">◇</span><small>Bóveda</small></button>
+    </nav>
+
+    <section class="widget-secondary" aria-label="Información y actividad">
+      <span id="clock" class="visually-hidden">--:--</span><span id="date" class="visually-hidden">Sincronizando…</span>
+      <span id="message-count" class="visually-hidden">0</span><span id="call-count" class="visually-hidden">0</span><span id="call-plural" class="visually-hidden">s</span>
+      <span id="temperature" class="visually-hidden">--°</span><span id="weather-icon" class="visually-hidden">☁</span>
+      <span id="hero-summary-count" class="visually-hidden">0 eventos pendientes</span>
+      <span id="weather-pill" class="visually-hidden" aria-label="Clima local"></span>
+      <button id="clock-hero" type="button" aria-controls="details-panel" aria-expanded="false" hidden></button>
+      <section class="details-panel" id="details-panel" aria-label="Actividad reciente" hidden>
+        <span id="feed-live-indicator" class="visually-hidden"></span>
+        <div id="announcements-list" role="region" aria-label="Lista de anuncios" aria-live="polite"></div>
+      </section>
+      <form id="quick-reply-form" action="javascript:void(0);" hidden>
+        <input type="text" id="quick-reply-input" maxlength="250" autocomplete="off">
+        <button type="submit" id="quick-reply-send" aria-label="Enviar anuncio">↗</button>
+      </form>
+      <div class="visually-hidden" aria-hidden="true" hidden>
+        <button type="button" data-widget-action="messages">Mensajes</button>
+        <button type="button" data-widget-action="calls">Llamadas</button>
+        <button type="button" data-widget-action="voice">Audio de chat</button>
+        <button type="button" data-widget-action="upload">Adjuntar imagen</button>
+        <button type="button" data-widget-action="reply">Responder en chat</button>
+      </div>
+    </section>
+
+    <p id="widget-notice" class="widget-notice" role="status" aria-live="polite"></p>
+    <div id="incoming-notice" class="incoming-notice" role="status" aria-live="polite" hidden></div>
+    <div id="auth-overlay" class="auth-overlay hidden">
+      <video id="auth-video" class="auth-video" autoplay muted playsinline>
+        <source src="/assets/intro.mp4" type="video/mp4">
+      </video>
+      <div class="auth-content">
+        <button type="button" id="widget-login-btn" class="auth-login-btn hidden-until-video-ends">Iniciar sesión <span aria-hidden="true">↗</span></button>
+      </div>
+    </div>
+    <div class="widget-utilities-drawer" aria-hidden="true">
+      <select id="contact-select" aria-label="Contacto"></select>
+      <button id="capture-button" type="button"><span id="capture-label">Capturar</span></button>
+      <button id="copy-button" type="button"><span id="copy-label">Copiar ID</span></button>
+      <div id="incoming-clipboard"><span id="incoming-clipboard-preview"></span><button id="copy-incoming-button" type="button">Copiar recibido</button></div>
+      <input id="camera-input" type="file" accept="image/*">
+    </div>
+  </main>
+</body>
+</html>

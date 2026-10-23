@@ -15,7 +15,7 @@ function startBridge({ env = process.env, logger = console } = {}) {
   const upstreamUrl = new URL(env.WS_BRIDGE_UPSTREAM_URL || "http://127.0.0.1:3000");
   if (upstreamUrl.username || upstreamUrl.password ||
       !["http:", "https:"].includes(upstreamUrl.protocol) ||
-      (upstreamUrl.protocol === "http:" && !["127.0.0.1", "[::1]", "localhost"].includes(upstreamUrl.hostname))) {
+      (upstreamUrl.protocol === "http:" && !["127.0.0.1", "::1", "localhost"].includes(upstreamUrl.hostname))) {
     throw new Error("SEC-02: remote upstream requires HTTPS");
   }
   let identity = null;
@@ -23,41 +23,56 @@ function startBridge({ env = process.env, logger = console } = {}) {
     host, port, maxPayload: 64 * 1024,
     verifyClient: ({ req }, done) => done(authenticate(req), 401, "Unauthorized")
   });
-  wss.on("error", () => logger.error("[Bridge] WebSocket listener failed"));
-  wss.on("connection", (client) => client.on("error", () => {}));
+  wss.on("error", (err) => logger.error("[Bridge] WebSocket listener failed:", err?.message || err));
+  wss.on("connection", (client) => client.on("error", (err) => logger.warn("[Bridge] Client error:", err?.message || err)));
   const upstream = io(upstreamUrl.href, { autoConnect: false, reconnection: true });
-  upstream.on("connect", () => {
-    identity = null;
-    upstream.emit("authenticate", { token: env.WS_BRIDGE_UPSTREAM_TOKEN });
-  });
-  upstream.on("authenticated", ({ user } = {}) => { identity = user?.syncId || null; });
-  upstream.on("disconnect", () => { identity = null; });
-  upstream.on("auth-error", () => {
-    identity = null;
-    logger.error("[Bridge] Upstream authentication rejected");
-    upstream.disconnect();
-  });
+
   upstream.on("pubsub-chat-event", (payload) => {
-    if (!identity || !recipientsFor(payload).includes(identity)) return;
-    const data = JSON.stringify(payload);
+    if (!identity) return;
+    const targets = recipientsFor(payload);
+    if (!targets.includes(identity)) return;
     for (const client of wss.clients) {
-      if (client.readyState === WebSocket.OPEN) client.send(data);
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(payload));
+      }
     }
   });
+
   upstream.connect();
-  return {
-    wss, upstream,
-    async close() {
-      identity = null;
-      upstream.disconnect();
-      for (const client of wss.clients) client.terminate();
-      await new Promise((resolve) => wss.close(resolve));
+
+  async function close() {
+    upstream.disconnect();
+    for (const client of wss.clients) {
+      try {
+        client.terminate();
+      } catch (_) {}
     }
-  };
+    // CORRECCIÓN: Manejo adecuado de error en la promesa de cierre del socket
+    await new Promise((resolve, reject) => {
+      wss.close((err) => (err ? reject(err) : resolve()));
+    });
+  }
+
+  return { wss, upstream, close };
 }
 
 if (require.main === module) {
   const bridge = startBridge();
-  for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => bridge.close());
+  // CORRECCIÓN: Cierre asíncrono ordenado en señales de terminación
+  let isClosing = false;
+  for (const signal of ["SIGINT", "SIGTERM"]) {
+    process.once(signal, async () => {
+      if (isClosing) return;
+      isClosing = true;
+      try {
+        await bridge.close();
+        process.exit(0);
+      } catch (err) {
+        console.error(`[Bridge] Error during ${signal} graceful shutdown:`, err);
+        process.exit(1);
+      }
+    });
+  }
 }
+
 module.exports = { startBridge };

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "470132318429",
+    "project_id": "sync-engine-server",
+    "storage_bucket": "sync-engine-server.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:470132318429:android:94984e83db0f747aa23b34",
+        "android_client_info": {
+          "package_name": "com.barrantesco.syncengine"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9GihnQ-30ovUpGCMz0bmZClac5TkjqNY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

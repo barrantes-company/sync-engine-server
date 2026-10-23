@@ -182,6 +182,25 @@ test('WIDGET 5: GET /widget.js serves client script', async () => {
   assert.ok(js.includes('#anuncios'), 'Must listen on #anuncios');
 });
 
+test('WIDGET 5b: all approved layouts are selectable and renderable', () => {
+  const html = fs.readFileSync(path.join(root, 'public', 'widget.html'), 'utf8');
+  const js = fs.readFileSync(path.join(root, 'public', 'widget.js'), 'utf8');
+  const options = [...html.matchAll(/data-widget-mode="(mode-\d+)"/g)].map((match) => match[1]);
+  const views = [...html.matchAll(/data-mode-view="(mode-\d+)"/g)].map((match) => match[1]);
+  const expected = Array.from({ length: 10 }, (_, index) => `mode-${index + 1}`);
+  const sortModes = (arr) => arr.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+  assert.deepEqual(sortModes(options), sortModes(expected));
+  assert.deepEqual(sortModes(views), sortModes(expected));
+  assert.match(js, /mode-6/);
+  assert.match(js, /mode-8/);
+  assert.match(js, /mode-10/);
+  for (const action of ['messages', 'calls', 'open-vault', 'voice', 'upload', 'reply']) {
+    assert.ok(html.includes(`data-widget-action="${action}"`), `Missing functional action: ${action}`);
+  }
+  assert.ok(html.includes('/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png'));
+});
+
 test('WIDGET 6: Extension CORS headers are allowed for chrome-extension origin', async () => {
   const res = await fetch(base + '/widget', {
     headers: {

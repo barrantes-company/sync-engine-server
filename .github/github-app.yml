@@ -7,4 +7,4 @@ instructions: |-
   - Asegúrate de que todo el código esté bien documentado con comentarios JSDoc.
 automation:
   auto_issue_session: true
-  remote_control: false
+  remote_control: true
