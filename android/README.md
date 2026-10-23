@@ -5,11 +5,20 @@ Esta app instala el widget de SYNC ENGINE y muestra su interfaz principal dentro
 ## Instalar y activar
 
 1. Abre el proyecto `android` en Android Studio y ejecuta la configuración Gradle de `:app` para instalar la app en un dispositivo Android (API 23 o superior).
+<<<<<<< HEAD
 2. Abre **SYNC ENGINE** desde el launcher para mostrar la interfaz principal dentro de la APK. No es necesario escribir una URL.
 3. Mantén pulsada un área vacía de la pantalla de inicio, elige **Widgets**, busca **SYNC ENGINE** y arrastra el widget; se añade sin solicitar configuración.
 4. Inicia sesión en Ajustes para activar los contadores/notificaciones nativos y permite las notificaciones en Android 13 o superior.
 
 El widget y la interfaz de la APK se conectan con `https://sync-engine-server.onrender.com`. Al pulsar el widget o una notificación, la app abre su interfaz principal integrada; las llamadas requieren que la interfaz esté abierta para establecer WebRTC.
+=======
+2. Abre **SYNC ENGINE** desde el launcher, escribe la URL completa de tu instalación, por ejemplo `https://tu-dominio.example`, y pulsa **Guardar URL predeterminada**. No se presupone ningún dominio de producción.
+3. Mantén pulsada un área vacía de la pantalla de inicio, elige **Widgets**, busca **SYNC ENGINE** y arrastra el widget a la pantalla.
+4. En la pantalla de configuración del widget, revisa o introduce la dirección de tu servidor y pulsa **Guardar y añadir widget**. Cada instancia puede tener su propia URL.
+5. Abre SYNC ENGINE, inicia sesión en los ajustes y permite notificaciones en Android 13 o superior.
+
+El widget nativo muestra contadores y recibe avisos Android mediante FCM. Al pulsar una notificación, abre el panel del servidor en el navegador; las llamadas requieren que la interfaz web esté abierta para establecer WebRTC.
+>>>>>>> origin/main
 
 ## Compilar desde la línea de comandos
 
@@ -17,7 +26,11 @@ Desde este directorio, ejecuta `gradle :app:assembleDebug` (o la tarea `:app:com
 
 ## URL de fábrica
 
+<<<<<<< HEAD
 La URL de producción está definida como predeterminada. Si se compila para otro servidor, puede sustituirse con la variable de entorno `SYNC_DEFAULT_URL` (origen HTTP(S), sin `/widget.html`). La app no solicita ni permite editar la URL desde el teléfono. Para firmar en release, define también `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` y `KEY_PASSWORD`.
+=======
+Para no escribir la URL en cada instalación, defínela al compilar: `$env:SYNC_DEFAULT_URL="https://tu-dominio.example"`. Se usa como URL predeterminada y, si es válida, el widget se añade sin pedir configuración. Sigue siendo editable en la app. Para firmar en release, define también `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` y `KEY_PASSWORD`.
+>>>>>>> origin/main
 
 Para compilar con Firebase Android, registra una app Android con el ID `com.barrantesco.syncengine` en Firebase y configura estas variables de entorno locales con los valores de **Project settings → Your apps**:
 
@@ -30,10 +43,17 @@ Son identificadores de cliente, no claves privadas. El servidor requiere además
 
 ## Contadores, avisos y ajustes
 
+<<<<<<< HEAD
 - Abre la app o el engranaje del widget e **inicia sesión**. Solo se guarda el token en el almacenamiento privado del teléfono, nunca la contraseña.
 - El widget muestra mensajes sin leer y llamadas perdidas (`GET /api/widget/summary`). Se actualizan cada ~15 min (mínimo de Android) y al añadir el widget.
 - FCM avisa en tiempo real de mensajes y llamadas entrantes cuando la app web del destinatario está desconectada. Requiere el permiso de notificaciones (Android 13+).
 - Tocar el widget abre la interfaz integrada y pone a cero las llamadas perdidas.
+=======
+- Abre la app (o el engranaje del widget), escribe la dirección del servidor e **inicia sesión**. Solo se guarda el token en el almacenamiento privado del teléfono, nunca la contraseña.
+- El widget muestra mensajes sin leer y llamadas perdidas (`GET /api/widget/summary`). Se actualizan cada ~15 min (mínimo de Android) y al añadir el widget.
+- FCM avisa en tiempo real de mensajes y llamadas entrantes cuando la app web del destinatario está desconectada. Requiere el permiso de notificaciones (Android 13+).
+- Tocar el widget abre la app y pone a cero las llamadas perdidas.
+>>>>>>> origin/main
 - Ajustes: formato 24 h, zona horaria, contadores, animación de estelas y notificaciones.
 - Las llamadas WebRTC no pueden conectarse sin que la interfaz del destinatario se abra y acepte la llamada; FCM solo muestra el aviso entrante.
 - El trabajo periódico de respaldo refresca los contadores aproximadamente cada 15 minutos.

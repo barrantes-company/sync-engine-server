@@ -12,13 +12,13 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [24.x]
 
     steps:
     - name: Checkout del código
       uses: actions/checkout@v4
 
-    - name: Configurar Node.js 20.x
+    - name: Configurar Node.js 24.x
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
@@ -30,5 +30,28 @@ jobs:
     - name: Compilar proyecto
       run: npm run build --if-present
 
+    - name: Verificar sintaxis y seguridad de staging
+      run: npm run lint && npm run test:staging
+
+    - name: Diagnóstico del entorno de navegador
+      continue-on-error: true
+      run: |
+        # Solo informa; no cambia el entorno. Deja en el log qué ejecutable resuelve tests/helpers/browser.js.
+        for f in /usr/bin/chromium /usr/bin/google-chrome; do
+          if [ -e "$f" ]; then
+            echo "$f -> $(readlink -f "$f")"
+            timeout 20 "$f" --version || echo "$f --version falló (código $?)"
+          else
+            echo "$f: no existe"
+          fi
+        done
+        echo "CHROME_PATH=${CHROME_PATH:-<sin definir>}"
+        df -h /dev/shm
+        nproc
+        free -m | sed -n 2p
+
     - name: Ejecutar pruebas
+      timeout-minutes: 10
       run: npm test --if-present
+      env:
+        CHROMIUM_SANDBOX_DISABLED: true

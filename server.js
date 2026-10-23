@@ -2,11 +2,16 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 // ==== Web Push Setup ====
 const webPush = require('web-push');
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BD7oG-w_r6z79_nS7N4K43m_B9k4vN5uP8q9l2m3n4o5p6q7r8s9t0u1v2w3x4y5z_SYNC_ENGINE_KEY";
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "YOUR_PRIVATE_VAPID_KEY_PLACEHOLDER";
+const { cert, getApps, initializeApp } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@syncengine.local';
 let webPushConfigured = false;
 try {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    throw new Error("VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY no están configuradas");
+  }
   webPush.setVapidDetails(
     VAPID_EMAIL,
     VAPID_PUBLIC_KEY,
@@ -109,7 +114,7 @@ async function sendFcmNotification(syncId, payload) {
 
 // Helper to send push notification to all stored subscriptions (Web Push & FCM) for a syncId
 async function sendPushNotification(syncId, payload) {
-  const fcmPromise = sendFcmNotification(syncId, payload).catch(err => {
+  const fcmPromise = sendFcmNotification(syncId, payload).catch((err) => {
     console.warn("[FCM] Falló envío:", err.message);
   });
 
@@ -117,39 +122,88 @@ async function sendPushNotification(syncId, payload) {
     await fcmPromise;
     return;
   }
+
   const dbData = db.readDb();
   const subs = (dbData.subscriptions && dbData.subscriptions[syncId]) || [];
-  const promises = subs.map(sub =>
-    webPush.sendNotification(sub, JSON.stringify(payload)).catch(err => {
-      // Remove invalid subscription
+  const expiredEndpoints = new Set();
+  const payloadStr = JSON.stringify(payload);
+
+  const promises = subs.map((sub) =>
+    webPush.sendNotification(sub, payloadStr).catch((err) => {
       if (err.statusCode === 410 || err.statusCode === 404) {
-        const idx = subs.findIndex(s => s.endpoint === sub.endpoint);
-        if (idx !== -1) subs.splice(idx, 1);
-        db.writeDb(dbData);
+        expiredEndpoints.add(sub.endpoint);
+      } else {
+        console.warn(`[Push Error] Fallo al entregar push a ${syncId}:`, err.message);
       }
     })
   );
+
   await Promise.all([...promises, fcmPromise]);
-}
 
-// Extend send-private-message logic for offline push notification
-// (Insert after line 560 where message is emitted to target sockets)
-// Note: The following code snippet will be inserted at the appropriate location in the existing function.
-/*
-if (!isTargetOnline) {
-  // Prepare minimal push payload
-  const pushPayload = {
-    title: 'Nuevo mensaje de ' + sender.formattedName,
-    body: text.length > 100 ? text.slice(0, 97) + '...' : text,
-    icon: '/assets/logo.png',
-    data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
-  };
-  sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
+  // Limpieza atómica en disco solo si hubo suscripciones expiradas
+  if (expiredEndpoints.size > 0) {
+    dbData.subscriptions[syncId] = subs.filter((s) => !expiredEndpoints.has(s.endpoint));
+    await db.writeDb(dbData);
+    console.log(`[Push Cleanup] Se removieron ${expiredEndpoints.size} suscripciones caducadas para ${syncId}`);
+  }
 }
-*/
-
 // ==== End of Web Push Additions ====
+
+// ==== Firebase Cloud Messaging for native Android ====
+let firebaseMessaging = null;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+    const app = getApps().length
+      ? getApps()[0]
+      : initializeApp({ credential: cert(serviceAccount) });
+    firebaseMessaging = getMessaging(app);
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn("[FCM] Notificaciones Android deshabilitadas: falta FIREBASE_SERVICE_ACCOUNT.");
+  }
+} catch (err) {
+  console.error("[FCM] No se pudo configurar Firebase Admin:", err.message);
+}
+
+/**
+ * Envía una notificación push a los dispositivos Android del usuario.
+ * No incluye tokens de acceso ni ofertas WebRTC en el payload.
+ * @param {string} syncId Usuario destinatario.
+ * @param {{title:string,body:string,type:string}} payload Notificación visible y tipo.
+ */
+async function sendMobilePushNotification(syncId, payload) {
+  if (!firebaseMessaging) return;
+  const tokens = db.getMobilePushTokens(syncId);
+  if (!tokens.length) return;
+  const stale = [];
+  await Promise.all(tokens.map(async ({ token }) => {
+    try {
+      await firebaseMessaging.send({
+        token,
+        data: {
+          title: String(payload.title || "SYNC ENGINE").slice(0, 120),
+          body: String(payload.body || "").slice(0, 240),
+          type: String(payload.type || "message"),
+          syncId: String(syncId)
+        },
+        android: { priority: "high" }
+      });
+    } catch (err) {
+      if (err.code === "messaging/registration-token-not-registered" ||
+          err.code === "messaging/invalid-registration-token") {
+        stale.push(token);
+      } else {
+        console.warn("[FCM] Falló el envío a un dispositivo:", err.message);
+      }
+    }
+  }));
+  for (const token of stale) db.removeMobilePushToken(syncId, token);
+}
+
+// ==== End of Firebase Cloud Messaging ====
 const fs = require("fs");
+const crypto = require("crypto");
 const dns = require("dns").promises;
 const http = require("http");
 const https = require("https");
@@ -162,12 +216,13 @@ const { Server } = require("socket.io");
 const selfsigned = require("selfsigned");
 const db = require("./db");
 const { safeUrl } = require("./public/safe-content");
+const { deliver } = require("./pubsub-routing");
 
 const asyncHandler = (fn) => (req, res, next) => {
   fn(req, res, next).catch(next);
 };
 
-const PORT = (process.env.PORT && process.env.PORT !== "8080") ? process.env.PORT : 3000;
+const PORT = Number(process.env.PORT || 3000);
 const HOST = "0.0.0.0";
 const configuredCorsOrigins = new Set(String(process.env.CORS_ORIGINS || "").split(",").map((origin) => origin.trim()).filter(Boolean));
 
@@ -237,6 +292,14 @@ function getLocalIPv4Addresses() {
 }
 
 const app = express();
+app.disable("x-powered-by");
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
+
 const authAttempts = new Map();
 const AUTH_WINDOW_MS = 15 * 60 * 1000;
 const AUTH_MAX_ATTEMPTS = 5;
@@ -244,7 +307,6 @@ const AUTH_MAX_TRACKED_IPS = 10000;
 
 function authRateLimit(req, res, next) {
   const now = Date.now();
-  // Expire stale keys and bound memory use when requests arrive from many IPs.
   for (const [ip, attempt] of authAttempts) {
     if (attempt.resetAt <= now) authAttempts.delete(ip);
   }
@@ -266,16 +328,25 @@ function authRateLimit(req, res, next) {
   next();
 }
 
+const allowedOrigins = new Set(
+  String(process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
 const corsOptions = {
   origin: function (origin, callback) {
-    return callback(null, isAllowedCorsOrigin(origin));
+    if (!origin || origin === "null" || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://")) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.has(origin) || configuredCorsOrigins.has(origin)) return callback(null, true);
+    return callback(new Error("Origen no permitido por CORS"));
   },
   credentials: true
 };
 app.use(cors(corsOptions));
 
-// Configuración de body-parser limitada a 1 MB para prevenir ataques DoS en memoria
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "1mb", extended: true }));
 app.use(
   "/.well-known",
@@ -310,20 +381,28 @@ app.get(["/widget", "/widget.html", "/public/widget.html"], (req, res) => {
     "Content-Security-Policy",
     "frame-ancestors 'self' chrome-extension:* moz-extension:*"
   );
-  res.sendFile(path.join(__dirname, "public", "widget.html"));
+  res.sendFile("widget.html", { root: path.join(__dirname, "public") });
 });
 
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/public", express.static(path.join(__dirname, "public")));
 app.use("/src/assets/images", express.static(path.join(__dirname, "src/assets/images")));
+// Manejador global de errores: Responder 400 Bad Request para JSON malformado y 403 para bloqueos CORS
 app.use((err, req, res, next) => {
   if (req.path === "/api/save-subscription" && err instanceof SyntaxError && err.status === 400) {
     return res.status(500).json({ ok: false, error: "Error al procesar el payload de suscripción" });
   }
-  next(err);
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({ error: "Payload JSON malformado o inválido" });
+  }
+  if (err.message && err.message.includes("CORS")) {
+    return res.status(403).json({ error: "Petición bloqueada por política de origen (CORS)" });
+  }
+  console.error("[Server Unhandled Error]:", err);
+  return res.status(500).json({ error: "Error interno del servidor" });
 });
 // Directorio y almacenamiento Multer para documentos y archivos pesados (hasta 2 GB sin compresión)
-const UPLOADS_DIR = path.join(__dirname, "public", "uploads");
+const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads"));
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
@@ -333,15 +412,30 @@ const storage = multer.diskStorage({
     cb(null, UPLOADS_DIR);
   },
   filename: function (_req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_\-\.]/g, "_");
-    cb(null, `${base}-${uniqueSuffix}${ext}`);
+    const ext = path.extname(file.originalname || "").toLowerCase().slice(0, 20);
+    cb(null, `${crypto.randomUUID()}${ext}`);
   }
 });
 
 const MAX_STANDARD_UPLOAD_BYTES = 50 * 1024 * 1024;
 const MAX_PREMIUM_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024;
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 2 * 1024 * 1024 * 1024,
+    files: 1,
+    fields: 8,
+    fieldSize: 64 * 1024,
+    parts: 12
+  },
+  fileFilter: (_req, file, cb) => {
+    if (!file.originalname || file.originalname.length > 255) {
+      return cb(new Error("Nombre de archivo inválido"));
+    }
+    cb(null, true);
+  }
+});
 
 function uploadSingleFileForPlan(req, res, next) {
   const plan = String(req.user?.plan || "free").trim().toLowerCase();
@@ -477,6 +571,18 @@ app.post('/api/notifications/subscribe', requireAuth, (req, res) => {
   }
 });
 
+app.get('/api/notifications/vapid-public-key', requireAuth, (_req, res) => {
+  res.json({ ok: true, configured: webPushConfigured, publicKey: webPushConfigured ? VAPID_PUBLIC_KEY : null });
+});
+
+function isBlockedMetadataHost(hostname) {
+  const host = String(hostname || "").toLowerCase().replace(/[\[\]]/g, "");
+  if (host === "localhost" || host.endsWith(".localhost") || host === "metadata.google.internal") return true;
+  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(host)) return true;
+  const match = host.match(/^172\.(\d+)\./);
+  return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
+}
+
 // Extractor de Metadatos OpenGraph y Favicon para Rich Link Cards
 async function fetchUrlMetadata(text) {
   if (!text || typeof text !== "string") return null;
@@ -486,9 +592,10 @@ async function fetchUrlMetadata(text) {
   const targetUrl = match[0];
   try {
     const parsed = new URL(targetUrl);
+    if (!['http:', 'https:'].includes(parsed.protocol) || isBlockedMetadataHost(parsed.hostname)) return null;
     await assertPublicPreviewUrl(targetUrl);
     const domain = parsed.hostname;
-    const defaultFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+    const defaultFavicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3500);
@@ -586,15 +693,26 @@ app.post("/api/auth/login", authRateLimit, (req, res) => {
   }
 });
 
+app.post("/api/auth/logout", requireAuth, (req, res) => {
+  const token = req.headers.authorization.slice(7).trim();
+  db.revokeSession(token);
+  res.status(204).end();
+});
+
+/**
+ * Resumen para el widget nativo de Android.
+ * Query: callsSince (ms epoch) limita las llamadas perdidas contadas.
+ */
+app.get("/api/widget/summary", requireAuth, (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ ok: true, ...db.getWidgetSummary(req.user.syncId, req.query.callsSince) });
+});
+
 app.get("/api/auth/me", requireAuth, (req, res) => {
   res.json({ ok: true, user: req.user });
 });
 
-app.post("/api/auth/logout", requireAuth, (req, res) => {
-  const token = req.headers.authorization.slice(7).trim();
-  db.revokeSession(token);
-  res.json({ ok: true });
-});
+
 
 // Endpoint de Registro Web Push inyectado de forma segura
 app.post("/api/save-subscription", requireAuth, asyncHandler(async (req, res) => {
@@ -622,6 +740,7 @@ app.post("/api/save-subscription", requireAuth, asyncHandler(async (req, res) =>
     return res.status(500).json({ ok: false, error: "Error interno al guardar la suscripción" });
   }
 }));
+
 
 /** Registra un token FCM Android en la cuenta autenticada. */
 app.post("/api/mobile/push-token", requireAuth, (req, res) => {
@@ -916,6 +1035,60 @@ app.post("/api/channels", requireAuth, (req, res) => {
   }
 });
 
+app.put("/api/channels/:channelId", requireAuth, (req, res) => {
+  try {
+    const channel = db.updateWorkspaceChannel(req.params.channelId, req.user.syncId, req.body || {});
+    res.json({ ok: true, channel });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/channels/:channelId/members", requireAuth, (req, res) => {
+  try {
+    const channel = db.addWorkspaceChannelMember(req.params.channelId, req.user.syncId, req.body && req.body.syncId);
+    res.json({ ok: true, channel });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) => {
+  try {
+    const channel = db.grantWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
+    res.json({ ok: true, channel });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) => {
+  try {
+    const channel = db.revokeWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
+    res.json({ ok: true, channel });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.delete("/api/channels/:channelId/members/:syncId", requireAuth, (req, res) => {
+  try {
+    const channel = db.removeWorkspaceChannelMember(req.params.channelId, req.user.syncId, req.params.syncId);
+    res.json({ ok: true, channel });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+app.delete("/api/channels/:channelId", requireAuth, (req, res) => {
+  try {
+    const channel = db.deleteWorkspaceChannel(req.params.channelId, req.user.syncId);
+    res.json({ ok: true, channel });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
 app.get("/api/channels/:channelId/messages", requireAuth, (req, res) => {
   try {
     const messages = db.getChannelMessages(req.params.channelId, req.user.syncId);
@@ -935,51 +1108,61 @@ app.get("/api/messages/:contactSyncId/export", requireAuth, (req, res) => {
   }
 });
 
-// Configuración de Certificados SSL Autofirmados para soporte HTTPS (Requerido para iOS WebRTC y Micrófono)
-const SSL_DIR = path.join(__dirname, "data", "ssl");
-if (!fs.existsSync(SSL_DIR)) {
-  fs.mkdirSync(SSL_DIR, { recursive: true });
-}
-const CERT_FILE = path.join(SSL_DIR, "cert.pem");
-const KEY_FILE = path.join(SSL_DIR, "key.pem");
-
+// Los certificados autofirmados solo se inicializan para el servidor local.
+// Vercel termina TLS delante de la Function y su filesystem desplegado no es persistente.
+const isServerlessRuntime = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_VERSION);
 let sslOptions = null;
-try {
-  if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
-    sslOptions = {
-      cert: fs.readFileSync(CERT_FILE),
-      key: fs.readFileSync(KEY_FILE)
-    };
-  } else {
-    const pemsOrPromise = selfsigned.generate(
-      [{ name: "commonName", value: "sync-engine-server" }],
-      { days: 365, keySize: 2048 }
-    );
-    if (pemsOrPromise && typeof pemsOrPromise.then === "function") {
-      pemsOrPromise.then((pems) => {
-        if (pems && pems.cert && pems.private) {
-          try {
-            fs.writeFileSync(CERT_FILE, pems.cert, "utf8");
-            fs.writeFileSync(KEY_FILE, pems.private, "utf8");
-          } catch (_) {}
-        }
-      }).catch(() => {});
-    } else if (pemsOrPromise && pemsOrPromise.cert && pemsOrPromise.private) {
-      fs.writeFileSync(CERT_FILE, pemsOrPromise.cert, "utf8");
-      fs.writeFileSync(KEY_FILE, pemsOrPromise.private, "utf8");
-      sslOptions = { cert: pemsOrPromise.cert, key: pemsOrPromise.private };
+
+if (!isServerlessRuntime && process.env.DISABLE_LOCAL_TLS !== "true") {
+  const SSL_DIR = path.join(__dirname, "data", "ssl");
+  const CERT_FILE = path.join(SSL_DIR, "cert.pem");
+  const KEY_FILE = path.join(SSL_DIR, "key.pem");
+
+  try {
+    if (!fs.existsSync(SSL_DIR)) {
+      fs.mkdirSync(SSL_DIR, { recursive: true });
     }
+
+    if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
+      sslOptions = {
+        cert: fs.readFileSync(CERT_FILE),
+        key: fs.readFileSync(KEY_FILE)
+      };
+    } else {
+      const pemsOrPromise = selfsigned.generate(
+        [{ name: "commonName", value: "sync-engine-server" }],
+        { days: 365, keySize: 2048 }
+      );
+      if (pemsOrPromise && typeof pemsOrPromise.then === "function") {
+        pemsOrPromise.then((pems) => {
+          if (pems && pems.cert && pems.private) {
+            try {
+              fs.writeFileSync(CERT_FILE, pems.cert, "utf8");
+              fs.writeFileSync(KEY_FILE, pems.private, "utf8");
+            } catch (_) {}
+          }
+        }).catch(() => {});
+      } else if (pemsOrPromise && pemsOrPromise.cert && pemsOrPromise.private) {
+        fs.writeFileSync(CERT_FILE, pemsOrPromise.cert, "utf8");
+        fs.writeFileSync(KEY_FILE, pemsOrPromise.private, "utf8");
+        sslOptions = { cert: pemsOrPromise.cert, key: pemsOrPromise.private };
+      }
+    }
+  } catch (sslErr) {
+    console.warn("[SSL] No se pudo inicializar certificado SSL:", sslErr.message);
   }
-} catch (sslErr) {
-  console.warn("[SSL] No se pudo inicializar certificado SSL:", sslErr.message);
 }
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
-      callback(null, isAllowedCorsOrigin(origin));
+      if (!origin || origin === "null" || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://") || allowedOrigins.has(origin) || configuredCorsOrigins.has(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Origen no permitido por CORS"));
     },
+    credentials: true,
     methods: ["GET", "POST"]
   },
   maxHttpBufferSize: 50e6
@@ -1010,6 +1193,28 @@ if (sslOptions) {
 const onlineUsers = new Map();
 const socketToUser = new Map();
 
+function deliverPubSubEvent(payload) {
+  return deliver(payload, socketToUser, io, (socketId, user) => {
+    const socket = io.sockets.sockets.get(socketId);
+    const currentUser = socket && db.getUserByToken(socket.data.authToken);
+    return currentUser?.syncId === user.syncId;
+  });
+}
+
+function clearSocketIdentity(socket) {
+  const previous = socketToUser.get(socket.id);
+  socketToUser.delete(socket.id);
+  delete socket.data.authToken;
+  if (previous) {
+    const sockets = onlineUsers.get(previous.syncId);
+    if (sockets) {
+      sockets.delete(socket.id);
+      if (!sockets.size) onlineUsers.delete(previous.syncId);
+    }
+    for (const room of socket.rooms) if (room !== socket.id) socket.leave(room);
+  }
+}
+
 /**
  * Sends a structured channel authorization failure to a Socket.IO client.
  * @param {import("socket.io").Socket} socket
@@ -1025,6 +1230,7 @@ io.on("connection", function (socket) {
   socket.on("authenticate", function (payload) {
     const token = payload && payload.token ? payload.token : null;
     const user = db.getUserByToken(token);
+    clearSocketIdentity(socket);
     if (!user) {
       socket.emit("auth-error", { message: "Token inválido" });
       return;
@@ -1032,6 +1238,7 @@ io.on("connection", function (socket) {
 
     const syncId = user.syncId;
     socketToUser.set(socket.id, user);
+    socket.data.authToken = token;
 
     if (!onlineUsers.has(syncId)) {
       onlineUsers.set(syncId, new Set());
@@ -1123,13 +1330,15 @@ io.on("connection", function (socket) {
 
   // Envío de Mensaje Privado (Texto, Audio de Voz o Archivo)
   socket.on("send-private-message", async function (payload) {
+    const clientMsgId = payload && payload.clientMsgId;
+    const emitMessageError = (message) => socket.emit("error-message", { id: clientMsgId, message });
     const sender = socketToUser.get(socket.id);
     if (!sender) {
-      socket.emit("error-message", { message: "No autenticado" });
+      emitMessageError("No autenticado");
       return;
     }
 
-    const { toSyncId, text, type, fileData, audioData, clientMsgId, replyTo } = payload || {};
+    const { toSyncId, text, type, fileData, audioData, replyTo } = payload || {};
     if (!toSyncId) return;
 
     const targetSyncId = String(toSyncId).trim().toUpperCase();
@@ -1143,38 +1352,35 @@ io.on("connection", function (socket) {
       if (typeof fileData !== "object" || Array.isArray(fileData) ||
           ["url", "data"].some((key) => fileData[key] != null &&
             !safeUrl(fileData[key], "download") && !safeUrl(fileData[key], "image"))) {
-        socket.emit("error-message", { message: "URL de archivo no válida" });
+        emitMessageError("URL de archivo no válida");
         return;
       }
     }
     if (audioData != null && !safeUrl(audioData, "audio")) {
-      socket.emit("error-message", { message: "URL de audio no válida" });
+      emitMessageError("URL de audio no válida");
       return;
     }
     let fileIds;
     try {
       fileIds = messageFileIds(sender.syncId, [fileData?.url, fileData?.data, audioData], socket.handshake.headers.host);
     } catch (err) {
-      socket.emit("error-message", { message: err.message });
+      emitMessageError(err.message);
       return;
     }
     const targetSockets = onlineUsers.get(targetSyncId);
     const isTargetOnline = Boolean(targetSockets && targetSockets.size > 0);
     const initialStatus = isTargetOnline ? "delivered" : "sent";
+    const existingMessage = clientMsgId ? db.getMessageById(clientMsgId) : null;
+    if (existingMessage &&
+        (existingMessage.fromId !== sender.syncId || existingMessage.toId !== targetSyncId)) {
+      emitMessageError("El identificador del mensaje ya está en uso");
+      return;
+    }
+    const isRetry = Boolean(existingMessage);
 
     let messageObj = null;
 
     if (msgType === "text") {
-      // If recipient is offline, send Web Push notification
-      if (!isTargetOnline) {
-        const pushPayload = {
-          title: `Nuevo mensaje de ${sender.formattedName}`,
-          body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
-          icon: '/assets/logo.png',
-          data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
-        };
-        sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
-      }
       messageObj = db.saveTextMessage(
         sender.syncId,
         targetSyncId,
@@ -1209,21 +1415,11 @@ io.on("connection", function (socket) {
           }
         } catch (err) {
           console.warn("[AUDIO] Error al persistir audio en disco:", err.message);
-          socket.emit("error-message", { message: "No se pudo registrar el audio" });
+          emitMessageError("No se pudo registrar el audio");
           return;
         }
       }
 
-      // If recipient is offline, send Web Push notification
-      if (!isTargetOnline) {
-        const pushPayload = {
-          title: `Nuevo mensaje de ${sender.formattedName}`,
-          body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
-          icon: '/assets/logo.png',
-          data: { syncId: targetSyncId, type: 'message' }
-        };
-        sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
-      }
       messageObj = db.saveMessage({
         id: clientMsgId || null,
         fromId: sender.syncId,
@@ -1236,6 +1432,24 @@ io.on("connection", function (socket) {
         replyTo: replyTo || null,
         status: initialStatus
       });
+    }
+
+    if (!isTargetOnline && !isRetry) {
+      const pushPayload = {
+        title: `Nuevo mensaje de ${sender.formattedName}`,
+        body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
+        icon: '/assets/logo.png',
+        data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
+      };
+      sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
+    }
+
+    if (!isRetry) {
+      sendMobilePushNotification(targetSyncId, {
+        title: `Nuevo mensaje de ${sender.formattedName}`,
+        body: (text && text.length > 100) ? text.slice(0, 97) + "..." : (text || "Tienes un mensaje nuevo"),
+        type: "message"
+      }).catch(e => console.warn("[FCM] Falló el aviso de mensaje:", e.message));
     }
 
     if (sender) {
@@ -1462,6 +1676,12 @@ io.on("connection", function (socket) {
 
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
+    db.recordCall(sender.syncId, targetSyncId, !(targetSockets && targetSockets.size > 0));
+    sendMobilePushNotification(targetSyncId, {
+      title: "Llamada entrante",
+      body: `Llamada de ${sender.formattedName || sender.syncId}`,
+      type: "call"
+    }).catch(e => console.warn("[FCM] Falló el aviso de llamada:", e.message));
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
@@ -1472,6 +1692,11 @@ io.on("connection", function (socket) {
         });
       });
     } else {
+      sendMobilePushNotification(targetSyncId, {
+        title: "Llamada entrante",
+        body: `Llamada de ${sender.formattedName || sender.syncId}`,
+        type: "call"
+      }).catch(e => console.warn("[FCM] Falló el aviso de llamada:", e.message));
       socket.emit("call-unavailable", {
         toSyncId: targetSyncId,
         message: "El contacto no se encuentra en línea para recibir llamadas"
@@ -1485,6 +1710,7 @@ io.on("connection", function (socket) {
 
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
+    db.resolveCall(targetSyncId, sender.syncId, 'answered');
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
@@ -1520,6 +1746,7 @@ io.on("connection", function (socket) {
 
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
+    db.resolveCall(targetSyncId, sender.syncId, 'rejected');
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
@@ -1537,6 +1764,8 @@ io.on("connection", function (socket) {
 
     const targetSyncId = String(data.toSyncId).trim().toUpperCase();
     const targetSockets = onlineUsers.get(targetSyncId);
+    // Si quien llama cuelga antes de que contesten, cuenta como llamada perdida.
+    db.resolveCall(sender.syncId, targetSyncId, 'missed');
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
@@ -1666,7 +1895,10 @@ function broadcastUserStatus(syncId, isOnline) {
   });
 }
 
-server.listen(PORT, HOST, function () {
+if (typeof module !== "undefined" && require.main === module) {
+  // DATA-01: fail before accepting traffic, including when /api/status is probed.
+  db.readDb();
+  server.listen(PORT, HOST, function () {
   const localIps = getLocalIPv4Addresses();
   console.log("\n==================================================");
   console.log("SYNC ENGINE Server Activo en http://" + HOST + ":" + PORT);
@@ -1682,24 +1914,27 @@ server.listen(PORT, HOST, function () {
 
   // ==== Inicialización del listener de Cloud Pub/Sub ====
   // Se arranca después de que el servidor HTTP/Socket.IO ya está escuchando tráfico.
-  // Los payloads recibidos desde la suscripción se emiten de forma transparente
-  // a todos los clientes conectados (Electron, web, móvil).
+  // Only explicitly addressed, currently authenticated recipients receive events.
   try {
+    if (process.env.PUBSUB_ENABLED === "false") return;
     const { startChatSubscriptionListener } = require("./pubsub-service");
     startChatSubscriptionListener(function (pubsubPayload) {
-      let delivered = 0;
-      socketToUser.forEach((user, socketId) => {
-        if (canReceivePubSubEvent(user, pubsubPayload)) {
-          io.to(socketId).emit("pubsub-chat-event", pubsubPayload);
-          delivered += 1;
-        }
-      });
-      console.log("[Pub/Sub → Socket.IO] Evento autorizado para sockets:", delivered);
+      const delivered = deliverPubSubEvent(pubsubPayload);
+      console.log("[Pub/Sub → Socket.IO] Destinatarios autenticados:", delivered);
     });
   } catch (err) {
     console.error("[Pub/Sub] No se pudo iniciar la suscripción; HTTP seguirá disponible:", err.message);
   }
-});
+  });
+}
+
+if (typeof module !== "undefined") {
+  module.exports = app;
+  module.exports.app = app;
+  module.exports.server = server;
+  module.exports.io = io;
+  module.exports.deliverPubSubEvent = deliverPubSubEvent;
+}
 
 if (process.env.RENDER_EXTERNAL_URL) {
   const keepAliveUrl = new URL("/api/status", process.env.RENDER_EXTERNAL_URL);

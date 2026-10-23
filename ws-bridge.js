@@ -1,33 +1,78 @@
-﻿const WebSocket = require('ws');
-const { io } = require('socket.io-client');
+"use strict";
+const WebSocket = require("ws");
+const { io } = require("socket.io-client");
+const { createBridgeAuth } = require("./bridge-security");
+const { recipientsFor } = require("./pubsub-routing");
 
-console.log('🚀 Inicializando adaptador nativo SYNC ENGINE HUB...');
+// One bridge process represents ONE upstream user. It is not a multi-user gateway.
+function startBridge({ env = process.env, logger = console } = {}) {
+  const authenticate = createBridgeAuth(env.WS_BRIDGE_TOKEN);
+  if (!env.WS_BRIDGE_UPSTREAM_TOKEN) throw new Error("SEC-02: WS_BRIDGE_UPSTREAM_TOKEN is required");
+  const host = env.WS_BRIDGE_HOST || "127.0.0.1";
+  if (!["127.0.0.1", "::1"].includes(host)) throw new Error("SEC-02: bridge must bind to loopback");
+  const port = Number(env.WS_BRIDGE_PORT ?? 8123);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error("Invalid bridge port");
+  const upstreamUrl = new URL(env.WS_BRIDGE_UPSTREAM_URL || "http://127.0.0.1:3000");
+  if (upstreamUrl.username || upstreamUrl.password ||
+      !["http:", "https:"].includes(upstreamUrl.protocol) ||
+      (upstreamUrl.protocol === "http:" && !["127.0.0.1", "::1", "localhost"].includes(upstreamUrl.hostname))) {
+    throw new Error("SEC-02: remote upstream requires HTTPS");
+  }
+  let identity = null;
+  const wss = new WebSocket.Server({
+    host, port, maxPayload: 64 * 1024,
+    verifyClient: ({ req }, done) => done(authenticate(req), 401, "Unauthorized")
+  });
+  wss.on("error", (err) => logger.error("[Bridge] WebSocket listener failed:", err?.message || err));
+  wss.on("connection", (client) => client.on("error", (err) => logger.warn("[Bridge] Client error:", err?.message || err)));
+  const upstream = io(upstreamUrl.href, { autoConnect: false, reconnection: true });
 
-const socketConnection = io('http://127.0.0.1:3000');
-const wss = new WebSocket.Server({ port: 8123 });
-
-wss.on('connection', (ws) => {
-  console.log('[Adapter] Cliente móvil en emulador conectado con éxito vía WS Puro.');
-  
-  ws.on('message', (message) => {
-    try {
-      const payload = JSON.parse(message);
-      console.log('[Móvil → Servidor]:', payload);
-    } catch (e) {
-      console.log('[Móvil RAW]:', message.toString());
+  upstream.on("pubsub-chat-event", (payload) => {
+    if (!identity) return;
+    const targets = recipientsFor(payload);
+    if (!targets.includes(identity)) return;
+    for (const client of wss.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(payload));
+      }
     }
   });
 
-  ws.on('close', () => console.log('[Adapter] Conexión con el móvil cerrada de forma segura.'));
-});
+  upstream.connect();
 
-socketConnection.on('pubsub-chat-event', (data) => {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
-      console.log('[Pub/Sub → WS Móvil] Evento propagado al stream del HUB:', data.type || 'sync');
+  async function close() {
+    upstream.disconnect();
+    for (const client of wss.clients) {
+      try {
+        client.terminate();
+      } catch (_) {}
     }
-  });
-});
+    // CORRECCIÓN: Manejo adecuado de error en la promesa de cierre del socket
+    await new Promise((resolve, reject) => {
+      wss.close((err) => (err ? reject(err) : resolve()));
+    });
+  }
 
-console.log('[OK] Servidor WebSocket activo escuchando de forma estricta en el puerto :8123');
+  return { wss, upstream, close };
+}
+
+if (require.main === module) {
+  const bridge = startBridge();
+  // CORRECCIÓN: Cierre asíncrono ordenado en señales de terminación
+  let isClosing = false;
+  for (const signal of ["SIGINT", "SIGTERM"]) {
+    process.once(signal, async () => {
+      if (isClosing) return;
+      isClosing = true;
+      try {
+        await bridge.close();
+        process.exit(0);
+      } catch (err) {
+        console.error(`[Bridge] Error during ${signal} graceful shutdown:`, err);
+        process.exit(1);
+      }
+    });
+  }
+}
+
+module.exports = { startBridge };

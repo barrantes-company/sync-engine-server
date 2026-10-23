@@ -5,14 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
   <title>SYNC ENGINE | Widget</title>
+<<<<<<< HEAD
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/widget.css?v=20261009-widget-final">
+=======
+  <link rel="stylesheet" href="/widget.css">
+>>>>>>> origin/main
   <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" defer></script>
   <script src="/widget.js?v=20261009-widget-final" defer></script>
 </head>
 <body>
+<<<<<<< HEAD
   <main class="widget-card" id="widget-container" aria-labelledby="widget-title">
     <span class="edge-sweep" aria-hidden="true"></span>
     <header class="widget-header">
@@ -181,7 +186,89 @@
         <button type="button" id="widget-login-btn" class="auth-login-btn hidden-until-video-ends">Iniciar sesión <span aria-hidden="true">↗</span></button>
       </div>
     </div>
+=======
+  <main class="widget-card" id="widget-container" aria-label="SYNC ENGINE">
+
+    <!-- Estelas de luz animadas (decorativas) -->
+    <svg id="trails" class="trails" viewBox="0 0 800 420" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="trail-fade" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#fff" stop-opacity="0"></stop>
+          <stop offset="0.08" stop-color="#fff" stop-opacity="1"></stop>
+          <stop offset="0.82" stop-color="#fff" stop-opacity="0.7"></stop>
+          <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+        </linearGradient>
+        <mask id="trail-mask"><rect width="800" height="420" fill="url(#trail-fade)"></rect></mask>
+      </defs>
+      <g id="trail-group" fill="none" stroke-linecap="round" mask="url(#trail-mask)"></g>
+    </svg>
+    <div class="base-glow" aria-hidden="true"></div>
+
+    <button id="open-chat-button" class="icon-btn icon-open" type="button" aria-label="Abrir SYNC ENGINE">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"></path></svg>
+    </button>
+    <button id="settings-button" class="icon-btn icon-settings" type="button" aria-label="Ajustes" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </button>
+
+    <!-- Estado de conexión en tiempo real (punto discreto) -->
+    <div class="sync-status" id="sync-status" data-state="offline" title="Estado de conexión en tiempo real">
+      <span class="sync-dot" aria-hidden="true"></span>
+      <span id="sync-label" class="sr-only">Sin conexión</span>
+    </div>
+
+    <!-- Hora, fecha y contadores -->
+    <section class="hero" aria-label="Hora y fecha">
+      <p id="clock" class="clock">--:--</p>
+      <p id="date" class="date">&nbsp;</p>
+      <div class="counters" aria-live="polite">
+        <button id="messages-counter" class="counter" type="button" aria-label="0 mensajes sin leer"><b id="unread-count">0</b> <span id="messages-word">mensajes</span></button>
+        <span class="counter-sep" aria-hidden="true">·</span>
+        <button id="calls-counter" class="counter" type="button" aria-label="0 llamadas"><b id="calls-count">0</b> <span id="calls-word">llamadas</span></button>
+      </div>
+    </section>
+
+    <!-- Anuncios recientes -->
+    <section class="announcements-section" aria-label="Anuncios en vivo">
+      <div id="announcements-list" class="announcements-list" role="region" aria-label="Lista de anuncios" aria-live="polite">
+        <div class="empty-announcements"><span>Esperando anuncios en #anuncios…</span></div>
+      </div>
+    </section>
+
+    <!-- Respuesta rápida -->
+    <form id="quick-reply-form" class="quick-reply-form" action="javascript:void(0);">
+      <input type="text" id="quick-reply-input" class="quick-reply-input" placeholder="Escribir en #anuncios…" maxlength="250" autocomplete="off">
+      <button type="submit" id="quick-reply-send" class="quick-reply-btn" title="Enviar" aria-label="Enviar anuncio">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+      </button>
+    </form>
+
+    <!-- Ajustes -->
+    <div id="settings-panel" class="settings-panel" hidden>
+      <button id="toggle-notifications" class="switch-row" type="button" role="switch" aria-checked="true">
+        <span><span class="switch-title">Avisos del sistema</span><span class="switch-hint">Solo avisa si no estás mirando el widget</span></span>
+        <span class="switch" aria-hidden="true"></span>
+      </button>
+      <button id="toggle-flash" class="switch-row" type="button" role="switch" aria-checked="true">
+        <span><span class="switch-title">Destello</span><span class="switch-hint">Las estelas se encienden al llegar un aviso</span></span>
+        <span class="switch" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <p id="widget-notice" class="widget-notice" role="status" aria-live="polite"></p>
+    <div id="incoming-notice" class="incoming-notice" role="status" aria-live="polite" hidden></div>
+
+    <!-- Sesión requerida -->
+    <div id="auth-overlay" class="auth-overlay hidden">
+      <h2 class="auth-overlay-title">Sesión requerida</h2>
+      <p class="auth-overlay-desc">Inicia sesión en SYNC ENGINE para ver tus avisos.</p>
+      <button type="button" id="widget-login-btn" class="auth-login-btn">Iniciar sesión</button>
+    </div>
+
+    <!-- Controles de compatibilidad (captura y portapapeles) -->
+>>>>>>> origin/main
     <div class="widget-utilities-drawer" aria-hidden="true">
+      <span id="weather-pill"><span id="weather-icon"></span><span id="temperature"></span></span>
       <select id="contact-select" aria-label="Contacto"></select>
       <button id="capture-button" type="button"><span id="capture-label">Capturar</span></button>
       <button id="copy-button" type="button"><span id="copy-label">Copiar ID</span></button>

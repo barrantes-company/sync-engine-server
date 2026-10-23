@@ -20,6 +20,7 @@ final class WidgetUrls {
      */
     static String defaultUrl(Context context) {
         String saved = preferences(context).getString(DEFAULT_URL, "");
+<<<<<<< HEAD
         String url = saved.isEmpty() ? BuildConfig.DEFAULT_WIDGET_URL : saved;
         if (url.contains("10.0.2.2") && !isEmulator()) {
             return "file:///android_asset/index.html";
@@ -33,6 +34,9 @@ final class WidgetUrls {
                 || android.os.Build.MODEL.contains("google_sdk")
                 || android.os.Build.MODEL.contains("Emulator")
                 || android.os.Build.MODEL.contains("Android SDK built for x86");
+=======
+        return saved.isEmpty() ? BuildConfig.DEFAULT_WIDGET_URL : saved;
+>>>>>>> origin/main
     }
 
     static void saveDefaultUrl(Context context, String url) {

@@ -3,13 +3,17 @@ package com.barrantesco.syncengine;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+<<<<<<< HEAD
 import java.util.TimeZone;
 
+=======
+>>>>>>> origin/main
 /**
  * Preferencias de la app: opciones del widget, sesión y caché de contadores.
  * La sesión solo guarda el token (nunca la contraseña) en almacenamiento privado.
  */
 final class AppSettings {
+<<<<<<< HEAD
     static final String DEVICE_TIME_ZONE = "device";
     static final int WIDGET_STYLE_LIGHT_SQUARE = 0;
     static final int WIDGET_STYLE_DARK_DIALS = 1;
@@ -20,6 +24,9 @@ final class AppSettings {
     static final int WIDGET_STYLE_WEATHER = 6;
     static final int WIDGET_STYLE_CONTACT = 7;
     static final int WIDGET_STYLE_COUNT = 8;
+=======
+    static final String DEFAULT_TIME_ZONE = "America/Lima";
+>>>>>>> origin/main
     private static final String FILE = "sync_state";
 
     private static final String TOKEN = "token";
@@ -27,16 +34,32 @@ final class AppSettings {
     private static final String USER_NAME = "user_name";
     private static final String USE_24H = "use_24h";
     private static final String TIME_ZONE = "time_zone";
+<<<<<<< HEAD
     private static final String WIDGET_STYLE = "widget_style";
     private static final String WIDGET_STYLE_VERSION = "widget_style_version";
     private static final String NOTIFICATIONS = "notifications";
     private static final String UNREAD = "unread";
     private static final String MISSED = "missed";
     private static final String LAST_SYNC = "last_sync";
+=======
+    private static final String SHOW_COUNTERS = "show_counters";
+    private static final String NOTIFICATIONS = "notifications";
+    private static final String ANIMATIONS = "animations";
+    private static final String WIDGET_STYLE = "widget_style";
+    private static final String UNREAD = "unread";
+    private static final String MISSED = "missed";
+>>>>>>> origin/main
     private static final String CALLS_SEEN_AT = "calls_seen_at";
     private static final String NOTIFIED_MSG_TS = "notified_msg_ts";
     private static final String NOTIFIED_MISSED = "notified_missed";
 
+<<<<<<< HEAD
+=======
+    static final String[] STYLE_NAMES = {
+            "Reloj", "Señal", "Negro", "Línea", "Barra", "Fino", "Ciudad", "Accesos"
+    };
+
+>>>>>>> origin/main
     private AppSettings() {
     }
 
@@ -73,7 +96,10 @@ final class AppSettings {
                 .remove(USER_NAME)
                 .putInt(UNREAD, 0)
                 .putInt(MISSED, 0)
+<<<<<<< HEAD
                 .putLong(LAST_SYNC, 0)
+=======
+>>>>>>> origin/main
                 .apply();
     }
 
@@ -93,6 +119,7 @@ final class AppSettings {
         prefs(context).edit().putBoolean(USE_24H, value).apply();
     }
 
+<<<<<<< HEAD
     static int widgetStyle(Context context) {
         SharedPreferences preferences = prefs(context);
         if (preferences.getInt(WIDGET_STYLE_VERSION, 0) == 0) {
@@ -127,12 +154,27 @@ final class AppSettings {
 
     static String timeZonePreference(Context context) {
         return prefs(context).getString(TIME_ZONE, DEVICE_TIME_ZONE);
+=======
+    static String timeZone(Context context) {
+        return prefs(context).getString(TIME_ZONE, DEFAULT_TIME_ZONE);
+>>>>>>> origin/main
     }
 
     static void setTimeZone(Context context, String zoneId) {
         prefs(context).edit().putString(TIME_ZONE, zoneId).apply();
     }
 
+<<<<<<< HEAD
+=======
+    static boolean showCounters(Context context) {
+        return prefs(context).getBoolean(SHOW_COUNTERS, true);
+    }
+
+    static void setShowCounters(Context context, boolean value) {
+        prefs(context).edit().putBoolean(SHOW_COUNTERS, value).apply();
+    }
+
+>>>>>>> origin/main
     static boolean notifications(Context context) {
         return prefs(context).getBoolean(NOTIFICATIONS, true);
     }
@@ -141,6 +183,27 @@ final class AppSettings {
         prefs(context).edit().putBoolean(NOTIFICATIONS, value).apply();
     }
 
+<<<<<<< HEAD
+=======
+    static boolean animations(Context context) {
+        return prefs(context).getBoolean(ANIMATIONS, true);
+    }
+
+    static void setAnimations(Context context, boolean value) {
+        prefs(context).edit().putBoolean(ANIMATIONS, value).apply();
+    }
+
+    static int widgetStyle(Context context) {
+        int value = prefs(context).getInt(WIDGET_STYLE, 2);
+        if (value < 0 || value >= STYLE_NAMES.length) return 2;
+        return value;
+    }
+
+    static void setWidgetStyle(Context context, int value) {
+        prefs(context).edit().putInt(WIDGET_STYLE, value).apply();
+    }
+
+>>>>>>> origin/main
     static int unread(Context context) {
         return prefs(context).getInt(UNREAD, 0);
     }
@@ -153,6 +216,7 @@ final class AppSettings {
         prefs(context).edit().putInt(UNREAD, unread).putInt(MISSED, missed).apply();
     }
 
+<<<<<<< HEAD
     static void markSyncSucceeded(Context context) {
         prefs(context).edit().putLong(LAST_SYNC, System.currentTimeMillis()).apply();
     }
@@ -162,6 +226,8 @@ final class AppSettings {
         return lastSync > 0 && System.currentTimeMillis() - lastSync < 20 * 60 * 1000L;
     }
 
+=======
+>>>>>>> origin/main
     /** Momento desde el que se cuentan llamadas perdidas (última vez que se abrió la app). */
     static long callsSeenAt(Context context) {
         return prefs(context).getLong(CALLS_SEEN_AT, 0);

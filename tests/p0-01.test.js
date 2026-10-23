@@ -9,13 +9,13 @@ const os = require('node:os');
 const vm = require('node:vm');
 const http = require('node:http');
 const { webcrypto } = require('node:crypto');
-const { spawn } = require('node:child_process');
 const { createRequire } = require('node:module');
 const { once } = require('node:events');
 const WebSocket = require('ws');
 const { io: connect } = require('socket.io-client');
 const { safeUrl } = require('../public/safe-content');
 const isolatedDb = require('./helpers/isolated-db');
+const { startChromium } = require('./helpers/browser');
 
 const root = path.resolve(__dirname, '..');
 const realRequire = createRequire(path.join(root, 'server.js'));
@@ -26,7 +26,7 @@ const unsafeUrls = ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'java\nscript:
   'blob:https://example.test/untrusted',
   'vbscript:msgbox(1)', 'data:text/html,<script>alert(1)</script>',
   'data:image/svg+xml;base64,' + Buffer.from('<svg onload="alert(1)"/>').toString('base64')];
-let tempDir, server, socketServer, base, browserProcess, cdp;
+let tempDir, server, socketServer, base, chromium, cdp;
 const sockets = [];
 const users = [
   { syncId: 'SYNC-1001', username: 'alice', formattedName: 'SYNC-1001 - Alice', cleanDisplayName: 'Alice', avatarUrl: raster },
@@ -75,20 +75,17 @@ before(async () => {
       return realRequire(name);
     }
   };
-  vm.runInNewContext(fs.readFileSync(path.join(root, 'server.js'), 'utf8') + '\nglobalThis.testIo = io;', context);
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'server.js'), 'utf8') + '\nglobalThis.testIo = io; globalThis.testOrigins = allowedOrigins;', context);
   socketServer = context.testIo;
   await new Promise((resolve) => http.Server.prototype.listen.call(server, 0, '127.0.0.1', resolve));
   base = 'http://127.0.0.1:' + server.address().port;
+  context.testOrigins.add(base);
 });
 
 after(async () => {
   for (const socket of sockets) socket.disconnect();
   if (cdp) cdp.close();
-  if (browserProcess && browserProcess.exitCode === null) {
-    const exited = once(browserProcess, 'exit');
-    browserProcess.kill();
-    await exited;
-  }
+  if (chromium) await chromium.stop();
   if (socketServer) await new Promise((resolve) => socketServer.close(resolve));
   if (server && server.listening) await new Promise((resolve) => server.close(resolve));
   if (db) await db.writeDb(db.testData);
@@ -231,6 +228,7 @@ test('real Socket.IO delivers normal text/files/audio and rejects executable res
   }
 });
 
+<<<<<<< HEAD
 test('message reactions and pinned messages cannot cross conversation boundaries', async () => {
   const foreign = {
     id: 'foreign-conversation-message',
@@ -288,6 +286,35 @@ test('billing webhook fails closed until provider signature verification exists'
   });
   assert.equal(response.status, 503);
   assert.match((await response.json()).error, /verificación de firma/);
+=======
+test('private message retries with the same client ID do not create duplicates', async () => {
+  const alice = await authenticatedSocket('test-alice');
+  const bob = await authenticatedSocket('test-bob');
+  const clientMsgId = 'retry_' + Date.now();
+  const received = waitEvent(bob, 'receive-private-message');
+  const firstAck = waitEvent(alice, 'message-sent');
+  alice.emit('send-private-message', {
+    clientMsgId, toSyncId: users[1].syncId, type: 'text', text: 'Queued once'
+  });
+  assert.equal((await firstAck).id, clientMsgId);
+  assert.equal((await received).id, clientMsgId);
+
+  const retryAck = waitEvent(alice, 'message-sent');
+  alice.emit('send-private-message', {
+    clientMsgId, toSyncId: users[1].syncId, type: 'text', text: 'Queued once'
+  });
+  assert.equal((await retryAck).id, clientMsgId);
+  assert.equal(messages.filter((message) => message.id === clientMsgId).length, 1);
+});
+
+test('Web Push configuration endpoint requires authentication and reports disabled configuration', async () => {
+  assert.equal((await fetch(base + '/api/notifications/vapid-public-key')).status, 401);
+  const response = await fetch(base + '/api/notifications/vapid-public-key', {
+    headers: { Authorization: ['Bearer', 'test-alice'].join(' ') }
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { ok: true, configured: false, publicKey: null });
+>>>>>>> origin/main
 });
 
 test('channel subscriptions and history require an authenticated member', async () => {
@@ -344,6 +371,62 @@ test('channel subscriptions and history require an authenticated member', async 
   const defaultChannel = db.getWorkspaceChannels(users[1].syncId).find((item) => item.isDefault);
   assert.equal(db.isChannelMember(defaultChannel.id, users[1].syncId), true);
   assert.equal(db.isChannelMember(channel.id, users[1].syncId), false);
+});
+
+test('channel creator can delegate and revoke channel administration securely', async () => {
+  const channel = db.createWorkspaceChannel('admin-delegation', 'Delegated admin test', users[0].syncId);
+  const aliceHeaders = { Authorization: 'Bearer test-alice', 'Content-Type': 'application/json' };
+  const bobHeaders = { Authorization: 'Bearer test-bob', 'Content-Type': 'application/json' };
+
+  // Only the creator can delegate administrative privileges.
+  const grant = await fetch(base + '/api/channels/' + channel.id + '/admins/' + users[1].syncId, {
+    method: 'POST', headers: aliceHeaders
+  });
+  assert.equal(grant.status, 200);
+  assert.equal((await grant.json()).channel.adminSyncIds.includes(users[1].syncId), true);
+  assert.equal(db.isChannelMember(channel.id, users[1].syncId), true);
+
+  // Delegated administrators can edit channels and manage membership.
+  const edit = await fetch(base + '/api/channels/' + channel.id, {
+    method: 'PUT', headers: bobHeaders, body: JSON.stringify({ name: 'admin-delegation-edited', description: 'Edited by delegate' })
+  });
+  assert.equal(edit.status, 200);
+  assert.equal((await edit.json()).channel.description, 'Edited by delegate');
+
+  const addMember = await fetch(base + '/api/channels/' + channel.id + '/members', {
+    method: 'POST', headers: bobHeaders, body: JSON.stringify({ syncId: users[0].syncId })
+  });
+  assert.equal(addMember.status, 200);
+
+  const removeMember = await fetch(base + '/api/channels/' + channel.id + '/members/' + encodeURIComponent(users[0].syncId), {
+    method: 'DELETE', headers: bobHeaders
+  });
+  // The creator cannot be removed from their own channel.
+  assert.equal(removeMember.status, 400);
+
+  // A delegated administrator cannot grant or revoke administrative privileges.
+  const delegateGrant = await fetch(base + '/api/channels/' + channel.id + '/admins/' + users[0].syncId, {
+    method: 'POST', headers: bobHeaders
+  });
+  assert.equal(delegateGrant.status, 400);
+
+  // Creator revokes the delegated role; the former admin can no longer edit.
+  const revoke = await fetch(base + '/api/channels/' + channel.id + '/admins/' + users[1].syncId, {
+    method: 'DELETE', headers: aliceHeaders
+  });
+  assert.equal(revoke.status, 200);
+  const deniedEdit = await fetch(base + '/api/channels/' + channel.id, {
+    method: 'PUT', headers: bobHeaders, body: JSON.stringify({ description: 'Should be denied' })
+  });
+  assert.equal(deniedEdit.status, 400);
+
+  // System/default channels remain protected from user administration.
+  const defaultChannel = db.getWorkspaceChannels(users[0].syncId).find((item) => item.isDefault);
+  assert.ok(defaultChannel);
+  const deniedDefaultEdit = await fetch(base + '/api/channels/' + defaultChannel.id, {
+    method: 'PUT', headers: aliceHeaders, body: JSON.stringify({ description: 'Should be denied' })
+  });
+  assert.equal(deniedDefaultEdit.status, 400);
 });
 
 test('vault API stores and returns only authenticated client-encrypted payloads', async () => {
@@ -449,29 +532,22 @@ class DevTools {
 }
 
 async function startBrowser(t) {
-  const executable = [process.env.CHROME_PATH,
-    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    '/usr/bin/chromium', '/usr/bin/google-chrome'].find((file) => file && fs.existsSync(file));
-  if (!executable) { t.skip('Set CHROME_PATH to run real-browser assertions'); return false; }
-  browserProcess = spawn(executable, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
-    '--disable-background-networking', '--remote-debugging-port=0', '--user-data-dir=' + path.join(tempDir, 'browser'),
-    '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
-  const browserUrl = await new Promise((resolve, reject) => {
-    let stderr = '';
-    const timer = setTimeout(() => reject(new Error('Chromium startup timeout: ' + stderr)), 20000);
-    browserProcess.once('error', (error) => { clearTimeout(timer); reject(error); });
-    browserProcess.stderr.on('data', (chunk) => {
-      stderr += chunk;
-      const match = stderr.match(/DevTools listening on (ws:\/\/[^\s]+)/);
-      if (match) { clearTimeout(timer); resolve(match[1]); }
-    });
-  });
+  if (cdp) return true;
+  const started = await startChromium(tempDir);
+  if (!started) { t.skip('Set CHROME_PATH to run real-browser assertions'); return false; }
+  chromium = started;
+  const browserUrl = started.browserUrl;
   const debuggerBase = browserUrl.replace(/^ws:/, 'http:').replace(/\/devtools\/browser\/.+$/, '');
-  const target = await (await fetch(debuggerBase + '/json/new?about:blank', { method: 'PUT' })).json();
-  const ws = new WebSocket(target.webSocketDebuggerUrl);
-  await once(ws, 'open');
-  cdp = new DevTools(ws);
+  try {
+    const target = await (await fetch(debuggerBase + '/json/new?about:blank', { method: 'PUT' })).json();
+    const ws = new WebSocket(target.webSocketDebuggerUrl);
+    await once(ws, 'open');
+    cdp = new DevTools(ws);
+  } catch (error) {
+    await started.stop();
+    chromium = null;
+    throw error;
+  }
   await cdp.send('Page.enable');
   await cdp.send('Runtime.enable');
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
@@ -671,6 +747,7 @@ test('real browser: text/name/file/quote payloads stay data across chat, avatars
   assert.equal(await cdp.evaluate('window.__xss'), 0);
 });
 
+<<<<<<< HEAD
 
 test('organization default channels are isolated to organization members', () => {
   const organization = db.createOrganization('Security Boundary Test', users[0].syncId);
@@ -719,4 +796,43 @@ test('HTTP CORS rejects unconfigured web origins while preserving extension acce
   assert.equal(denied.headers.get('access-control-allow-origin'), null);
   const extension = await fetch(base + '/api/health', { headers: { Origin: 'chrome-extension://abcdefghijklmnop' } });
   assert.equal(extension.headers.get('access-control-allow-origin'), 'chrome-extension://abcdefghijklmnop');
+=======
+test('real browser queues offline private text and replays it once after reconnect', async (t) => {
+  if (!cdp) db.saveTextMessage(users[0].syncId, users[1].syncId, 'Outbox test history');
+  if (!await startBrowser(t)) return;
+  const disconnected = await cdp.evaluate(`(() => {
+    socket.disconnect();
+    isSocketAuthenticated = false;
+    return JSON.stringify({ connected: socket.connected, recipient: activeContactSyncId });
+  })()`).then(JSON.parse).catch((error) => { throw new Error('Disconnect evaluation failed: ' + error.message); });
+  assert.equal(disconnected.connected, false);
+  assert.equal(disconnected.recipient, users[1].syncId);
+  await cdp.evaluate(`(async () => {
+    chatTextarea.value = 'Offline private message';
+    await handleSendMessage();
+    return true;
+  })()`).catch((error) => { throw new Error('Queue evaluation failed: ' + error.message); });
+  const queued = await cdp.evaluate(`getOfflineMessages().then(messages => JSON.stringify((() => {
+    const entry = messages.find(message => message.text === 'Offline private message');
+    return { saved: Boolean(entry), status: entry && entry.status, text: entry && entry.text,
+      textarea: chatTextarea.value };
+  })()))`).then(JSON.parse).catch((error) => { throw new Error('Outbox evaluation failed: ' + error.message); });
+  assert.equal(queued.textarea, '');
+  assert.equal(queued.saved, true);
+  assert.equal(queued.status, 'pending');
+
+  await cdp.evaluate('socket.connect(); true');
+  await cdp.evaluate(`new Promise((resolve, reject) => {
+    const started = Date.now();
+    const timer = setInterval(async () => {
+      const stillQueued = (await getOfflineMessages()).some(message => message.text === 'Offline private message');
+      if (!stillQueued && socket.connected && isSocketAuthenticated) {
+        clearInterval(timer); resolve(true);
+      } else if (Date.now() - started > 10000) {
+        clearInterval(timer); reject(new Error('Offline message did not replay'));
+      }
+    }, 50);
+  })`);
+  assert.equal(messages.filter((message) => message.text === 'Offline private message').length, 1);
+>>>>>>> origin/main
 });

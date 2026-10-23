@@ -3,6 +3,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<<<<<<< HEAD
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -12,6 +13,16 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+=======
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+>>>>>>> origin/main
 
     <application
         android:name=".SyncEngineApplication"
@@ -23,10 +34,20 @@
         android:theme="@style/AppTheme">
 
         <activity
+<<<<<<< HEAD
             android:name=".WebAppActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden">
+=======
+            android:name=".MainActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".WebAppActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+>>>>>>> origin/main
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -34,9 +55,38 @@
         </activity>
 
         <activity
+<<<<<<< HEAD
             android:name=".MainActivity"
             android:exported="false"
             android:label="@string/configure_widget" />
+=======
+            android:name=".WidgetConfigActivity"
+            android:exported="true"
+            android:label="@string/configure_widget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".OpenAppActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoDisplay" />
+
+        <service
+            android:name=".SyncJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <service
+            android:name=".SyncEngineMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+>>>>>>> origin/main
 
         <activity
             android:name=".OpenAppActivity"
@@ -60,7 +110,7 @@
         <receiver
             android:name=".SyncWidgetProvider"
             android:exported="true"
-            android:label="@string/widget_name"
+            android:label="@string/widget_negro"
             android:permission="android.permission.BIND_APPWIDGET">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -71,6 +121,35 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/sync_widget_info" />
+        </receiver>
+
+        <receiver android:name=".WidgetReloj" android:exported="true" android:label="@string/widget_reloj" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_0" />
+        </receiver>
+        <receiver android:name=".WidgetSenal" android:exported="true" android:label="@string/widget_senal" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_1" />
+        </receiver>
+        <receiver android:name=".WidgetLinea" android:exported="true" android:label="@string/widget_linea" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_3" />
+        </receiver>
+        <receiver android:name=".WidgetBarra" android:exported="true" android:label="@string/widget_barra" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_4" />
+        </receiver>
+        <receiver android:name=".WidgetFino" android:exported="true" android:label="@string/widget_fino" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_5" />
+        </receiver>
+        <receiver android:name=".WidgetCiudad" android:exported="true" android:label="@string/widget_ciudad" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_6" />
+        </receiver>
+        <receiver android:name=".WidgetAccesos" android:exported="true" android:label="@string/widget_accesos" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_7" />
         </receiver>
     </application>
 </manifest>
