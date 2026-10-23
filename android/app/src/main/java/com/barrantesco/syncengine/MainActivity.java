@@ -2,44 +2,17 @@ package com.barrantesco.syncengine;
 
 import android.Manifest;
 import android.app.Activity;
-<<<<<<< HEAD
-import android.content.Intent;
-import android.os.Build;
-import android.os.Bundle;
-import android.text.InputType;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
-=======
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
->>>>>>> origin/main
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
-<<<<<<< HEAD
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.TimeZone;
-
-/** Pantalla de ajustes: sesión, notificaciones y opciones visuales del widget. */
-public final class MainActivity extends Activity {
-    private static final List<String> ZONES = Arrays.asList(
-            "America/Lima", "America/Bogota", "America/Mexico_City", "America/Santiago",
-            "America/Argentina/Buenos_Aires", "America/New_York", "Europe/Madrid", "UTC");
-    private static final String DEVICE_ZONE = AppSettings.DEVICE_TIME_ZONE;
-
-    private LinearLayout sessionBox;
-=======
 import java.util.Arrays;
 import java.util.List;
 
@@ -56,7 +29,6 @@ public final class MainActivity extends Activity {
     private static final List<String> ZONES = Arrays.asList(
             "America/Lima", "America/Bogota", "America/Mexico_City", "America/Santiago",
             "America/Argentina/Buenos_Aires", "America/New_York", "Europe/Madrid", "UTC");
->>>>>>> origin/main
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,13 +37,6 @@ public final class MainActivity extends Activity {
     }
 
     private void buildContent() {
-<<<<<<< HEAD
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(24));
-
-        TextView title = text(getString(R.string.app_name), 26, R.color.brand_navy);
-=======
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         page.setPadding(dp(22), dp(26), dp(22), dp(28));
@@ -82,198 +47,10 @@ public final class MainActivity extends Activity {
         page.addView(eyebrow, matchWrap());
 
         TextView title = text("Configuración", 28, WHITE);
->>>>>>> origin/main
         title.setTypeface(null, 1);
         title.setPadding(0, dp(7), 0, dp(4));
         page.addView(title, matchWrap());
 
-<<<<<<< HEAD
-        Button open = new Button(this);
-        open.setText(R.string.open_panel);
-        open.setOnClickListener(view -> startActivity(new Intent(this, OpenAppActivity.class)));
-        content.addView(open, matchWrap());
-
-        content.addView(section(R.string.section_widget), matchWrap());
-        content.addView(text(getString(R.string.opt_widget_style), 15, R.color.text_primary), matchWrap());
-        Spinner widgetStyles = new Spinner(this);
-        String[] styleLabels = {
-                getString(R.string.widget_style_light_square),
-                getString(R.string.widget_style_dark_dials),
-                getString(R.string.widget_style_oled),
-                getString(R.string.widget_style_sync_ring),
-                getString(R.string.widget_style_light_wide),
-                getString(R.string.widget_style_slim_sync),
-                getString(R.string.widget_style_weather),
-                getString(R.string.widget_style_contact)
-        };
-        widgetStyles.setAdapter(new ArrayAdapter<>(
-                this, android.R.layout.simple_spinner_dropdown_item, styleLabels));
-        widgetStyles.setSelection(AppSettings.widgetStyle(this));
-        widgetStyles.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, android.view.View view,
-                                       int position, long id) {
-                if (position != AppSettings.widgetStyle(MainActivity.this)) {
-                    AppSettings.setWidgetStyle(MainActivity.this, position);
-                    SyncWidgetProvider.refreshAll(MainActivity.this);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        content.addView(widgetStyles, matchWrap());
-        content.addView(toggle(R.string.opt_24h, AppSettings.use24h(this),
-                value -> AppSettings.setUse24h(this, value)), matchWrap());
-        content.addView(toggle(R.string.opt_notifications, AppSettings.notifications(this), value -> {
-            AppSettings.setNotifications(this, value);
-            if (value) {
-                requestNotificationPermission();
-            }
-        }), matchWrap());
-
-        content.addView(text(getString(R.string.opt_timezone), 15, R.color.text_primary), matchWrap());
-        Spinner zones = new Spinner(this);
-        List<String> zoneIds = new ArrayList<>();
-        List<String> zoneLabels = new ArrayList<>();
-        zoneIds.add(DEVICE_ZONE);
-        zoneLabels.add(getString(R.string.timezone_device, TimeZone.getDefault().getID()));
-        zoneIds.addAll(ZONES);
-        zoneLabels.addAll(ZONES);
-        zones.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, zoneLabels));
-        int current = zoneIds.indexOf(AppSettings.timeZonePreference(this));
-        zones.setSelection(Math.max(current, 0));
-        zones.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
-                String zoneId = zoneIds.get(position);
-                if (!zoneId.equals(AppSettings.timeZonePreference(MainActivity.this))) {
-                    AppSettings.setTimeZone(MainActivity.this, zoneId);
-                    SyncWidgetProvider.refreshAll(MainActivity.this);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        content.addView(zones, matchWrap());
-
-        TextView note = text(getString(R.string.sync_note), 13, R.color.text_secondary);
-        note.setPadding(0, dp(16), 0, 0);
-        content.addView(note, matchWrap());
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.addView(content);
-        setContentView(scroll);
-    }
-
-    private interface OnToggle {
-        void changed(boolean value);
-    }
-
-    private Switch toggle(int label, boolean checked, OnToggle listener) {
-        Switch view = new Switch(this);
-        view.setText(label);
-        view.setTextSize(16);
-        view.setChecked(checked);
-        view.setPadding(0, dp(8), 0, dp(8));
-        view.setOnCheckedChangeListener((button, value) -> {
-            listener.changed(value);
-            SyncWidgetProvider.refreshAll(this);
-        });
-        return view;
-    }
-
-    private void renderSession() {
-        sessionBox.removeAllViews();
-        if (AppSettings.isLoggedIn(this)) {
-            sessionBox.addView(text(getString(R.string.signed_in_as, AppSettings.userName(this)),
-                    15, R.color.text_primary), matchWrap());
-            Button logout = new Button(this);
-            logout.setText(R.string.sign_out);
-            logout.setOnClickListener(view -> {
-                FcmRegistration.unregister(this);
-                AppSettings.clearSession(this);
-                SyncJobService.cancel(this);
-                SyncWidgetProvider.refreshAll(this);
-                renderSession();
-            });
-            sessionBox.addView(logout, matchWrap());
-            return;
-        }
-        EditText user = new EditText(this);
-        user.setSingleLine(true);
-        user.setHint(R.string.hint_username);
-        user.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        sessionBox.addView(user, matchWrap());
-        EditText pass = new EditText(this);
-        pass.setSingleLine(true);
-        pass.setHint(R.string.hint_password);
-        pass.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        sessionBox.addView(pass, matchWrap());
-        Button login = new Button(this);
-        login.setText(R.string.sign_in);
-        login.setOnClickListener(view -> signIn(login, user.getText().toString().trim(),
-                pass.getText().toString()));
-        sessionBox.addView(login, matchWrap());
-    }
-
-    private void signIn(Button button, String username, String password) {
-        String url = WidgetUrls.defaultUrl(this);
-        if (!WidgetUrls.isWidgetUrl(url)) {
-            Toast.makeText(this, R.string.server_unavailable, Toast.LENGTH_LONG).show();
-            return;
-        }
-        if (username.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, R.string.credentials_required, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        button.setEnabled(false);
-        new Thread(() -> {
-            String error = null;
-            try {
-                ApiClient.Session session = ApiClient.login(WidgetUrls.origin(url), username, password);
-                AppSettings.saveSession(this, session.token, session.displayName);
-                SyncRefresher.refresh(this);
-            } catch (Exception exception) {
-                error = exception.getMessage();
-            }
-            final String failure = error;
-            runOnUiThread(() -> {
-                button.setEnabled(true);
-                if (failure != null) {
-                    Toast.makeText(this, getString(R.string.sign_in_failed, failure),
-                            Toast.LENGTH_LONG).show();
-                    return;
-                }
-                SyncJobService.schedule(this);
-                SyncWidgetProvider.refreshAll(this);
-                renderSession();
-                FcmRegistration.registerCurrentDevice(this);
-                FcmRegistration.onUserAuthenticated(this, username);
-                if (AppSettings.notifications(this)) {
-                    requestNotificationPermission();
-                }
-            });
-        }).start();
-    }
-
-    private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= 33
-                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, 1);
-        }
-    }
-
-    private TextView section(int label) {
-        TextView view = text(getString(label), 14, R.color.widget_border);
-        view.setTypeface(null, 1);
-        view.setAllCaps(true);
-        view.setPadding(0, dp(24), 0, dp(4));
-=======
         TextView intro = text("Personaliza el widget y sus avisos. Tu cuenta se administra desde la aplicación principal.", 14, MUTED);
         intro.setPadding(0, 0, 0, dp(22));
         page.addView(intro, matchWrap());
@@ -362,7 +139,6 @@ public final class MainActivity extends Activity {
         view.setTypeface(null, 1);
         view.setLetterSpacing(0.1f);
         view.setPadding(0, dp(16), 0, dp(5));
->>>>>>> origin/main
         return view;
     }
 
@@ -370,10 +146,6 @@ public final class MainActivity extends Activity {
         TextView view = new TextView(this);
         view.setText(value);
         view.setTextSize(size);
-<<<<<<< HEAD
-        view.setTextColor(getColor(color));
-        return view;
-=======
         view.setTextColor(color);
         return view;
     }
@@ -384,7 +156,6 @@ public final class MainActivity extends Activity {
         shape.setCornerRadius(radius);
         shape.setStroke(dp(1), 0xFF26394A);
         return shape;
->>>>>>> origin/main
     }
 
     private LinearLayout.LayoutParams matchWrap() {

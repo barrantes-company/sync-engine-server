@@ -1,44 +1,23 @@
 package com.barrantesco.syncengine;
 
 import android.app.Application;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.os.Build;
 import android.util.Log;
 
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 
-<<<<<<< HEAD
-/** Inicializa Firebase y registra el token FCM al iniciar la aplicación. */
-=======
 /** Inicializa Firebase Messaging con la configuración pública del proyecto inyectada al compilar. */
->>>>>>> origin/main
 public final class SyncEngineApplication extends Application {
     private static final String TAG = "SyncEngineFirebase";
+    static final String REALTIME_CHANNEL_ID = "sync_engine_realtime";
 
     @Override
     public void onCreate() {
         super.onCreate();
-<<<<<<< HEAD
-        try {
-            if (FirebaseApp.getApps(this).isEmpty()) {
-                if (!BuildConfig.FIREBASE_API_KEY.isEmpty()
-                        && !BuildConfig.FIREBASE_PROJECT_ID.isEmpty()
-                        && !BuildConfig.FIREBASE_APP_ID.isEmpty()) {
-                    FirebaseOptions options = new FirebaseOptions.Builder()
-                            .setApiKey(BuildConfig.FIREBASE_API_KEY)
-                            .setProjectId(BuildConfig.FIREBASE_PROJECT_ID)
-                            .setApplicationId(BuildConfig.FIREBASE_APP_ID)
-                            .setGcmSenderId(BuildConfig.FIREBASE_SENDER_ID)
-                            .build();
-                    FirebaseApp.initializeApp(this, options);
-                } else {
-                    FirebaseApp.initializeApp(this);
-                }
-            }
-            // Obtener el token FCM al iniciar la app
-            FcmRegistration.registerCurrentDevice(this);
-        } catch (Exception e) {
-            Log.w(TAG, "No se pudo inicializar Firebase en la aplicación.", e);
-=======
+        createRealtimeChannel();
         if (BuildConfig.FIREBASE_API_KEY.isEmpty()
                 || BuildConfig.FIREBASE_PROJECT_ID.isEmpty()
                 || BuildConfig.FIREBASE_APP_ID.isEmpty()
@@ -54,7 +33,19 @@ public final class SyncEngineApplication extends Application {
                     .setGcmSenderId(BuildConfig.FIREBASE_SENDER_ID)
                     .build();
             FirebaseApp.initializeApp(this, options);
->>>>>>> origin/main
         }
+    }
+
+    /** El canal existe antes del primer aviso, también si el sistema lo muestra con la app cerrada. */
+    private void createRealtimeChannel() {
+        if (Build.VERSION.SDK_INT < 26) return;
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager == null) return;
+        NotificationChannel channel = new NotificationChannel(
+                REALTIME_CHANNEL_ID,
+                getString(R.string.channel_realtime),
+                NotificationManager.IMPORTANCE_HIGH);
+        channel.setDescription(getString(R.string.realtime_notification_body));
+        manager.createNotificationChannel(channel);
     }
 }

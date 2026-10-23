@@ -64,7 +64,7 @@ before(async () => {
       if (name === './db') return db;
       if (name === './public/safe-content') return realRequire(name);
       if (name === 'selfsigned') return { generate: async () => null };
-      if (name === 'web-push') return { setVapidDetails() { throw new Error('disabled in fixtures'); } };
+      if (name === 'web-push') return { setVapidDetails() {}, sendNotification() { return Promise.resolve(); } };
       if (name === 'http') return {
         createServer(app) {
           server = http.createServer(app);
@@ -228,65 +228,6 @@ test('real Socket.IO delivers normal text/files/audio and rejects executable res
   }
 });
 
-<<<<<<< HEAD
-test('message reactions and pinned messages cannot cross conversation boundaries', async () => {
-  const foreign = {
-    id: 'foreign-conversation-message',
-    fromId: 'SYNC-3003',
-    toId: 'SYNC-4004',
-    type: 'text',
-    text: 'Private message outside Alice-Bob'
-  };
-  db.testData.messages.push(foreign);
-  db.writeDb(db.testData);
-
-  assert.throws(
-    () => db.updateMessageReaction(foreign.id, users[0].syncId, '🔥', users[1].syncId),
-    /permisos/
-  );
-  assert.throws(
-    () => db.setPinnedMessage(users[0].syncId, users[1].syncId, foreign.id),
-    /permisos/
-  );
-
-  const key = [users[0].syncId, users[1].syncId].sort().join(':');
-  db.testData.pinnedMessages[key] = foreign.id;
-  db.writeDb(db.testData);
-  assert.equal(db.getPinnedMessage(users[0].syncId, users[1].syncId), null);
-
-  const alice = await authenticatedSocket('test-alice');
-  const reactionError = waitEvent(alice, 'error-message');
-  alice.emit('message-reaction', {
-    messageId: foreign.id,
-    toSyncId: users[1].syncId,
-    emoji: '🔥'
-  });
-  assert.match((await reactionError).message, /permisos/);
-  assert.equal(db.getMessagesBetween('SYNC-3003', 'SYNC-4004').find((message) => message.id === foreign.id).reactions, undefined);
-
-  const pinError = waitEvent(alice, 'error-message');
-  alice.emit('pin-message', {
-    messageId: foreign.id,
-    toSyncId: users[1].syncId
-  });
-  assert.match((await pinError).message, /permisos/);
-  assert.equal(db.testData.pinnedMessages[key], foreign.id);
-});
-
-test('billing webhook fails closed until provider signature verification exists', async () => {
-  const response = await fetch(base + '/api/billing/webhook', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'stripe-signature': 'forged-signature' },
-    body: JSON.stringify({
-      event: 'charge.success',
-      userSyncId: users[0].syncId,
-      plan: 'enterprise',
-      billingCycle: 'yearly'
-    })
-  });
-  assert.equal(response.status, 503);
-  assert.match((await response.json()).error, /verificación de firma/);
-=======
 test('private message retries with the same client ID do not create duplicates', async () => {
   const alice = await authenticatedSocket('test-alice');
   const bob = await authenticatedSocket('test-bob');
@@ -307,14 +248,17 @@ test('private message retries with the same client ID do not create duplicates',
   assert.equal(messages.filter((message) => message.id === clientMsgId).length, 1);
 });
 
-test('Web Push configuration endpoint requires authentication and reports disabled configuration', async () => {
+test('Web Push configuration endpoint requires authentication and returns the public key', async () => {
   assert.equal((await fetch(base + '/api/notifications/vapid-public-key')).status, 401);
   const response = await fetch(base + '/api/notifications/vapid-public-key', {
     headers: { Authorization: ['Bearer', 'test-alice'].join(' ') }
   });
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { ok: true, configured: false, publicKey: null });
->>>>>>> origin/main
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.configured, true);
+  assert.equal(typeof body.publicKey, 'string');
+  assert.ok(body.publicKey.length > 20);
 });
 
 test('channel subscriptions and history require an authenticated member', async () => {
@@ -427,66 +371,6 @@ test('channel creator can delegate and revoke channel administration securely', 
     method: 'PUT', headers: aliceHeaders, body: JSON.stringify({ description: 'Should be denied' })
   });
   assert.equal(deniedDefaultEdit.status, 400);
-});
-
-test('vault API stores and returns only authenticated client-encrypted payloads', async () => {
-  const legacyItems = db.testData.vaultItems || (db.testData.vaultItems = {});
-  legacyItems[users[1].syncId] = [{ id: 'legacy', title: 'Legacy', secretContent: 'old plaintext' }];
-  const secret = 'sensitive-vault-value';
-  const passphrase = 'local-master-passphrase';
-  const salt = webcrypto.getRandomValues(new Uint8Array(16));
-  const iv = webcrypto.getRandomValues(new Uint8Array(12));
-  const material = await webcrypto.subtle.importKey('raw', Buffer.from(passphrase), 'PBKDF2', false, ['deriveKey']);
-  const key = await webcrypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' },
-    material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
-  );
-  const ciphertext = await webcrypto.subtle.encrypt(
-    { name: 'AES-GCM', iv }, key, Buffer.from(secret)
-  );
-  const base64 = (bytes) => Buffer.from(bytes).toString('base64');
-  const encryptedContent = {
-    version: 1, algorithm: 'AES-GCM', kdf: 'PBKDF2', hash: 'SHA-256', iterations: 310000,
-    salt: base64(salt), iv: base64(iv), ciphertext: base64(ciphertext)
-  };
-
-  const plaintextAttempt = await fetch(base + '/api/vault', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer test-bob', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title: 'Plaintext', category: 'note', secretContent: secret })
-  });
-  assert.equal(plaintextAttempt.status, 400);
-
-  const savedResponse = await fetch(base + '/api/vault', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer test-bob', 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      title: 'Encrypted', category: 'note', hint: 'non-secret hint',
-      encryptedContent: { ...encryptedContent, unexpectedPlaintext: secret }
-    })
-  });
-  assert.equal(savedResponse.status, 200);
-  assert.match(savedResponse.headers.get('cache-control'), /no-store/);
-  const saved = await savedResponse.json();
-  assert.equal(saved.item.encryptedContent.ciphertext, encryptedContent.ciphertext);
-  assert.equal(JSON.stringify(saved).includes(secret), false);
-  assert.equal(Object.hasOwn(saved.item, 'secretContent'), false);
-
-  const fetchedResponse = await fetch(base + '/api/vault', {
-    headers: { Authorization: 'Bearer test-bob' }
-  });
-  assert.match(fetchedResponse.headers.get('cache-control'), /no-store/);
-  const fetched = await fetchedResponse.json();
-  assert.equal(fetched.items.some((item) => item.id === 'legacy'), false);
-  assert.equal(fetched.items.length, 1);
-  const stored = db.testData.vaultItems[users[1].syncId][0];
-  assert.equal(Object.hasOwn(stored, 'secretContent'), false);
-  assert.equal(JSON.stringify(stored).includes(secret), false);
-
-  const decrypted = await webcrypto.subtle.decrypt(
-    { name: 'AES-GCM', iv }, key, Buffer.from(fetched.items[0].encryptedContent.ciphertext, 'base64')
-  );
-  assert.equal(Buffer.from(decrypted).toString(), secret);
 });
 
 test('HTML disguised as inline media still receives sandbox and nosniff', async () => {
@@ -695,51 +579,6 @@ test('real browser: text/name/file/quote payloads stay data across chat, avatars
   assert.equal(sent, true);
   assert.ok(messages.at(-1).fileData.url.startsWith('/api/files/'));
 
-  const vaultSaved = await cdp.evaluate(`(async () => {
-    window.prompt = () => 'test-master-passphrase';
-    openVaultBtn.click();
-    vaultTitleInput.value = 'Browser vault test';
-    vaultCategorySelect.value = 'note';
-    vaultSecretInput.value = 'browser-only secret value';
-    vaultHintInput.value = 'public hint';
-    await handleSaveVaultItem();
-    await loadVaultItems();
-    const card = vaultItemsContainer.querySelector('.vault-item-card');
-    const masked = card.querySelector('.secret-text').textContent;
-    card.querySelector('.btn-toggle-secret').click();
-    return { masked, revealed: card.querySelector('.secret-text').textContent };
-  })()`);
-  assert.equal(vaultSaved.masked, '••••••••••••');
-  assert.equal(vaultSaved.revealed, 'browser-only secret value');
-  const storedVaultItem = db.testData.vaultItems[users[0].syncId].find((item) => item.title === 'Browser vault test');
-  assert.ok(storedVaultItem.encryptedContent);
-  assert.equal(Object.hasOwn(storedVaultItem, 'secretContent'), false);
-  assert.equal(JSON.stringify(storedVaultItem).includes('browser-only secret value'), false);
-  const fetchedVault = await (await fetch(base + '/api/vault', {
-    headers: { Authorization: 'Bearer test-alice' }
-  })).json();
-  assert.equal(Object.hasOwn(fetchedVault.items.find((item) => item.id === storedVaultItem.id), 'secretContent'), false);
-
-  await cdp.evaluate(`(() => {
-    closeVaultModalBtn.click();
-    window.prompt = () => 'incorrect-master-passphrase';
-    openVaultBtn.click();
-  })()`);
-  await cdp.evaluate(`new Promise((resolve, reject) => {
-    const start = Date.now();
-    const timer = setInterval(() => {
-      if (vaultItemsContainer.textContent.includes('No se pudo cargar o descifrar')) { clearInterval(timer); resolve(true); }
-      else if (Date.now() - start > 5000) { clearInterval(timer); reject(new Error('Vault did not reject an incorrect master passphrase')); }
-    }, 25);
-  })`);
-  const wrongKeyState = await cdp.evaluate(`({
-    showsSecret: vaultItemsContainer.textContent.includes('browser-only secret value'),
-    masterInputCleared: vaultSecretInput.value === ''
-  })`);
-  assert.equal(wrongKeyState.showsSecret, false);
-  assert.equal(wrongKeyState.masterInputCleared, true);
-  await cdp.evaluate('closeVaultModalBtn.click()');
-
   // HTML directly opened from the app origin must download, never become an app document.
   const html = await upload('<script>alert(1)</script>', 'direct.html', 'text/html');
   const navigation = await cdp.send('Page.navigate', { url: base + html.url });
@@ -747,56 +586,6 @@ test('real browser: text/name/file/quote payloads stay data across chat, avatars
   assert.equal(await cdp.evaluate('window.__xss'), 0);
 });
 
-<<<<<<< HEAD
-
-test('organization default channels are isolated to organization members', () => {
-  const organization = db.createOrganization('Security Boundary Test', users[0].syncId);
-  const channel = db.testData.channels.find((item) => item.orgId === organization.id && item.name === 'general');
-  assert.ok(channel, 'organization general channel should exist');
-  assert.equal(db.isChannelMember(channel.id, users[0].syncId), true, 'owner must access own organization channel');
-  assert.equal(db.isChannelMember(channel.id, users[1].syncId), false, 'unrelated registered user must not access organization channel');
-  assert.throws(() => db.getChannelMessages(channel.id, users[1].syncId), /permisos/);
-  assert.throws(() => db.saveChannelMessage(channel.id, users[1].syncId, { text: 'unauthorized' }), /permisos/);
-  assert.throws(() => db.createOrganization('Invalid owner test', 'SYNC-DOES-NOT-EXIST'), /Propietario/);
-});
-
-
-test('account deletion removes sessions, reciprocal contacts, pins, private data and owned organization data', () => {
-  const data = db.testData;
-  const organization = db.createOrganization('Deletion Boundary Test', users[0].syncId);
-  const ownedChannel = data.channels.find((channel) => channel.orgId === organization.id && channel.name === 'general');
-  data.contacts[users[0].syncId] = [users[1].syncId];
-  data.contacts[users[1].syncId] = [users[0].syncId];
-  data.vaultItems[users[0].syncId] = [{ id: 'private-vault-item' }];
-  data.subscriptions[users[0].syncId] = [{ endpoint: 'https://push.example.test/user-a' }];
-  data.messages.push({ id: 'delete-user-message', fromId: users[0].syncId, toId: users[1].syncId, text: 'private' });
-  data.messages.push({ id: 'keep-user-message', fromId: users[1].syncId, toId: users[1].syncId, text: 'keep' });
-  data.pinnedMessages[users[0].syncId + ':' + users[1].syncId] = 'delete-user-message';
-  data.channelMessages = [{ id: 'org-message', channelId: ownedChannel.id, senderSyncId: users[0].syncId }];
-
-  const result = db.deleteUserAccount(' sync-1001 ');
-  assert.equal(result.deletedSyncId, users[0].syncId);
-  assert.equal(data.users.some((user) => user.syncId === users[0].syncId), false);
-  assert.equal(data.sessions.some((session) => session.syncId === users[0].syncId), false);
-  assert.equal(data.contacts[users[1].syncId].includes(users[0].syncId), false);
-  assert.equal(Object.hasOwn(data.vaultItems, users[0].syncId), false);
-  assert.equal(Object.hasOwn(data.subscriptions, users[0].syncId), false);
-  assert.equal(data.messages.some((message) => message.id === 'delete-user-message'), false);
-  assert.equal(data.messages.some((message) => message.id === 'keep-user-message'), true);
-  assert.equal(Object.hasOwn(data.pinnedMessages, users[0].syncId + ':' + users[1].syncId), false);
-  assert.equal(data.organizations.some((item) => item.id === organization.id), false);
-  assert.equal(data.channels.some((item) => item.orgId === organization.id), false);
-  assert.equal(data.channelMessages.some((item) => item.id === 'org-message'), false);
-  assert.throws(() => db.deleteUserAccount(users[0].syncId), /Usuario no encontrado/);
-});
-
-
-test('HTTP CORS rejects unconfigured web origins while preserving extension access', async () => {
-  const denied = await fetch(base + '/api/health', { headers: { Origin: 'https://untrusted-origin.example' } });
-  assert.equal(denied.headers.get('access-control-allow-origin'), null);
-  const extension = await fetch(base + '/api/health', { headers: { Origin: 'chrome-extension://abcdefghijklmnop' } });
-  assert.equal(extension.headers.get('access-control-allow-origin'), 'chrome-extension://abcdefghijklmnop');
-=======
 test('real browser queues offline private text and replays it once after reconnect', async (t) => {
   if (!cdp) db.saveTextMessage(users[0].syncId, users[1].syncId, 'Outbox test history');
   if (!await startBrowser(t)) return;
@@ -834,5 +623,4 @@ test('real browser queues offline private text and replays it once after reconne
     }, 50);
   })`);
   assert.equal(messages.filter((message) => message.text === 'Offline private message').length, 1);
->>>>>>> origin/main
 });

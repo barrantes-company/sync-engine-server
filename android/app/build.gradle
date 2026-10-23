@@ -1,7 +1,5 @@
 plugins {
     id 'com.android.application'
-    id 'com.google.gms.google-services'
-    id 'com.google.firebase.crashlytics'
 }
 
 android {
@@ -10,18 +8,12 @@ android {
 
     defaultConfig {
         applicationId 'com.barrantesco.syncengine'
-        minSdk 24
+        minSdk 23
         targetSdk 35
         versionCode 1
         versionName '1.0'
-<<<<<<< HEAD
-        // Servidor oficial predeterminado de origen (Render / Producción Cloud)
-        def defaultUrl = (System.getenv('SYNC_DEFAULT_URL') ?: 'https://sync-engine-server.onrender.com')
-                .replace('\\', '\\\\').replace('"', '\\"')
-=======
         // URL de /widget.html de fábrica; se toma del entorno para no fijar un dominio en el repo.
         def defaultUrl = (System.getenv('SYNC_DEFAULT_URL') ?: 'https://sync-engine-server.onrender.com/').replace('\\', '\\\\').replace('"', '\\"')
->>>>>>> origin/main
         buildConfigField 'String', 'DEFAULT_WIDGET_URL', "\"${defaultUrl}\""
         def firebaseApiKey = (System.getenv('FIREBASE_ANDROID_API_KEY') ?: '').replace('\\', '\\\\').replace('"', '\\"')
         def firebaseProjectId = (System.getenv('FIREBASE_PROJECT_ID') ?: '').replace('\\', '\\\\').replace('"', '\\"')
@@ -60,16 +52,6 @@ android {
 }
 
 dependencies {
-<<<<<<< HEAD
-    implementation platform('com.google.firebase:firebase-bom:35.0.2')
-    implementation 'com.google.firebase:firebase-auth'
-    implementation 'com.google.firebase:firebase-firestore'
-    implementation 'com.google.firebase:firebase-messaging'
-    implementation 'com.google.firebase:firebase-appcheck-playintegrity'
-    implementation 'com.google.firebase:firebase-crashlytics'
-    implementation 'com.google.firebase:firebase-analytics'
-=======
     implementation platform('com.google.firebase:firebase-bom:34.1.0')
     implementation 'com.google.firebase:firebase-messaging'
->>>>>>> origin/main
 }

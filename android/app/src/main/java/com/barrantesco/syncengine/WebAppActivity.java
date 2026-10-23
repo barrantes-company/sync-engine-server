@@ -4,26 +4,14 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-<<<<<<< HEAD
-import android.os.Build;
-import android.os.Bundle;
-import android.webkit.JavascriptInterface;
-import android.webkit.PermissionRequest;
-import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-
-/** Muestra la interfaz principal de SYNC ENGINE dentro de la aplicación Android. */
-public final class WebAppActivity extends Activity {
-    private WebView webView;
-    private String pendingConversationId;
-=======
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -45,16 +33,14 @@ import java.util.List;
 public final class WebAppActivity extends Activity {
     private static final int MEDIA_PERMISSION = 42;
     private WebView webView;
+    private LinearLayout root;
     private ProgressBar progress;
     private TextView errorMessage;
     private PermissionRequest pendingMedia;
->>>>>>> origin/main
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-<<<<<<< HEAD
-=======
         buildView();
         loadOfficialApp();
     }
@@ -67,6 +53,7 @@ public final class WebAppActivity extends Activity {
 
     private void buildView() {
         LinearLayout root = new LinearLayout(this);
+        this.root = root;
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.WHITE);
 
@@ -74,125 +61,11 @@ public final class WebAppActivity extends Activity {
         progress.setMax(100);
         root.addView(progress, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(3)));
->>>>>>> origin/main
 
         webView = new WebView(this);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
-<<<<<<< HEAD
-        settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(true);
-        settings.setAllowFileAccessFromFileURLs(true);
-        settings.setAllowUniversalAccessFromFileURLs(true);
-        settings.setDatabaseEnabled(true);
-
-        webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
-
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                if (pendingConversationId != null) {
-                    openConversation(pendingConversationId);
-                    pendingConversationId = null;
-                }
-            }
-        });
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public void onPermissionRequest(final PermissionRequest request) {
-                runOnUiThread(() -> {
-                    if (request != null && request.getResources() != null) {
-                        request.grant(request.getResources());
-                    }
-                });
-            }
-        });
-        setContentView(webView);
-
-        // Solicitar permisos de notificación en Android 13+
-        requestNotificationPermission();
-
-        // Obtener y registrar el token FCM en el inicio de la app
-        FcmRegistration.registerCurrentDevice(this);
-
-        handleIntent(getIntent());
-
-        String appUrl = WidgetUrls.appUrl(WidgetUrls.defaultUrl(this));
-        
-        // En teléfonos físicos donde 10.0.2.2 no existe, cargar directamente los assets locales empaquetados en la APK
-        if ((appUrl.contains("10.0.2.2") && !isEmulator()) || !WidgetUrls.isWidgetUrl(appUrl)) {
-            appUrl = "file:///android_asset/index.html";
-        }
-
-        webView.loadUrl(appUrl);
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        setIntent(intent);
-        handleIntent(intent);
-    }
-
-    private void handleIntent(Intent intent) {
-        if (intent == null) return;
-        String conversationId = intent.getStringExtra("conversationId");
-        if (conversationId == null || conversationId.isEmpty()) {
-            conversationId = intent.getStringExtra("syncId");
-        }
-        if (conversationId != null && !conversationId.isEmpty()) {
-            pendingConversationId = conversationId;
-            openConversation(conversationId);
-        }
-    }
-
-    private void openConversation(String conversationId) {
-        if (webView == null || conversationId == null || conversationId.isEmpty()) {
-            return;
-        }
-        String safeId = conversationId.replace("\\", "\\\\").replace("'", "\\'");
-        String js = "(function() {" +
-                "  if (typeof window.openConversationById === 'function') {" +
-                "    window.openConversationById('" + safeId + "');" +
-                "  } else if (typeof selectContact === 'function') {" +
-                "    selectContact('" + safeId + "');" +
-                "  }" +
-                "})();";
-        webView.evaluateJavascript(js, null);
-    }
-
-    private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= 33
-                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
-        }
-    }
-
-    private boolean isEmulator() {
-        return android.os.Build.FINGERPRINT.startsWith("generic")
-                || android.os.Build.FINGERPRINT.startsWith("unknown")
-                || android.os.Build.MODEL.contains("google_sdk")
-                || android.os.Build.MODEL.contains("Emulator")
-                || android.os.Build.MODEL.contains("Android SDK built for x86");
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (webView != null) {
-=======
         settings.setDatabaseEnabled(true);
         settings.setLoadsImagesAutomatically(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
@@ -200,6 +73,7 @@ public final class WebAppActivity extends Activity {
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setUserAgentString(settings.getUserAgentString() + " SYNCENGINE-Android");
+        webView.addJavascriptInterface(new ThemeBridge(), "SyncAndroid");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public void onProgressChanged(WebView view, int newProgress) {
                 progress.setProgress(newProgress);
@@ -307,26 +181,37 @@ public final class WebAppActivity extends Activity {
     @Override protected void onDestroy() {
         if (webView != null) {
             webView.stopLoading();
->>>>>>> origin/main
             webView.destroy();
             webView = null;
         }
         super.onDestroy();
     }
 
-<<<<<<< HEAD
-    public final class AndroidBridge {
+    private final class ThemeBridge {
         @JavascriptInterface
-        public void onUserAuthenticated(String syncId, String username) {
-            if (syncId == null || syncId.isEmpty()) return;
-            AppSettings.saveSession(WebAppActivity.this, AppSettings.token(WebAppActivity.this), syncId);
-            FcmRegistration.onUserAuthenticated(WebAppActivity.this, syncId);
+        public void setTheme(String theme) {
+            boolean dark = "energy".equals(theme);
+            int color = Color.parseColor(dark ? "#070D16" : "#F4F8FD");
+            runOnUiThread(() -> applySystemTheme(color, dark));
         }
     }
-}
-=======
+
+    private void applySystemTheme(int color, boolean dark) {
+        if (root != null) root.setBackgroundColor(color);
+        if (webView != null) webView.setBackgroundColor(color);
+        Window window = getWindow();
+        window.setStatusBarColor(color);
+        window.setNavigationBarColor(color);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && window.getInsetsController() != null) {
+            int appearance = dark ? 0 : android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                    | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+            window.getInsetsController().setSystemBarsAppearance(appearance,
+                    android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+        }
+    }
+
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }
->>>>>>> origin/main

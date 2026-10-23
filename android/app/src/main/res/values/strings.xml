@@ -19,37 +19,6 @@
     <string name="widget_accesos">Contacto</string>
     <string name="widget_accesos_hint">Abrir mensajes y llamadas</string>
     <string name="configure_widget">Configurar widget SYNC ENGINE</string>
-<<<<<<< HEAD
-    <string name="widget_content_description">SYNC ENGINE: hora, notificaciones y llamadas. Toca para abrir la app.</string>
-    <string name="setup_instructions">Mantén pulsada la pantalla de inicio, abre Widgets y arrastra SYNC ENGINE. El widget se conecta automáticamente a tu app.</string>
-    <string name="widget_url_instructions">El widget se conecta automáticamente con SYNC ENGINE; no necesitas introducir una dirección.</string>
-    <string name="widget_url_hint">Conexión automática con SYNC ENGINE</string>
-    <string name="save_url">Guardar</string>
-    <string name="open_panel">Abrir SYNC ENGINE</string>
-    <string name="add_widget">Guardar y añadir widget</string>
-    <string name="tap_to_open">Toca para abrir SYNC ENGINE</string>
-    <string name="web_sign_in_note">Inicia sesión en Ajustes para ver mensajes y llamadas en el widget.</string>
-    <string name="invalid_widget_url">No se pudo configurar la conexión con SYNC ENGINE.</string>
-    <string name="url_saved">Conexión guardada</string>
-    <string name="no_browser">No se pudo abrir SYNC ENGINE.</string>
-    <string name="server_unavailable">No se pudo conectar con SYNC ENGINE.</string>
-    <string name="section_server">Conexión</string>
-    <string name="section_session">Sesión</string>
-    <string name="section_widget">Widget y avisos</string>
-    <string name="opt_widget_style">Diseño aprobado del widget</string>
-    <string name="widget_style_light_square">01 · Hero Clock (Cuadrado Claro)</string>
-    <string name="widget_style_dark_dials">02 · Comms Center (Esferas Oscuras)</string>
-    <string name="widget_style_oled">03 · Sync Orbit (OLED)</string>
-    <string name="widget_style_sync_ring">04 · Daily Line (Anillo Sync)</string>
-    <string name="widget_style_light_wide">05 · Essential Bar (Ancho Claro)</string>
-    <string name="widget_style_slim_sync">06 · Material Hub (Sync Delgado)</string>
-    <string name="widget_style_weather">07 · Stealth Dot (Reloj y Ciudad)</string>
-    <string name="widget_style_contact">08 · Quick Contact (Perfil y Accesos)</string>
-    <string name="opt_24h">Formato de 24 horas</string>
-    <string name="opt_notifications">Notificaciones de mensajes y llamadas perdidas</string>
-    <string name="opt_timezone">Zona horaria del reloj</string>
-    <string name="timezone_device">Hora del dispositivo (%1$s)</string>
-=======
     <string name="setup_instructions">Escribe la dirección de tu servidor y guarda. Luego, mantén pulsada la pantalla de inicio, abre Widgets, busca SYNC ENGINE y arrastra el widget; podrás confirmar la URL para esa instancia.</string>
     <string name="widget_url_instructions">Introduce la dirección HTTPS (o HTTP) de tu servidor. Cada widget guarda su propia dirección y al tocarlo abre la app en el navegador.</string>
     <string name="widget_url_hint">https://tu-dominio.example</string>
@@ -71,7 +40,6 @@
     <string name="opt_timezone">Zona horaria del reloj</string>
     <string name="fcm_configured">Firebase está configurado en esta instalación. Para recibir avisos, inicia sesión aquí y permite las notificaciones del sistema.</string>
     <string name="fcm_missing">FCM no está configurado en este APK. Las notificaciones push no funcionarán hasta recompilar con la configuración Firebase Android.</string>
->>>>>>> origin/main
     <string name="sync_note">Con FCM configurado, mensajes y llamadas entrantes avisan en tiempo real. Los contadores se sincronizan aproximadamente cada 15 minutos. Las llamadas requieren abrir la interfaz web para establecer audio.</string>
     <string name="signed_in_as">Sesión iniciada como %1$s</string>
     <string name="sign_out">Cerrar sesión</string>
