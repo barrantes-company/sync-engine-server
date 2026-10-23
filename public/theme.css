@@ -2757,3 +2757,55 @@ html[data-se-theme="energy"] #auth-screen .auth-tabs button { color: #93a4bd; }
   #app-container[data-se-theme="energy"] #sidebar-panel,
   #app-container[data-se-theme="energy"] #chat-panel-container { background: #070d16 !important; }
 }
+
+/* Correcciones de estructura: un solo plano, identidad, buscador y marca. */
+#main-layout { gap: 0 !important; padding: 0 !important; background: transparent !important; }
+#sidebar-panel, #chat-panel-container, #chat-panel {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+#sidebar-panel { border-top: 0 !important; border-bottom: 0 !important; border-left: 0 !important; }
+#chat-panel-container { border-radius: 0 !important; }
+#header-session { min-width: 0; }
+#header-identity {
+  background: #f4f8fd;
+  border: 1px solid rgba(8,119,249,.18);
+  color: #071a38;
+  min-width: 0;
+  max-width: 240px;
+}
+#user-identity-badge { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-field { position: relative; flex: 1 1 auto; min-width: 0; }
+.search-field svg {
+  position: absolute; left: 12px; top: 50%; width: 16px; height: 16px;
+  transform: translateY(-50%); fill: none; stroke: #0877f9; stroke-width: 1.8;
+  stroke-linecap: round; pointer-events: none;
+}
+#contact-search-input { width: 100%; text-transform: none !important; }
+.sidebar-mark { width: 46px; height: 46px; object-fit: contain; display: block; }
+#sidebar-panel > div:last-child { overflow: visible; padding: 8px 0 10px !important; }
+.empty-state-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+#contacts-list .empty-state-icon {
+  width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 16px;
+  display: grid; place-items: center; background: #f4f8fd;
+  border: 1px solid rgba(8,119,249,.22); color: #0877f9;
+}
+.se-nav-theme span { font-size: 10px; line-height: 1; white-space: nowrap; }
+#app-container[data-se-theme="energy"] #header-identity,
+#app-container[data-se-theme="energy"] #logout-btn {
+  background: #121c2c !important;
+  color: #e7f0ff !important;
+  border-color: rgba(126,231,255,.28) !important;
+}
+#app-container[data-se-theme="energy"] #header-user-clean-name { color: #f4f8ff !important; }
+#app-container[data-se-theme="energy"] #header-user-sync-id { color: #7ee7ff !important; }
+#app-container[data-se-theme="energy"] .empty-state-hint {
+  background: #102033 !important;
+  color: #f4f8ff !important;
+  border-color: rgba(126,231,255,.45) !important;
+}
+#app-container[data-se-theme="energy"] #contacts-list .empty-state-icon {
+  background: #102033 !important;
+  color: #7ee7ff !important;
+}
+#app-container[data-se-theme="energy"] .search-field svg { stroke: #7ee7ff; }

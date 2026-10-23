@@ -76,14 +76,14 @@
         <span class="se-nav-avatar">SE</span><span>Perfil</span>
       </button>
       <button class="se-nav-item se-nav-theme" id="se-theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2M12 19v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="4"/></svg><span>Tema oscuro</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2M12 19v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="4"/></svg><span>Oscuro</span>
       </button>
     </nav>
 
 
     <!-- ENCABEZADO SUPERIOR -->
     <header class="sticky top-0 z-40 bg-white border-b border-[rgba(197,160,89,0.22)] text-[#0A1A3A] shadow-sm">
-      <div class="w-full max-w-[1600px] mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-3 flex-wrap">
+      <div class="w-full max-w-[1600px] mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-3">
 
         <!-- Zona 1: Marca y Wordmark Único -->
         <div class="flex items-center gap-3">
@@ -104,9 +104,8 @@
         </div>
 
         <!-- Zona 3: Identidad y salir -->
-        <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-          <!-- Identidad Formateada & Estado -->
-          <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-xs text-[#0A1A3A] shadow-sm">
+        <div id="header-session" class="flex items-center gap-2 flex-shrink-0">
+          <div id="header-identity" class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs shadow-sm">
             <img id="header-user-avatar" class="w-6 h-6 rounded-full object-cover avatar-circle hidden" alt="Avatar">
             <span id="user-identity-badge" class="font-bold tracking-wide truncate max-w-[140px] sm:max-w-[200px]">
               <span id="header-user-sync-id" class="text-[#C5A059] font-mono">SYNC-0000</span>
@@ -141,10 +140,10 @@
         <div id="sidebar-dms-view" class="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex flex-col gap-1.5 flex-shrink-0">
             <div class="flex items-center gap-2">
-              <div class="relative flex-1">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#C5A059] text-xs pointer-events-none">🔍</span>
-                <input type="text" id="contact-search-input" maxlength="20" placeholder="Buscar o ID (ej. SYNC-8821)..."
-                  class="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/25 outline-none text-xs text-[#0A1A3A] uppercase placeholder-gray-400 font-mono shadow-xs">
+              <div class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
+              <input type="text" id="contact-search-input" maxlength="20" placeholder="Buscar o ID"
+                  class="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] outline-none text-xs text-[#0A1A3A] placeholder-gray-400 font-mono shadow-xs">
               </div>
               <button id="add-contact-btn" type="button" title="Agregar contacto por Código ID"
                 class="h-9 px-3 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-sm flex items-center justify-center transition-all flex-shrink-0 cursor-pointer whitespace-nowrap">
@@ -213,10 +212,7 @@
         </div>
 
         <div class="flex flex-shrink-0 items-center justify-center border-t border-[rgba(197,160,89,0.18)] p-2">
-          <div class="logo-electric-stream" aria-label="SYNC ENGINE BY BARRANTES CO.">
-            <img src="/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png" alt="SYNC ENGINE BY BARRANTES CO." class="h-[70px] max-h-[70px] w-auto object-contain mix-blend-multiply">
-            <span class="logo-electric-mask" aria-hidden="true"><span class="logo-electric-light"></span></span>
-          </div>
+          <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="SYNC ENGINE" class="sidebar-mark">
         </div>
 
       </aside>
@@ -347,7 +343,7 @@
                 </svg>
               </div>
               <p class="empty-state-title text-base font-bold text-[#0A1A3A] font-title">SYNC ENGINE para Web &amp; Móvil</p>
-              <p class="empty-state-text text-xs text-[#64748B] max-w-sm mt-1.5 leading-relaxed">Selecciona una conversación existente o agrega un compañero mediante su Código ID único arriba.</p>
+              <p class="empty-state-text text-xs text-[#64748B] max-w-sm mt-1.5 leading-relaxed">Elige un contacto en la lista. Si todavía no tienes, escribe su Código ID en el buscador de la izquierda.</p>
               <span class="empty-state-hint mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[10px] font-bold uppercase tracking-wider text-[#C5A059]">🔒 Solo contactos con Código ID</span>
             </div>
           </div>
@@ -1776,7 +1772,7 @@
     if (validContacts.length === 0) {
       contactsList.innerHTML = `
         <div class="empty-state p-6 text-center text-[#64748B]">
-          <div class="empty-state-icon w-14 h-14 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[#C5A059] flex items-center justify-center mx-auto mb-3 text-xl font-bold shadow-xs">💬</div>
+          <div class="empty-state-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6h14v9H8l-3 3V6Z"/></svg></div>
           <p class="text-xs font-bold text-[#0A1A3A] font-title">Sin contactos agregados</p>
           <p class="text-[11px] mt-1.5 text-[#64748B] leading-relaxed">Ingresa el Código ID de un compañero en el buscador superior para iniciar una conversación.</p>
         </div>
@@ -5451,7 +5447,7 @@
     app.dataset.seTheme = selected;
     document.documentElement.dataset.seTheme = selected;
     if (themeButton) {
-      const label = selected === 'energy' ? 'Tema claro' : 'Tema oscuro';
+      const label = selected === 'energy' ? 'Claro' : 'Oscuro';
       const span = themeButton.querySelector('span');
       if (span) span.textContent = label;
       themeButton.setAttribute('aria-label', label);
