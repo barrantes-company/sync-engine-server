@@ -1,5 +1,6 @@
 node_modules/
 data/sync_db.json
+data/vapid.json
 data/ssl/
 *.pem
 .env

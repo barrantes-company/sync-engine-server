@@ -21,7 +21,7 @@ import java.util.Map;
 >>>>>>> origin/main
 /** Recibe avisos FCM de mensajes y llamadas entrantes y los muestra como notificaciones Android. */
 public final class SyncEngineMessagingService extends FirebaseMessagingService {
-    private static final String CHANNEL_ID = "sync_engine_realtime";
+    private static final String CHANNEL_ID = SyncEngineApplication.REALTIME_CHANNEL_ID;
 
     @Override
     public void onNewToken(String token) {

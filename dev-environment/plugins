@@ -1,7 +1,0 @@
-# Essential plugins for the development environment
-
-- dotenv: A plugin for loading environment variables from a `.env` file into `process.env`.
-- socket.io: A plugin that enables real-time, bidirectional communication between web clients and servers.
-- eslint: A static code analysis tool for identifying problematic patterns in JavaScript code.
-- prettier: An opinionated code formatter that enforces a consistent style across the codebase.
-- nodemon: A utility that monitors for changes in the source code and automatically restarts the server.
