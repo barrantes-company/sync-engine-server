@@ -2942,3 +2942,76 @@ html[data-se-theme="energy"] #auth-screen .auth-tabs button { color: #93a4bd; }
   color: #f4f8ff !important;
   border-color: rgba(126,231,255,.35) !important;
 }
+
+/* Hoja de perfil fuera de los paneles, para que Guardar no quede tapado. */
+.profile-settings-popover {
+  position: fixed; inset: 0; z-index: 90;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(7, 17, 29, .46);
+  padding: 12px 12px calc(74px + env(safe-area-inset-bottom));
+}
+.profile-settings-popover.hidden { display: none !important; }
+.profile-sheet {
+  width: min(440px, 100%);
+  max-height: min(520px, calc(100dvh - 110px));
+  display: flex; flex-direction: column;
+  background: #ffffff; color: #071a38;
+  border-radius: 18px; overflow: hidden;
+  box-shadow: 0 18px 50px rgba(7,26,56,.28);
+}
+.profile-sheet-head, .profile-sheet-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px 14px; flex: 0 0 auto;
+}
+.profile-sheet-foot { border-top: 1px solid rgba(7,26,56,.08); }
+.profile-sheet-title { margin: 0; font-size: 16px; font-weight: 700; color: inherit; }
+.profile-sheet-head button {
+  width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(7,26,56,.12);
+  background: #f4f8fd; color: #071a38; cursor: pointer;
+}
+.profile-sheet-body { overflow: auto; padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.profile-avatar-drop-zone { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+#profile-name-input {
+  width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid rgba(8,119,249,.28);
+  background: #f8fbff; color: #071a38; padding: 0 12px; outline: none;
+}
+#select-avatar-btn, #enable-push-notifications-btn, #save-profile-btn, #cancel-profile-modal-btn {
+  min-height: 40px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer;
+}
+#select-avatar-btn, #enable-push-notifications-btn {
+  background: #eaf3ff; color: #0757b8; border: 1px solid rgba(8,119,249,.25); padding: 0 14px;
+}
+#enable-push-notifications-btn { width: 100%; text-align: center; }
+#push-notifications-status:empty { display: none; }
+#cancel-profile-modal-btn { background: transparent; border: 0; color: #64748b; padding: 0 12px; }
+#save-profile-btn { background: #0877f9; color: #fff; border: 0; padding: 0 16px; }
+html[data-se-theme="energy"] .profile-sheet { background: #101826; color: #f4f8ff; }
+html[data-se-theme="energy"] .profile-sheet-head button,
+html[data-se-theme="energy"] #profile-name-input { background: #0c1522; color: #f4f8ff; border-color: rgba(126,231,255,.28); }
+html[data-se-theme="energy"] #select-avatar-btn,
+html[data-se-theme="energy"] #enable-push-notifications-btn { background: #102033; color: #7ee7ff; border-color: rgba(126,231,255,.35); }
+html[data-se-theme="energy"] .profile-sheet-foot { border-top-color: rgba(126,231,255,.16); }
+.channel-name { margin: 0; font-size: 14px; font-weight: 700; color: #071a38; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app-container[data-se-theme="energy"] #sidebar-panel .channel-item { background: #121c2c !important; color: #e7f0ff !important; }
+#app-container[data-se-theme="energy"] .channel-name { color: #f4f8ff !important; }
+.empty-title { margin: 8px 0 0; font-size: 14px; font-weight: 700; color: #071a38; }
+#app-container[data-se-theme="energy"] .empty-title { color: #f4f8ff !important; }
+#contact-search-input {
+  background: #ffffff !important;
+  background-image: none !important;
+  border: 1px solid rgba(8,119,249,.28) !important;
+  box-shadow: none !important;
+  height: 40px;
+}
+#app-container[data-se-theme="energy"] #contact-search-input {
+  background: #101826 !important;
+  color: #f4f8ff !important;
+  border-color: rgba(126,231,255,.35) !important;
+}
+#add-contact-btn { flex: 0 0 64px !important; height: 40px !important; position: static !important; }
+.search-field { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 767px) {
+  #header-identity { display: none !important; }
+  #logout-btn { flex: 0 0 auto !important; min-width: 64px; height: 36px; }
+  #app-container > header.sticky > div { overflow: hidden; }
+}

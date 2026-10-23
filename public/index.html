@@ -168,53 +168,6 @@
           <div id="channels-list" class="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-1 bg-white"></div>
         </div>
 
-        <div id="edit-profile-modal" class="profile-settings-popover hidden" role="dialog" aria-modal="false" aria-labelledby="profile-settings-title">
-          <div class="bg-white rounded-2xl p-4 flex flex-col gap-3 shadow-xl border border-[rgba(197,160,89,0.3)] text-[#0A1A3A]">
-            <div class="flex items-center justify-between">
-              <h3 id="profile-settings-title" class="font-bold text-sm text-[#0A1A3A] font-title flex items-center gap-2">
-                <span>👤</span> Configuración de perfil
-              </h3>
-              <button id="close-profile-modal-btn" type="button" aria-label="Cerrar configuración" class="text-[#64748B] hover:text-[#0A1A3A] p-1 text-sm cursor-pointer">✕</button>
-            </div>
-
-            <div id="avatar-drop-zone" class="profile-avatar-drop-zone flex flex-col items-center gap-2 rounded-xl border border-dashed border-[rgba(197,160,89,0.45)] p-3 text-center" aria-label="Arrastra una imagen aquí o selecciona un avatar">
-              <div class="avatar-preview-box flex items-center justify-center relative group">
-                <img id="profile-avatar-preview" src="" alt="Vista previa del avatar" class="w-full h-full object-cover hidden">
-                <div id="profile-avatar-fallback" class="w-full h-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-2xl flex items-center justify-center font-mono">0000</div>
-                <button id="trigger-avatar-btn" type="button" title="Seleccionar foto" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity cursor-pointer">📷 Cambiar</button>
-              </div>
-              <p class="text-[10px] text-[#64748B]">Arrastra una imagen aquí o selecciona una foto. Se recortará a 1080 × 1080 px.</p>
-              <button id="select-avatar-btn" type="button" class="text-xs text-[#C5A059] hover:text-[#99793D] font-bold cursor-pointer transition-colors">Elegir imagen</button>
-              <input type="file" id="profile-avatar-input" accept="image/*" title="Seleccionar foto de perfil" aria-label="Seleccionar foto de perfil" class="hidden">
-            </div>
-
-            <div>
-              <button id="enable-push-notifications-btn" type="button" class="text-xs text-[#C5A059] hover:text-[#99793D] font-bold cursor-pointer transition-colors">Activar notificaciones cuando SYNC ENGINE está cerrado</button>
-              <p id="push-notifications-status" class="text-[10px] text-[#64748B] mt-1" role="status" aria-live="polite"></p>
-            </div>
-
-            <div>
-              <label for="profile-name-input" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre personalizado</label>
-              <input type="text" id="profile-name-input" maxlength="35" title="Nombre personalizado, sin emojis" placeholder="ej. Laptop de Jose" class="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A]">
-              <p class="text-[10px] text-[#64748B] mt-1 font-mono">Formato: [ID] - [Nombre] · Los emojis se eliminan automáticamente.</p>
-            </div>
-
-            <div class="flex items-center justify-end gap-2 pt-2 border-t border-[rgba(197,160,89,0.18)]">
-              <button id="cancel-profile-modal-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1A3A] cursor-pointer">Cancelar</button>
-              <button id="save-profile-btn" type="button" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-xs transition-all cursor-pointer">Guardar</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-shrink-0 items-center justify-between border-t border-[rgba(197,160,89,0.18)] px-3 py-1.5">
-          <span class="text-[10px] text-[#64748B] font-medium">Perfil y preferencias</span>
-          <button id="open-edit-profile-btn" type="button" title="Configuración del perfil" aria-label="Abrir configuración del perfil" aria-haspopup="dialog" class="h-7 w-7 rounded-lg text-[#64748B] hover:text-[#C5A059] hover:bg-[#F8FAFC] flex items-center justify-center text-sm transition-colors cursor-pointer">⚙</button>
-        </div>
-
-        <div class="flex flex-shrink-0 items-center justify-center border-t border-[rgba(197,160,89,0.18)] p-2">
-          <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="SYNC ENGINE" class="sidebar-mark">
-        </div>
-
       </aside>
 
       <!-- COLUMNA 2: VENTANA DE CONVERSACIÓN ACTIVA (FLEX-GROW: 1, FONDO ADAPTADO 768 × 1024px O SUPERIOR) -->
@@ -533,6 +486,37 @@
 
   </main>
 
+  </div>
+
+  <button id="open-edit-profile-btn" type="button" class="sr-only" aria-haspopup="dialog">Perfil</button>
+  <div id="edit-profile-modal" class="profile-settings-popover hidden" role="dialog" aria-modal="true" aria-labelledby="profile-settings-title">
+    <div class="profile-sheet">
+      <div class="profile-sheet-head">
+        <h3 id="profile-settings-title" class="profile-sheet-title">Perfil</h3>
+        <button id="close-profile-modal-btn" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="profile-sheet-body">
+        <div id="avatar-drop-zone" class="profile-avatar-drop-zone" aria-label="Selecciona un avatar">
+          <div class="avatar-preview-box">
+            <img id="profile-avatar-preview" src="" alt="" class="hidden">
+            <div id="profile-avatar-fallback">0000</div>
+          </div>
+          <button id="select-avatar-btn" type="button">Elegir imagen</button>
+          <button id="trigger-avatar-btn" type="button" class="sr-only">Cambiar</button>
+          <input type="file" id="profile-avatar-input" accept="image/*" title="Seleccionar foto de perfil" aria-label="Seleccionar foto de perfil" class="hidden">
+        </div>
+        <div id="push-notifications-block">
+          <button id="enable-push-notifications-btn" type="button">Activar notificaciones</button>
+          <p id="push-notifications-status" role="status" aria-live="polite"></p>
+        </div>
+        <label for="profile-name-input">Nombre</label>
+        <input type="text" id="profile-name-input" maxlength="35" title="Nombre, sin emojis" placeholder="Tu nombre">
+      </div>
+      <div class="profile-sheet-foot">
+        <button id="cancel-profile-modal-btn" type="button">Cancelar</button>
+        <button id="save-profile-btn" type="button">Guardar</button>
+      </div>
+    </div>
   </div>
 
   <div id="network-loading-screen" class="network-loading-screen hidden" role="status" aria-live="polite" aria-label="Conectando con SYNC ENGINE">
@@ -1405,13 +1389,18 @@
   }
 
   if (enablePushNotificationsBtn) {
+    const pushBlock = document.getElementById('push-notifications-block');
+    const pushCapable = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+    if (!pushCapable && pushBlock) pushBlock.remove();
     enablePushNotificationsBtn.addEventListener('click', async () => {
-      if (pushNotificationsStatus) pushNotificationsStatus.textContent = 'Configurando…';
+      if (!pushCapable) return;
+      if (pushNotificationsStatus) pushNotificationsStatus.textContent = '';
       try {
         await enablePushNotifications();
-        if (pushNotificationsStatus) pushNotificationsStatus.textContent = 'Notificaciones push activadas.';
+        if (pushNotificationsStatus) pushNotificationsStatus.textContent = 'Activadas.';
       } catch (error) {
-        if (pushNotificationsStatus) pushNotificationsStatus.textContent = error.message;
+        if (pushNotificationsStatus) pushNotificationsStatus.textContent = '';
+        triggerPopupNotification('Notificaciones', error.message, '⚠️');
       }
     });
   }
@@ -1773,8 +1762,7 @@
       contactsList.innerHTML = `
         <div class="empty-state p-6 text-center text-[#64748B]">
           <div class="empty-state-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6h14v9H8l-3 3V6Z"/></svg></div>
-          <p class="text-xs font-bold text-[#0A1A3A] font-title">Sin contactos agregados</p>
-          <p class="text-[11px] mt-1.5 text-[#64748B] leading-relaxed">Ingresa el Código ID de un compañero en el buscador superior para iniciar una conversación.</p>
+          <p class="empty-title">Sin contactos</p>
         </div>
       `;
       return;
@@ -5059,7 +5047,7 @@
         <div class="flex items-center gap-2 min-w-0">
           <span class="text-[#C5A059] font-bold">#</span>
           <div class="min-w-0">
-            <p class="text-xs font-bold text-[#0A1A3A] truncate">${escapeHtml(chan.name)}</p>
+            <p class="channel-name">${escapeHtml(chan.name)}</p>
             <p class="text-[10px] text-[#64748B] truncate">${escapeHtml(chan.description || '')}</p>
           </div>
         </div>
