@@ -139,7 +139,7 @@
         <!-- VISTA DE CHATS DIRECTOS (DMs) -->
         <div id="sidebar-dms-view" class="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex flex-col gap-1.5 flex-shrink-0">
-            <div class="flex items-center gap-2">
+            <div class="search-row">
               <div class="search-field">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
               <input type="text" id="contact-search-input" maxlength="20" placeholder="Buscar o ID"
@@ -496,25 +496,34 @@
         <button id="close-profile-modal-btn" type="button" aria-label="Cerrar">✕</button>
       </div>
       <div class="profile-sheet-body">
-        <div id="avatar-drop-zone" class="profile-avatar-drop-zone" aria-label="Selecciona un avatar">
+        <p id="profile-sync-id" class="profile-sync-id">SYNC-0000</p>
+        <div id="avatar-drop-zone" class="profile-avatar-drop-zone" aria-label="Foto de perfil">
           <div class="avatar-preview-box">
             <img id="profile-avatar-preview" src="" alt="" class="hidden">
             <div id="profile-avatar-fallback">0000</div>
           </div>
-          <button id="select-avatar-btn" type="button">Elegir imagen</button>
+          <div class="avatar-actions">
+            <button id="select-avatar-btn" type="button">Elegir foto</button>
+            <button id="remove-avatar-btn" type="button">Quitar</button>
+          </div>
           <button id="trigger-avatar-btn" type="button" class="sr-only">Cambiar</button>
           <input type="file" id="profile-avatar-input" accept="image/*" title="Seleccionar foto de perfil" aria-label="Seleccionar foto de perfil" class="hidden">
         </div>
+        <div id="avatar-zoom-row" class="hidden">
+          <label for="avatar-zoom">Recorte</label>
+          <input type="range" id="avatar-zoom" min="1" max="2.4" step="0.05" value="1">
+        </div>
+        <label for="profile-name-input">Nombre</label>
+        <input type="text" id="profile-name-input" maxlength="35" title="Nombre, sin emojis" placeholder="Tu nombre">
+        <button id="copy-sync-id-btn" type="button">Copiar mi ID</button>
         <div id="push-notifications-block">
           <button id="enable-push-notifications-btn" type="button">Activar notificaciones</button>
           <p id="push-notifications-status" role="status" aria-live="polite"></p>
         </div>
-        <label for="profile-name-input">Nombre</label>
-        <input type="text" id="profile-name-input" maxlength="35" title="Nombre, sin emojis" placeholder="Tu nombre">
       </div>
       <div class="profile-sheet-foot">
-        <button id="cancel-profile-modal-btn" type="button">Cancelar</button>
         <button id="save-profile-btn" type="button">Guardar</button>
+        <button id="profile-logout-btn" type="button">Salir</button>
       </div>
     </div>
   </div>
@@ -530,7 +539,7 @@
   <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4 bg-[#F8FAFC]">
     <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md flex flex-col gap-6 shadow-xl border border-[rgba(197,160,89,0.25)]">
 
-      <div class="flex items-center flex-col text-center gap-2">
+      <div class="auth-brand flex items-center flex-col text-center gap-2">
         <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="" class="auth-logo">
         <h2 class="font-bold text-xl text-[#0A1A3A] font-title tracking-wide">SYNC ENGINE</h2>
         <p class="text-xs text-[#64748B]">Plataforma Privada de Mensajería &amp; Workspace</p>
@@ -1582,32 +1591,50 @@
   });
 
   // Procesamiento Automático de Foto de Perfil: Recorte Circular 1:1 (1080 × 1080 px)
+  let avatarSource = null;
+  let avatarZoom = 1;
+  let avatarEdit = null;
+
+  function drawAvatarCrop() {
+    if (!avatarSource) return;
+    const zoom = Math.max(1, Math.min(2.4, avatarZoom));
+    const side = Math.min(avatarSource.naturalWidth, avatarSource.naturalHeight) / zoom;
+    const startX = (avatarSource.naturalWidth - side) / 2;
+    const startY = (avatarSource.naturalHeight - side) / 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(avatarSource, startX, startY, side, side, 0, 0, 1080, 1080);
+    const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    avatarEdit = croppedDataUrl;
+    setSafeUrl(profileAvatarPreview, 'src', croppedDataUrl, 'avatar');
+    profileAvatarPreview.classList.remove('hidden');
+    profileAvatarFallback.classList.add('hidden');
+  }
+
   function processProfileAvatar(file) {
     return new Promise((resolve, reject) => {
       const objectUrl = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
         URL.revokeObjectURL(objectUrl);
-        const side = Math.min(img.naturalWidth, img.naturalHeight);
-        const startX = Math.round((img.naturalWidth - side) / 2);
-        const startY = Math.round((img.naturalHeight - side) / 2);
-
-        const canvas = document.createElement('canvas');
-        canvas.width = 1080;
-        canvas.height = 1080;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        // Recorte automático circular basado en imagen cuadrada de 1080x1080
-        ctx.drawImage(img, startX, startY, side, side, 0, 0, 1080, 1080);
-        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        resolve(croppedDataUrl);
+        avatarSource = img;
+        avatarZoom = 1;
+        const zoom = document.getElementById('avatar-zoom');
+        const zoomRow = document.getElementById('avatar-zoom-row');
+        if (zoom) zoom.value = '1';
+        if (zoomRow) zoomRow.classList.remove('hidden');
+        drawAvatarCrop();
+        resolve(avatarEdit);
       };
       img.onerror = () => {
         URL.revokeObjectURL(objectUrl);
         reject(new Error('Error al decodificar la imagen'));
       };
-      img.src = objectUrl; // Locally created image-only blob, never a received URL.
+      img.src = objectUrl;
     });
   }
 
@@ -1621,9 +1648,6 @@
     try {
       const croppedDataUrl = await processProfileAvatar(file);
       currentSelectedAvatarData = croppedDataUrl;
-      setSafeUrl(profileAvatarPreview, 'src', croppedDataUrl, 'avatar');
-      profileAvatarPreview.classList.remove('hidden');
-      profileAvatarFallback.classList.add('hidden');
     } catch (err) {
       triggerPopupNotification('Avatar', 'No se pudo procesar la imagen: ' + err.message, '⚠️');
     }
@@ -1631,6 +1655,25 @@
 
   if (selectAvatarBtn) selectAvatarBtn.addEventListener('click', () => profileAvatarInput.click());
   if (triggerAvatarBtn) triggerAvatarBtn.addEventListener('click', () => profileAvatarInput.click());
+  const avatarZoomInput = document.getElementById('avatar-zoom');
+  if (avatarZoomInput) avatarZoomInput.addEventListener('input', () => {
+    avatarZoom = Number(avatarZoomInput.value) || 1;
+    drawAvatarCrop();
+  });
+  document.getElementById('remove-avatar-btn')?.addEventListener('click', () => {
+    avatarEdit = '';
+    avatarSource = null;
+    document.getElementById('avatar-zoom-row')?.classList.add('hidden');
+    profileAvatarPreview.classList.add('hidden');
+    profileAvatarFallback.classList.remove('hidden');
+    profileAvatarFallback.textContent = currentUser ? currentUser.syncId.replace('SYNC-', '') : '0000';
+  });
+  document.getElementById('copy-sync-id-btn')?.addEventListener('click', async () => {
+    if (!currentUser) return;
+    try { await navigator.clipboard.writeText(currentUser.syncId); } catch (_) {}
+    triggerPopupNotification('ID', currentUser.syncId, '✓');
+  });
+  document.getElementById('profile-logout-btn')?.addEventListener('click', () => logoutBtn.click());
 
   if (profileAvatarInput) {
     profileAvatarInput.addEventListener('change', async (e) => {
@@ -1659,7 +1702,12 @@
 
   function openProfileSettings() {
     profileNameInput.value = currentUser ? purgeEmojis(currentUser.cleanDisplayName) : '';
-    currentSelectedAvatarData = null;
+    avatarEdit = null;
+    avatarSource = null;
+    const zoomRow = document.getElementById('avatar-zoom-row');
+    if (zoomRow) zoomRow.classList.add('hidden');
+    const idLine = document.getElementById('profile-sync-id');
+    if (idLine) idLine.textContent = currentUser ? currentUser.syncId : '';
     if (setSafeUrl(profileAvatarPreview, 'src', currentUser && currentUser.avatarUrl, 'avatar')) {
       profileAvatarPreview.classList.remove('hidden');
       profileAvatarFallback.classList.add('hidden');
@@ -1674,7 +1722,7 @@
   if (openEditProfileBtn) openEditProfileBtn.addEventListener('click', openProfileSettings);
 
   closeProfileModalBtn.addEventListener('click', () => editProfileModal.classList.add('hidden'));
-  cancelProfileModalBtn.addEventListener('click', () => editProfileModal.classList.add('hidden'));
+  if (cancelProfileModalBtn) cancelProfileModalBtn.addEventListener('click', () => editProfileModal.classList.add('hidden'));
 
   profileNameInput.addEventListener('input', () => {
     profileNameInput.value = profileNameInput.value.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/gu, '');
@@ -1695,7 +1743,7 @@
         },
         body: JSON.stringify({
           displayName: cleanName,
-          avatarUrl: currentSelectedAvatarData !== null ? currentSelectedAvatarData : (currentUser ? currentUser.avatarUrl : null)
+          avatarUrl: avatarEdit !== null ? (avatarEdit || null) : (currentUser ? currentUser.avatarUrl : null)
         })
       });
       const data = await res.json();

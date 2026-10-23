@@ -3015,3 +3015,62 @@ html[data-se-theme="energy"] .profile-sheet-foot { border-top-color: rgba(126,23
   #logout-btn { flex: 0 0 auto !important; min-width: 64px; height: 36px; }
   #app-container > header.sticky > div { overflow: hidden; }
 }
+
+/* El teléfono no puede ser más ancho que la pantalla. */
+html, body { overflow-x: hidden; max-width: 100%; }
+* { scrollbar-width: thin; scrollbar-color: rgba(8,119,249,.55) transparent; }
+*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar-thumb { background: rgba(8,119,249,.55); border-radius: 99px; }
+*::-webkit-scrollbar-track { background: transparent; }
+@media (max-width: 1023px) {
+  #app-container > header.sticky,
+  #main-layout {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  #sidebar-panel {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  #header-identity, #logout-btn { display: none !important; }
+  #app-container > header.sticky > div { overflow: visible !important; padding-right: 12px !important; }
+  .search-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 72px;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+  #add-contact-btn { width: 72px !important; min-width: 0 !important; height: 40px !important; }
+}
+.avatar-actions { display: flex; gap: 8px; }
+.avatar-actions button, #copy-sync-id-btn, #profile-logout-btn, #save-profile-btn {
+  min-height: 40px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer;
+}
+#remove-avatar-btn, #copy-sync-id-btn {
+  background: transparent; color: #0757b8; border: 1px solid rgba(8,119,249,.28); padding: 0 14px;
+}
+#avatar-zoom { width: 100%; accent-color: #0877f9; }
+.profile-sync-id { margin: 0; text-align: center; font-family: ui-monospace, monospace; font-weight: 700; letter-spacing: .04em; color: #0877f9; }
+#profile-logout-btn { background: transparent; color: #9f1239; border: 1px solid rgba(159,18,57,.28); padding: 0 14px; }
+.profile-sheet-body { overflow-y: auto; }
+.auth-brand { position: relative; }
+.auth-logo {
+  width: 72px; height: 72px; object-fit: contain;
+  animation: se-mark-in 1s cubic-bezier(.16,1,.3,1) both;
+}
+.auth-brand h2 { animation: se-word-in .7s .28s cubic-bezier(.16,1,.3,1) both; }
+.auth-brand p { animation: se-word-in .7s .42s cubic-bezier(.16,1,.3,1) both; }
+@keyframes se-mark-in {
+  0% { opacity: 0; transform: scale(.72); filter: blur(8px); }
+  60% { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+@keyframes se-word-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+html[data-se-theme="energy"] #remove-avatar-btn,
+html[data-se-theme="energy"] #copy-sync-id-btn { color: #7ee7ff; border-color: rgba(126,231,255,.35); }
