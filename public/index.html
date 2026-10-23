@@ -895,6 +895,29 @@
 
   let currentUser = null;
   let currentToken = localStorage.getItem(TOKEN_KEY) || null;
+  let nativeWidgetRefresh = null;
+
+  function publishNativeSession() {
+    const bridge = window.SyncAndroid;
+    if (!bridge) return;
+    try {
+      if (currentToken && typeof bridge.setSession === 'function') {
+        const name = currentUser ? (currentUser.cleanDisplayName || currentUser.syncId || '') : '';
+        bridge.setSession(currentToken, name);
+      } else if (typeof bridge.clearSession === 'function') {
+        bridge.clearSession();
+      }
+    } catch (_) {}
+  }
+
+  function refreshNativeWidget() {
+    const bridge = window.SyncAndroid;
+    if (!bridge || typeof bridge.refreshWidget !== 'function' || !currentToken) return;
+    clearTimeout(nativeWidgetRefresh);
+    nativeWidgetRefresh = setTimeout(() => {
+      try { bridge.refreshWidget(); } catch (_) {}
+    }, 400);
+  }
   let activeContactSyncId = null;
   let lastDmSyncId = null;
   let contactsMap = new Map();
@@ -1574,6 +1597,7 @@
     } else {
       document.body.classList.remove('mobile-view-contacts', 'mobile-view-chat');
     }
+    publishNativeSession();
   }
 
   logoutBtn.addEventListener('click', () => {
@@ -1582,6 +1606,7 @@
     SyncPrivateFiles.clear().catch(() => {});
     currentToken = null;
     currentUser = null;
+    publishNativeSession();
     activeContactSyncId = null;
     lastDmSyncId = null;
     parkedThreads.clear();
@@ -2634,6 +2659,7 @@
     // Notificar lectura al servidor
     if (socket && document.visibilityState === 'visible') {
       socket.emit('mark-messages-read', { contactSyncId: activeContactSyncId });
+      refreshNativeWidget();
     }
 
     loadContacts();
@@ -3208,10 +3234,12 @@
 
         if (isCurrentConversation && fromId !== currentUser.syncId && document.visibilityState === 'visible') {
           socket.emit('mark-messages-read', { contactSyncId: activeContactSyncId });
+          refreshNativeWidget();
         }
       }
 
       if (fromId !== currentUser.syncId) {
+        refreshNativeWidget();
         const preview = msg.type === 'audio'
           ? '🎤 Nota de voz recibida'
           : (msg.type === 'file' ? '📎 ' + (msg.fileData ? msg.fileData.name : 'Archivo') : msg.text);
@@ -3271,11 +3299,13 @@
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && activeContactSyncId && socket) {
       socket.emit('mark-messages-read', { contactSyncId: activeContactSyncId });
+      refreshNativeWidget();
     }
   });
   window.addEventListener('focus', () => {
     if (activeContactSyncId && socket) {
       socket.emit('mark-messages-read', { contactSyncId: activeContactSyncId });
+      refreshNativeWidget();
     }
   });
 
@@ -5515,6 +5545,9 @@
     if (sidebar) sidebar.classList.add('hidden');
     if (callsHome) callsHome.classList.remove('hidden');
     setActiveNav('calls');
+    if (window.SyncAndroid && typeof window.SyncAndroid.markCallsSeen === 'function') {
+      try { window.SyncAndroid.markCallsSeen(); } catch (_) {}
+    }
   };
   const showWorkspace = () => {
     document.body.classList.remove('mobile-view-calls');

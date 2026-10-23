@@ -3,6 +3,7 @@ package com.barrantesco.syncengine;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
@@ -214,6 +215,43 @@ public final class WebAppActivity extends Activity {
             boolean dark = "energy".equals(theme);
             int color = Color.parseColor(dark ? "#070D16" : "#F4F8FD");
             runOnUiThread(() -> applySystemTheme(color, dark));
+        }
+
+        @JavascriptInterface
+        public void setSession(String token, String name) {
+            String clean = token == null ? "" : token.trim();
+            if (clean.isEmpty()) {
+                clearSession();
+                return;
+            }
+            Context app = getApplicationContext();
+            boolean changed = !clean.equals(AppSettings.token(app));
+            if (changed) {
+                AppSettings.saveSession(app, clean, name == null ? "" : name);
+                FcmRegistration.registerCurrentDevice(app);
+            }
+            new Thread(() -> SyncRefresher.refresh(app)).start();
+        }
+
+        @JavascriptInterface
+        public void clearSession() {
+            Context app = getApplicationContext();
+            FcmRegistration.unregister(app);
+            AppSettings.clearSession(app);
+            SyncWidgetProvider.refreshAll(app);
+        }
+
+        @JavascriptInterface
+        public void refreshWidget() {
+            Context app = getApplicationContext();
+            new Thread(() -> SyncRefresher.refresh(app)).start();
+        }
+
+        @JavascriptInterface
+        public void markCallsSeen() {
+            Context app = getApplicationContext();
+            AppSettings.markCallsSeen(app);
+            SyncWidgetProvider.refreshAll(app);
         }
     }
 
