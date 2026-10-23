@@ -9,42 +9,62 @@ let VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 let VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 let webPushConfigured = false;
 
-function configureWebPush(directory) {
+function generateVapidKeys() {
+  const curve = crypto.createECDH("prime256v1");
+  curve.generateKeys();
+  return {
+    publicKey: curve.getPublicKey().toString("base64url"),
+    privateKey: curve.getPrivateKey().toString("base64url")
+  };
+}
+
+function readStoredVapid(file) {
   try {
-    const dir = directory || path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
-    let publicKey = String(process.env.VAPID_PUBLIC_KEY || "").trim();
-    let privateKey = String(process.env.VAPID_PRIVATE_KEY || "").trim();
-    if (!publicKey || !privateKey) {
-      const file = path.join(dir, "vapid.json");
-      try {
-        const stored = JSON.parse(fs.readFileSync(file, "utf8"));
-        publicKey = String(stored.publicKey || "");
-        privateKey = String(stored.privateKey || "");
-      } catch (_) {
-        publicKey = "";
-        privateKey = "";
-      }
-      if (!publicKey || !privateKey) {
-        if (typeof webPush.generateVAPIDKeys !== "function") {
-          throw new Error("web-push no puede generar claves VAPID");
+    const stored = JSON.parse(fs.readFileSync(file, "utf8"));
+    const publicKey = String(stored.publicKey || "").trim();
+    const privateKey = String(stored.privateKey || "").trim();
+    if (publicKey && privateKey) return { publicKey, privateKey };
+  } catch (_) {}
+  return null;
+}
+
+function configureWebPush(directory) {
+  const dir = directory || path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
+  const file = path.join(dir, "vapid.json");
+  const fromEnv = {
+    publicKey: String(process.env.VAPID_PUBLIC_KEY || "").trim(),
+    privateKey: String(process.env.VAPID_PRIVATE_KEY || "").trim()
+  };
+  const candidates = [];
+  if (fromEnv.publicKey && fromEnv.privateKey) candidates.push(fromEnv);
+  const stored = readStoredVapid(file);
+  if (stored) candidates.push(stored);
+  candidates.push(null);
+  let lastError = null;
+  for (const candidate of candidates) {
+    const generated = !candidate;
+    const keys = candidate || generateVapidKeys();
+    try {
+      webPush.setVapidDetails(VAPID_EMAIL, keys.publicKey, keys.privateKey);
+      if (generated) {
+        try {
+          fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(file, JSON.stringify(keys), { mode: 0o600 });
+        } catch (err) {
+          console.warn("[WebPush] Claves activas, pero no se pudieron guardar:", err.message);
         }
-        const generated = webPush.generateVAPIDKeys();
-        publicKey = generated.publicKey;
-        privateKey = generated.privateKey;
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(file, JSON.stringify({ publicKey, privateKey }), { mode: 0o600 });
       }
+      VAPID_PUBLIC_KEY = keys.publicKey;
+      VAPID_PRIVATE_KEY = keys.privateKey;
+      webPushConfigured = true;
+      return keys;
+    } catch (err) {
+      lastError = err;
     }
-    webPush.setVapidDetails(VAPID_EMAIL, publicKey, privateKey);
-    VAPID_PUBLIC_KEY = publicKey;
-    VAPID_PRIVATE_KEY = privateKey;
-    webPushConfigured = true;
-    return { publicKey, privateKey };
-  } catch (err) {
-    webPushConfigured = false;
-    console.warn("[WebPush] Notificaciones web deshabilitadas:", err.message);
-    return null;
   }
+  webPushConfigured = false;
+  console.warn("[WebPush] Notificaciones web deshabilitadas:", lastError && lastError.message);
+  return null;
 }
 
 // Helper to send push notification to all stored subscriptions for a syncId

@@ -64,7 +64,7 @@ before(async () => {
       if (name === './db') return db;
       if (name === './public/safe-content') return realRequire(name);
       if (name === 'selfsigned') return { generate: async () => null };
-      if (name === 'web-push') return { setVapidDetails() { throw new Error('disabled in fixtures'); } };
+      if (name === 'web-push') return { setVapidDetails() {}, sendNotification() { return Promise.resolve(); } };
       if (name === 'http') return {
         createServer(app) {
           server = http.createServer(app);
@@ -248,13 +248,17 @@ test('private message retries with the same client ID do not create duplicates',
   assert.equal(messages.filter((message) => message.id === clientMsgId).length, 1);
 });
 
-test('Web Push configuration endpoint requires authentication and reports disabled configuration', async () => {
+test('Web Push configuration endpoint requires authentication and returns the public key', async () => {
   assert.equal((await fetch(base + '/api/notifications/vapid-public-key')).status, 401);
   const response = await fetch(base + '/api/notifications/vapid-public-key', {
     headers: { Authorization: ['Bearer', 'test-alice'].join(' ') }
   });
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { ok: true, configured: false, publicKey: null });
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.configured, true);
+  assert.equal(typeof body.publicKey, 'string');
+  assert.ok(body.publicKey.length > 20);
 });
 
 test('channel subscriptions and history require an authenticated member', async () => {

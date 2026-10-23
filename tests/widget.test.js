@@ -54,7 +54,7 @@ before(async () => {
       if (name === './db') return db;
       if (name === './public/safe-content') return realRequire(name);
       if (name === 'selfsigned') return { generate: async () => null };
-      if (name === 'web-push') return { setVapidDetails() { throw new Error('disabled in fixtures'); } };
+      if (name === 'web-push') return { setVapidDetails() {}, sendNotification() { return Promise.resolve(); } };
       if (name === 'http') return {
         createServer(app) {
           server = http.createServer(app);
