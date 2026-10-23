@@ -1,5 +1,13 @@
 "use strict";
 
+if (process.env.APP_ENV === "staging" &&
+    (!process.env.PUBSUB_PROJECT_ID || !process.env.PUBSUB_TOPIC || !process.env.PUBSUB_SUBSCRIPTION ||
+     (process.env.PUBSUB_PROJECT_ID || "sync-engine-hub") === "sync-engine-hub" ||
+     (process.env.PUBSUB_TOPIC || "chat-events-topic") === "chat-events-topic" ||
+     (process.env.PUBSUB_SUBSCRIPTION || "chat-events-sub") === "chat-events-sub")) {
+  throw new Error("Staging requires dedicated Pub/Sub project, topic and subscription");
+}
+
 const { PubSub } = require("@google-cloud/pubsub");
 
 const BACKOFF_BASE_MS = 1000;

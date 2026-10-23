@@ -27,6 +27,17 @@ function startBridge({ env = process.env, logger = console } = {}) {
   wss.on("connection", (client) => client.on("error", (err) => logger.warn("[Bridge] Client error:", err?.message || err)));
   const upstream = io(upstreamUrl.href, { autoConnect: false, reconnection: true });
 
+  upstream.on("connect", () => {
+    identity = null;
+    upstream.emit("authenticate", { token: env.WS_BRIDGE_UPSTREAM_TOKEN });
+  });
+  upstream.on("authenticated", (payload) => {
+    identity = payload && payload.user && payload.user.syncId ? payload.user.syncId : null;
+  });
+  upstream.on("auth-error", () => {
+    identity = null;
+    upstream.disconnect();
+  });
   upstream.on("pubsub-chat-event", (payload) => {
     if (!identity) return;
     const targets = recipientsFor(payload);
