@@ -19,14 +19,6 @@
       "destination": "https://sync-engine-server.onrender.com/uploads/:path*"
     },
     {
-      "source": "/socket.io",
-      "destination": "https://sync-engine-server.onrender.com/socket.io/"
-    },
-    {
-      "source": "/socket.io/",
-      "destination": "https://sync-engine-server.onrender.com/socket.io/"
-    },
-    {
       "source": "/socket.io/:path*",
       "destination": "https://sync-engine-server.onrender.com/socket.io/:path*"
     }
