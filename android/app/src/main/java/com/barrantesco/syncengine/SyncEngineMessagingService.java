@@ -14,11 +14,8 @@ import androidx.core.app.NotificationCompat;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
-<<<<<<< HEAD
 import java.util.Map;
 
-=======
->>>>>>> origin/main
 /** Recibe avisos FCM de mensajes y llamadas entrantes y los muestra como notificaciones Android. */
 public final class SyncEngineMessagingService extends FirebaseMessagingService {
     private static final String CHANNEL_ID = SyncEngineApplication.REALTIME_CHANNEL_ID;
@@ -30,7 +27,6 @@ public final class SyncEngineMessagingService extends FirebaseMessagingService {
 
     @Override
     public void onMessageReceived(RemoteMessage message) {
-<<<<<<< HEAD
         String title = null;
         String body = null;
 
@@ -77,28 +73,15 @@ public final class SyncEngineMessagingService extends FirebaseMessagingService {
         }
 
         boolean isCall = "call".equals(type);
-        showNotification(title, body, conversationId, isCall);
-        SyncRefresher.refresh(getApplicationContext());
-    }
 
-    private void showNotification(String title, String body, String conversationId, boolean call) {
-=======
-        String title = message.getData().get("title");
-        String body = message.getData().get("body");
-        String type = message.getData().get("type");
         // FCM es la vía inmediata; respetar el ajuste del usuario y refrescar contadores
-        // sin generar una segunda notificación por el mismo evento.
         if (AppSettings.notifications(this)) {
-            showNotification(
-                    title == null || title.isEmpty() ? getString(R.string.app_name) : title,
-                    body == null ? getString(R.string.realtime_notification_body) : body,
-                    "call".equals(type));
+            showNotification(title, body, conversationId, isCall);
         }
         SyncRefresher.refresh(getApplicationContext(), false);
     }
 
-    private void showNotification(String title, String body, boolean call) {
->>>>>>> origin/main
+    private void showNotification(String title, String body, String conversationId, boolean call) {
         NotificationManager manager = getSystemService(NotificationManager.class);
         if (manager == null || !manager.areNotificationsEnabled()) {
             return;
@@ -109,7 +92,6 @@ public final class SyncEngineMessagingService extends FirebaseMessagingService {
             return;
         }
         if (Build.VERSION.SDK_INT >= 26) {
-<<<<<<< HEAD
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
                     getString(R.string.channel_realtime),
@@ -121,8 +103,8 @@ public final class SyncEngineMessagingService extends FirebaseMessagingService {
             manager.createNotificationChannel(channel);
         }
 
-        Intent open = new Intent(this, WebAppActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        Intent open = new Intent(this, OpenAppActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         if (conversationId != null && !conversationId.isEmpty()) {
             open.putExtra("conversationId", conversationId);
             open.putExtra("syncId", conversationId);
@@ -150,26 +132,5 @@ public final class SyncEngineMessagingService extends FirebaseMessagingService {
 
         int notificationId = conversationId != null ? Math.abs(conversationId.hashCode()) : (call ? 4202 : 4203);
         manager.notify(notificationId, notification.build());
-=======
-            manager.createNotificationChannel(new NotificationChannel(
-                    CHANNEL_ID,
-                    getString(R.string.channel_realtime),
-                    NotificationManager.IMPORTANCE_HIGH));
-        }
-        Intent open = new Intent(this, OpenAppActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent content = PendingIntent.getActivity(
-                this, call ? 4202 : 4203, open,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        NotificationCompat.Builder notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_widget_open)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setContentIntent(content)
-                .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(call ? NotificationCompat.CATEGORY_CALL : NotificationCompat.CATEGORY_MESSAGE);
-        manager.notify(call ? 4202 : 4203, notification.build());
->>>>>>> origin/main
     }
 }
