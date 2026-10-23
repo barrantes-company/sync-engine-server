@@ -13,9 +13,12 @@ import android.view.View;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
+import android.net.http.SslError;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -37,6 +40,7 @@ public final class WebAppActivity extends Activity {
     private ProgressBar progress;
     private TextView errorMessage;
     private PermissionRequest pendingMedia;
+    private boolean showingError;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,14 +103,23 @@ public final class WebAppActivity extends Activity {
                 return !("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme));
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) showLoadError();
+                if (!request.isForMainFrame() || error.getErrorCode() == -3) return;
+                showLoadError();
+            }
+            @Override public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                if (!request.isForMainFrame() || errorResponse.getStatusCode() < 400) return;
+                showLoadError();
+            }
+            @Override public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                handler.cancel();
+                showLoadError();
             }
         });
         root.addView(webView, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
 
         errorMessage = new TextView(this);
-        errorMessage.setText("No se pudo conectar con SYNC ENGINE. Comprueba tu conexión e inténtalo de nuevo.");
+        errorMessage.setText("No se pudo conectar con SYNC ENGINE. Comprueba tu conexión y toca para reintentar.");
         errorMessage.setTextColor(Color.rgb(10, 26, 58));
         errorMessage.setTextSize(16);
         errorMessage.setGravity(Gravity.CENTER);
@@ -114,11 +127,12 @@ public final class WebAppActivity extends Activity {
         errorMessage.setVisibility(View.GONE);
         errorMessage.setOnClickListener(v -> loadOfficialApp());
         root.addView(errorMessage, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);
     }
 
     private void loadOfficialApp() {
+        showingError = false;
         errorMessage.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
         String configured = WidgetUrls.defaultUrl(this);
@@ -137,7 +151,14 @@ public final class WebAppActivity extends Activity {
     }
 
     private void showLoadError() {
-        errorMessage.setVisibility(View.VISIBLE);
+        if (showingError) return;
+        showingError = true;
+        if (progress != null) progress.setVisibility(View.GONE);
+        if (webView != null) {
+            webView.stopLoading();
+            webView.setVisibility(View.GONE);
+        }
+        if (errorMessage != null) errorMessage.setVisibility(View.VISIBLE);
     }
 
     @Override protected void onStart() {
