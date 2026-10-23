@@ -1,15 +1,12 @@
-{
+﻿{
   "version": 2,
   "name": "sync-engine-frontend",
   "framework": null,
-<<<<<<< HEAD
-=======
   "git": {
     "deploymentEnabled": {
       "staging-sync-engine-2": false
     }
   },
->>>>>>> origin/main
   "buildCommand": null,
   "outputDirectory": "public",
   "rewrites": [
