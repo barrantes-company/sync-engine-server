@@ -551,14 +551,14 @@
     <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md flex flex-col gap-6 shadow-xl border border-[rgba(197,160,89,0.25)]">
 
       <div class="flex items-center flex-col text-center gap-2">
-        <img src="/assets/logo.png" alt="SYNC ENGINE" class="h-12 w-auto object-contain drop-shadow-md">
+        <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="" class="auth-logo">
         <h2 class="font-bold text-xl text-[#0A1A3A] font-title tracking-wide">SYNC ENGINE</h2>
         <p class="text-xs text-[#64748B]">Plataforma Privada de Mensajería &amp; Workspace</p>
       </div>
 
-      <div class="grid grid-cols-2 p-1 rounded-2xl bg-[#F1F5F9] border border-[rgba(197,160,89,0.2)]">
-        <button id="tab-login" type="button" class="py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-[#C5A059] to-[#99793D] text-white shadow-xs transition-all cursor-pointer">Iniciar Sesión</button>
-        <button id="tab-register" type="button" class="py-2.5 rounded-xl font-bold text-xs text-[#64748B] hover:text-[#C5A059] transition-all cursor-pointer">Crear Cuenta</button>
+      <div class="auth-tabs">
+        <button id="tab-login" type="button" class="is-active">Iniciar Sesión</button>
+        <button id="tab-register" type="button">Crear Cuenta</button>
       </div>
 
       <form id="auth-form" class="flex flex-col gap-4">
@@ -1423,16 +1423,14 @@
   // Pestañas y Modo de Autenticación
   function setAuthMode(register) {
     isRegisterMode = register;
+    tabLogin.classList.toggle('is-active', !register);
+    tabRegister.classList.toggle('is-active', register);
     if (isRegisterMode) {
-      tabRegister.className = 'py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-[#C5A059] to-[#99793D] text-white shadow-xs transition-all cursor-pointer';
-      tabLogin.className = 'py-2.5 rounded-xl font-bold text-xs text-[#64748B] hover:text-[#C5A059] transition-all cursor-pointer';
       displayNameGroup.classList.remove('hidden');
       authSubmitBtn.textContent = 'Crear Cuenta y Obtener ID';
       if (authSwitchText) authSwitchText.textContent = '¿Ya tienes una cuenta?';
       if (authSwitchBtn) authSwitchBtn.textContent = 'Iniciar Sesión';
     } else {
-      tabLogin.className = 'py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-[#C5A059] to-[#99793D] text-white shadow-xs transition-all cursor-pointer';
-      tabRegister.className = 'py-2.5 rounded-xl font-bold text-xs text-[#64748B] hover:text-[#C5A059] transition-all cursor-pointer';
       displayNameGroup.classList.add('hidden');
       authSubmitBtn.textContent = 'Ingresar al Chat';
       if (authSwitchText) authSwitchText.textContent = '¿No tienes una cuenta?';

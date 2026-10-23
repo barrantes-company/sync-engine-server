@@ -2488,6 +2488,10 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
   backdrop-filter: blur(18px);
 }
 #auth-screen h2 { letter-spacing: -.03em; color: #071a38 !important; }
+#auth-screen .auth-logo { width: 84px; height: 84px; object-fit: contain; }
+#auth-screen .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: #e8eef6; border: 1px solid rgba(7,26,56,.08); }
+#auth-screen .auth-tabs button { min-height: 40px; border: 0; border-radius: 12px; background: transparent; color: #3d4d63; font-weight: 700; font-size: 12px; cursor: pointer; }
+#auth-screen .auth-tabs button.is-active { background: linear-gradient(135deg,#0877f9,#0757b8); color: #fff; box-shadow: 0 8px 16px rgba(8,119,249,.22); }
 #auth-screen input {
   min-height: 46px;
   border: 1px solid rgba(7,26,56,.12) !important;
