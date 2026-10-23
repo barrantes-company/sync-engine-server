@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sync-engine-v11';
+const CACHE_NAME = 'sync-engine-v12';
 const CACHE_PREFIX = 'sync-engine-';
 const ASSETS_TO_CACHE = [
   '/',

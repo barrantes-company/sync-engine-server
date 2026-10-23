@@ -4519,17 +4519,17 @@
   // RESPONSIVE RESIZE (BREAKPOINTS CANÓNICOS BARRANTES CO.)
   window.addEventListener('resize', () => {
     if (window.innerWidth >= 1024) {
-      document.body.classList.remove('mobile-view-contacts', 'mobile-view-chat');
+      document.body.classList.remove('mobile-view-contacts', 'mobile-view-chat', 'mobile-view-calls');
       if (drawerBackdrop) drawerBackdrop.classList.add('hidden');
       chatPanel.classList.remove('hidden');
+    } else if (document.body.classList.contains('mobile-view-calls')) {
+      document.body.classList.remove('mobile-view-contacts', 'mobile-view-chat');
+    } else if (activeContactSyncId) {
+      document.body.classList.add('mobile-view-chat');
+      document.body.classList.remove('mobile-view-contacts');
     } else {
-      if (activeContactSyncId) {
-        document.body.classList.add('mobile-view-chat');
-        document.body.classList.remove('mobile-view-contacts');
-      } else {
-        document.body.classList.add('mobile-view-contacts');
-        document.body.classList.remove('mobile-view-chat');
-      }
+      document.body.classList.add('mobile-view-contacts');
+      document.body.classList.remove('mobile-view-chat');
     }
   });
 
@@ -5473,12 +5473,15 @@
   };
   const sidebar = document.getElementById('sidebar-panel');
   const showCalls = () => {
+    document.body.classList.remove('mobile-view-contacts', 'mobile-view-chat');
+    document.body.classList.add('mobile-view-calls');
     if (split) split.classList.add('hidden');
     if (sidebar) sidebar.classList.add('hidden');
     if (callsHome) callsHome.classList.remove('hidden');
     setActiveNav('calls');
   };
   const showWorkspace = () => {
+    document.body.classList.remove('mobile-view-calls');
     if (callsHome) callsHome.classList.add('hidden');
     if (split) split.classList.remove('hidden');
     if (sidebar) sidebar.classList.remove('hidden');
@@ -5499,6 +5502,9 @@
       return;
     }
     if (view === 'profile') {
+      showWorkspace();
+      document.body.classList.remove('mobile-view-chat');
+      if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
       document.getElementById('open-edit-profile-btn')?.click();
       setActiveNav('profile');
       return;
@@ -5530,6 +5536,18 @@
   themeButton?.addEventListener('click', () => {
     applyTheme(app.dataset.seTheme === 'energy' ? 'sync-blue' : 'energy');
   });
+  const viewport = window.visualViewport;
+  if (viewport) {
+    const syncKeyboard = () => {
+      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      document.documentElement.style.setProperty('--se-vvh', viewport.height + 'px');
+      document.documentElement.style.setProperty('--se-vvtop', viewport.offsetTop + 'px');
+      document.documentElement.dataset.keyboard = inset > 80 ? '1' : '0';
+    };
+    viewport.addEventListener('resize', syncKeyboard);
+    viewport.addEventListener('scroll', syncKeyboard);
+    syncKeyboard();
+  }
   // Deep links desde acciones del widget nativo; se aplican tras autenticar y mostrar la app.
   window.addEventListener('sync-engine-app-ready', () => {
     const url = new URL(window.location.href);
