@@ -263,7 +263,7 @@ test('Web Push configuration endpoint requires authentication and returns the pu
 
 test('channel subscriptions and history require an authenticated member', async () => {
   const channel = db.createWorkspaceChannel('private-room', 'Private channel', users[0].syncId);
-  db.saveChannelMessage(channel.id, users[0].syncId, { text: 'Private history' });
+  await db.saveChannelMessage(channel.id, users[0].syncId, { text: 'Private history' });
 
   const anonymous = await connectedSocket();
   const anonymousError = waitEvent(anonymous, 'authorization-error');

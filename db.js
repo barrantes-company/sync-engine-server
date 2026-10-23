@@ -103,6 +103,10 @@ async function processWriteQueue() {
         }
       } catch (_) {}
       writeQueue.shift();
+      if (cachedDb === item.source && writeQueue.length === 0) {
+        cachedDb = null;
+        try { readDb(); } catch (_) { cachedDb = null; }
+      }
       item.reject(err);
     }
   }
@@ -116,7 +120,7 @@ function writeDb(data) {
   cachedDb = data;
   const content = JSON.stringify(data, null, 2);
   const promise = new Promise((resolve, reject) => {
-    writeQueue.push({ content, resolve, reject });
+    writeQueue.push({ content, source: data, resolve, reject });
     processWriteQueue();
   });
   promise.catch(() => {});
@@ -573,14 +577,14 @@ function saveMessage(msgData) {
   if (msgData.id) {
     const existingMessage = db.messages.find((message) => message.id === msgData.id);
     if (existingMessage) {
-      if (existingMessage.fromId === fromId && existingMessage.toId === toId) return existingMessage;
-      throw new Error("El identificador del mensaje ya está en uso");
+      if (existingMessage.fromId === fromId && existingMessage.toId === toId) return Promise.resolve(existingMessage);
+      return Promise.reject(new Error("El identificador del mensaje ya está en uso"));
     }
   }
   const fileIds = [...new Set(msgData.fileIds || [])];
   for (const fileId of fileIds) {
     const file = db.files.find((item) => item.id === fileId);
-    if (!file || file.ownerId !== fromId) throw new Error("No puedes compartir este archivo");
+    if (!file || file.ownerId !== fromId) return Promise.reject(new Error("No puedes compartir este archivo"));
   }
   const newMsg = {
     id: msgData.id || ("msg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
@@ -596,7 +600,7 @@ function saveMessage(msgData) {
     linkPreview: msgData.linkPreview || null,
     reactions: msgData.reactions || {},
     timestamp: msgData.timestamp || Date.now(),
-    status: msgData.status || 'sent', // 'sent' | 'delivered' | 'read'
+    status: msgData.status || 'sent',
     read: Boolean(msgData.read || msgData.status === 'read'),
     deletedForEveryone: false
   };
@@ -607,8 +611,7 @@ function saveMessage(msgData) {
     (message.fromId === toId && message.toId === fromId)
   );
 
-  writeDb(db);
-  return newMsg;
+  return writeDb(db).then(() => newMsg);
 }
 
 function getMessageById(messageId) {
@@ -1259,8 +1262,7 @@ function saveChannelMessage(channelId, senderSyncId, payload) {
 
   db.channelMessages.push(message);
   db.channelMessages = trimIndexed(db.channelMessages, 1500, (item) => item.channelId === resolvedChannelId);
-  writeDb(db);
-  return message;
+  return writeDb(db).then(() => message);
 }
 
 // ==== Exportación de Conversación / Auditoría ====

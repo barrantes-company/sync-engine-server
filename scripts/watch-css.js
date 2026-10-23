@@ -1,12 +1,10 @@
 'use strict';
 
-const { spawnSync } = require('child_process');
+const { buildCss } = require('./build-css');
 const fs = require('fs');
 const path = require('path');
 
 const root = path.join(__dirname, '..');
-const compiler = path.join(root, 'node_modules', '.bin', 'tailwindcss');
-const layers = ['public/utilities.css', 'public/theme.css', 'public/sync-effects.css'];
 const inputs = [
   'public/index.html',
   'public/widget.html',
@@ -25,17 +23,8 @@ function build() {
     return;
   }
   running = true;
-  const compiled = spawnSync(compiler, [
-    '-c', 'tailwind.config.js',
-    '-i', 'public/tailwind.input.css',
-    '-o', 'public/utilities.css',
-    '--minify'
-  ], { cwd: root, stdio: 'inherit' });
-  if (compiled.status === 0) {
-    const css = layers.map((file) => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
-    fs.writeFileSync(path.join(root, 'public/style.css'), css);
-    console.log('style.css actualizado');
-  }
+  const status = buildCss();
+  if (status === 0) console.log('style.css actualizado');
   running = false;
   if (queued) {
     queued = false;

@@ -7,7 +7,7 @@
     "dev": "node scripts/dev.js",
     "start": "node server.js",
     "build": "webpack --config webpack.config.js",
-    "build:css": "tailwindcss -c tailwind.config.js -i public/tailwind.input.css -o public/utilities.css --minify && cat public/utilities.css public/theme.css public/sync-effects.css > public/style.css",
+    "build:css": "node scripts/build-css.js",
     "watch:css": "node scripts/watch-css.js",
     "lint": "node --check server.js && node --check db.js && node --check ws-bridge.js && node --check pubsub-routing.js && node --check bridge-security.js && node --check pubsub-service.js && node --check extension_worker.js",
     "test:staging": "node --test tests/security-fixes.test.js tests/staging-integration.test.js tests/persistence.test.js",

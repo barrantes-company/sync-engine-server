@@ -17,10 +17,10 @@ function freshDb() {
   ]);
 }
 
-test('reactions and pins cannot cross conversation boundaries', () => {
+test('reactions and pins cannot cross conversation boundaries', async () => {
   const db = freshDb();
-  const own = db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'hola');
-  const foreign = db.saveTextMessage('SYNC-3003', 'SYNC-4004', 'secreto');
+  const own = await db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'hola');
+  const foreign = await db.saveTextMessage('SYNC-3003', 'SYNC-4004', 'secreto');
 
   const reactions = db.updateMessageReaction(own.id, 'sync-1001', '🔥', 'sync-1002');
   assert.equal(reactions['SYNC-1001'], '🔥');
@@ -43,9 +43,9 @@ test('reactions and pins cannot cross conversation boundaries', () => {
   assert.equal(Object.hasOwn(db.readDb().pinnedMessages, key), false);
 });
 
-test('delete-for-everyone stays inside the sender conversation', () => {
+test('delete-for-everyone stays inside the sender conversation', async () => {
   const db = freshDb();
-  const own = db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'borrar');
+  const own = await db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'borrar');
   assert.throws(() => db.deleteMessageForEveryone(own.id, 'SYNC-1002', 'SYNC-1001'), /permisos/);
   assert.throws(() => db.deleteMessageForEveryone(own.id, 'SYNC-1001', 'SYNC-4004'), /permisos/);
   const deleted = db.deleteMessageForEveryone(own.id, 'SYNC-1001', 'SYNC-1002');
@@ -53,9 +53,9 @@ test('delete-for-everyone stays inside the sender conversation', () => {
   assert.equal(deleted.text, 'Este mensaje fue eliminado');
 });
 
-test('conversation export uses the stored participant ids', () => {
+test('conversation export uses the stored participant ids', async () => {
   const db = freshDb();
-  db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'exportable');
+  await db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'exportable');
   const exported = db.exportConversation('SYNC-1001', 'SYNC-1002');
   assert.equal(exported.totalMessages, 1);
   assert.equal(exported.messages[0].fromSyncId, 'SYNC-1001');
@@ -65,9 +65,9 @@ test('conversation export uses the stored participant ids', () => {
   assert.equal(exported.participants.requester.plan, undefined);
 });
 
-test('history limits stay inside one conversation', () => {
+test('history limits stay inside one conversation', async () => {
   const db = freshDb();
-  const other = db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'conservar');
+  const other = await db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'conservar');
   const stored = db.readDb();
   for (let i = 0; i < 5001; i += 1) {
     stored.messages.push({
@@ -79,8 +79,8 @@ test('history limits stay inside one conversation', () => {
       timestamp: i
     });
   }
-  db.writeDb(stored);
-  db.saveTextMessage('SYNC-3003', 'SYNC-4004', 'ultimo');
+  await db.writeDb(stored);
+  const kept = await db.saveTextMessage('SYNC-3003', 'SYNC-4004', 'ultimo');
   const messages = db.readDb().messages;
   assert.equal(messages.some((message) => message.id === other.id), true);
   assert.equal(messages.filter((message) => message.fromId === 'SYNC-3003').length, 5000);

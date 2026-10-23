@@ -1215,7 +1215,7 @@ io.on("connection", function (socket) {
     }
 
     try {
-      const msg = db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });
+      const msg = await db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });
       io.to("channel:" + channelId).emit("channel-message-received", msg);
       if (rawChannelId !== channelId) {
         io.to("channel:" + rawChannelId).emit("channel-message-received", msg);
@@ -1288,58 +1288,62 @@ io.on("connection", function (socket) {
 
     let messageObj = null;
 
-    if (msgType === "text") {
-      messageObj = db.saveTextMessage(
-        sender.syncId,
-        targetSyncId,
-        text,
-        clientMsgId || null,
-        replyTo || null,
-        null,
-        initialStatus
-      );
-    } else {
-      let finalAudioData = audioData || null;
+    try {
+      if (msgType === "text") {
+        messageObj = await db.saveTextMessage(
+          sender.syncId,
+          targetSyncId,
+          text,
+          clientMsgId || null,
+          replyTo || null,
+          null,
+          initialStatus
+        );
+      } else {
+        let finalAudioData = audioData || null;
 
-      // Si es audio en Base64, persistirlo en disco en /uploads/ para soporte de streaming y Range requests en iOS
-      if (msgType === "audio" && audioData && typeof audioData === "string" && audioData.startsWith("data:audio/")) {
-        try {
-          const matches = audioData.match(/^data:audio\/([a-zA-Z0-9_\-+.]+);base64,(.+)$/);
-          if (matches) {
-            const rawFormat = matches[1].toLowerCase();
-            const ext = rawFormat.includes("mp4") || rawFormat.includes("m4a") || rawFormat.includes("aac") 
-              ? "mp4" 
-              : (rawFormat.includes("wav") ? "wav" : "webm");
-            const buffer = Buffer.from(matches[2], "base64");
-            const audioFileName = `voice-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
-            const audioFilePath = path.join(UPLOADS_DIR, audioFileName);
-            fs.writeFileSync(audioFilePath, buffer);
-            const audioFile = await db.registerFile(sender.syncId, {
-              filename: audioFileName, originalname: audioFileName, size: buffer.length,
-              mimetype: "audio/" + rawFormat
-            });
-            finalAudioData = `/api/files/${audioFile.id}`;
-            fileIds.push(audioFile.id);
+        if (msgType === "audio" && audioData && typeof audioData === "string" && audioData.startsWith("data:audio/")) {
+          try {
+            const matches = audioData.match(/^data:audio\/([a-zA-Z0-9_\-+.]+);base64,(.+)$/);
+            if (matches) {
+              const rawFormat = matches[1].toLowerCase();
+              const ext = rawFormat.includes("mp4") || rawFormat.includes("m4a") || rawFormat.includes("aac")
+                ? "mp4"
+                : (rawFormat.includes("wav") ? "wav" : "webm");
+              const buffer = Buffer.from(matches[2], "base64");
+              const audioFileName = `voice-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+              const audioFilePath = path.join(UPLOADS_DIR, audioFileName);
+              fs.writeFileSync(audioFilePath, buffer);
+              const audioFile = await db.registerFile(sender.syncId, {
+                filename: audioFileName, originalname: audioFileName, size: buffer.length,
+                mimetype: "audio/" + rawFormat
+              });
+              finalAudioData = `/api/files/${audioFile.id}`;
+              fileIds.push(audioFile.id);
+            }
+          } catch (err) {
+            console.warn("[AUDIO] Error al persistir audio en disco:", err.message);
+            emitMessageError("No se pudo registrar el audio");
+            return;
           }
-        } catch (err) {
-          console.warn("[AUDIO] Error al persistir audio en disco:", err.message);
-          emitMessageError("No se pudo registrar el audio");
-          return;
         }
-      }
 
-      messageObj = db.saveMessage({
-        id: clientMsgId || null,
-        fromId: sender.syncId,
-        toId: targetSyncId,
-        type: msgType,
-        text: text,
-        audioData: finalAudioData,
-        fileData: fileData,
-        fileIds: fileIds,
-        replyTo: replyTo || null,
-        status: initialStatus
-      });
+        messageObj = await db.saveMessage({
+          id: clientMsgId || null,
+          fromId: sender.syncId,
+          toId: targetSyncId,
+          type: msgType,
+          text: text,
+          audioData: finalAudioData,
+          fileData: fileData,
+          fileIds: fileIds,
+          replyTo: replyTo || null,
+          status: initialStatus
+        });
+      }
+    } catch (err) {
+      emitMessageError(err.message || "No se pudo guardar el mensaje");
+      return;
     }
 
     if (!isRetry) {
@@ -1711,15 +1715,21 @@ io.on("connection", function (socket) {
     const targetSockets = onlineUsers.get(targetSyncId);
     const initialStatus = Boolean(targetSockets && targetSockets.size > 0) ? "delivered" : "sent";
 
-    const savedMsg = db.saveTextMessage(
-      sender.syncId,
-      targetSyncId,
-      payload.text,
-      null,
-      payload.replyTo || null,
-      null,
-      initialStatus
-    );
+    let savedMsg;
+    try {
+      savedMsg = await db.saveTextMessage(
+        sender.syncId,
+        targetSyncId,
+        payload.text,
+        null,
+        payload.replyTo || null,
+        null,
+        initialStatus
+      );
+    } catch (err) {
+      socket.emit("error-message", { message: err.message || "No se pudo guardar el mensaje" });
+      return;
+    }
     savedMsg.fromName = sender.formattedName;
     savedMsg.toSyncId = targetSyncId;
 

@@ -44,12 +44,12 @@ test('the call log lists both directions for the signed-in user', () => {
   assert.equal(calls.find((call) => call.direction === 'out').peerName, 'SYNC-1002 - Bob');
 });
 
-test('search reaches a message that the first page does not show', () => {
+test('search reaches a message that the first page does not show', async () => {
   const db = fixture([
     { syncId: 'SYNC-1001', username: 'alice', formattedName: 'SYNC-1001 - Alice', cleanDisplayName: 'Alice' },
     { syncId: 'SYNC-1002', username: 'bob', formattedName: 'SYNC-1002 - Bob', cleanDisplayName: 'Bob' }
   ]);
-  const first = db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'aguja-inicio');
+  const first = await db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'aguja-inicio');
   for (let i = 0; i < 44; i += 1) db.saveTextMessage('SYNC-1001', 'SYNC-1002', 'mensaje ' + i);
   const page = db.getMessagesPage('SYNC-1001', 'SYNC-1002', 40);
   assert.equal(page.messages.some((message) => message.id === first.id), false);
