@@ -2616,3 +2616,144 @@ button.bg-\[\#C5A059\], .bg-\[\#C5A059\] { background-color: var(--se-blue) !imp
   #app-container, #contacts-list > *, #channels-list > *, .chat-bubble-inner { animation: none !important; }
   #app-container button:not(:disabled), #app-container [role="button"], .chat-bubble-inner { transition: none !important; }
 }
+
+/* Temas funcionales: Sync Blue (claro) y Energy (oscuro), también en el móvil. */
+#app-container {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+#contact-search-input {
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(100deg, #2ee6ff, #6d5efc 55%, #d946ef) border-box !important;
+  box-shadow: 0 0 0 1px rgba(46, 230, 255, .08), 0 8px 18px rgba(7, 26, 56, .06) !important;
+}
+#add-contact-btn {
+  background: linear-gradient(135deg, #0877f9, #0757b8) !important;
+  border-radius: 12px !important;
+}
+#app-container[data-se-theme="energy"] {
+  color-scheme: dark;
+  background: #070d16 !important;
+  color: #e7f0ff;
+  --se-navy: #07111d;
+  --se-blue: #2f9bff;
+  --se-ink: #e7f0ff;
+  --se-muted: #93a4bd;
+  --se-line: rgba(140, 180, 230, .16);
+  --se-surface: #101826;
+  --accent-gold: #49c6ff;
+}
+#app-container[data-se-theme="energy"] > header.sticky {
+  background: rgba(8, 14, 24, .94) !important;
+  color: #e7f0ff !important;
+  border-bottom-color: rgba(120, 170, 220, .14) !important;
+  box-shadow: none !important;
+}
+#app-container[data-se-theme="energy"] > header.sticky [class*="text-[#0A1A3A]"],
+#app-container[data-se-theme="energy"] > header.sticky .font-title { color: #f4f8ff !important; }
+#app-container[data-se-theme="energy"] > header.sticky [class*="text-[#64748B]"],
+#app-container[data-se-theme="energy"] > header.sticky [class*="text-[#94A3B8]"] { color: #93a4bd !important; }
+#app-container[data-se-theme="energy"] #user-identity-badge,
+#app-container[data-se-theme="energy"] #logout-btn {
+  background: #121c2c !important;
+  color: #e7f0ff !important;
+  border-color: rgba(120, 170, 220, .2) !important;
+}
+#app-container[data-se-theme="energy"] #sync-engine-nav-rail {
+  background: #0a1220 !important;
+  box-shadow: inset -1px 0 rgba(80, 190, 255, .16);
+}
+#app-container[data-se-theme="energy"] .se-nav-item.is-active {
+  background: rgba(18, 40, 72, .9) !important;
+  color: #7ee7ff !important;
+  box-shadow: inset 0 0 0 1px rgba(80, 210, 255, .45), 0 0 16px rgba(46, 180, 255, .28) !important;
+}
+#app-container[data-se-theme="energy"] #main-layout { background: #070d16 !important; }
+#app-container[data-se-theme="energy"] #sidebar-panel,
+#app-container[data-se-theme="energy"] #contacts-list,
+#app-container[data-se-theme="energy"] #channels-list {
+  background: #0d1624 !important;
+  color: #d5e4f7;
+  border-color: rgba(120, 170, 220, .12) !important;
+}
+#app-container[data-se-theme="energy"] #sidebar-dms-view > div:first-child,
+#app-container[data-se-theme="energy"] #sidebar-channels-view > div:first-child {
+  background: #0d1624 !important;
+  border-bottom-color: rgba(120, 170, 220, .12) !important;
+}
+#app-container[data-se-theme="energy"] #contact-search-input,
+#app-container[data-se-theme="energy"] #chat-search-input,
+#app-container[data-se-theme="energy"] #chat-textarea {
+  background:
+    linear-gradient(#0d1726, #0d1726) padding-box,
+    linear-gradient(100deg, #2ee6ff, #6d5efc 55%, #d946ef) border-box !important;
+  color: #eaf4ff !important;
+}
+#app-container[data-se-theme="energy"] #contact-search-input::placeholder { color: #7f93ad; }
+#app-container[data-se-theme="energy"] #chat-panel,
+#app-container[data-se-theme="energy"] #chat-messages,
+#app-container[data-se-theme="energy"] #chat-header-bar,
+#app-container[data-se-theme="energy"] #chat-form,
+#app-container[data-se-theme="energy"] #se-calls-home {
+  background: #070d16 !important;
+  background-image: none !important;
+  color: #d5e4f7;
+  border-color: rgba(120, 170, 220, .12) !important;
+}
+#app-container[data-se-theme="energy"] .empty-state-title,
+#app-container[data-se-theme="energy"] #sidebar-panel [class*="text-[#0A1A3A]"] { color: #f4f8ff !important; }
+#app-container[data-se-theme="energy"] .empty-state,
+#app-container[data-se-theme="energy"] .empty-state-text,
+#app-container[data-se-theme="energy"] #sidebar-panel [class*="text-[#64748B]"] { color: #93a4bd !important; }
+#app-container[data-se-theme="energy"] .empty-state-icon {
+  background: rgba(16, 28, 48, .9) !important;
+  border-color: rgba(90, 200, 255, .35) !important;
+  color: #49c6ff !important;
+  box-shadow: 0 0 18px rgba(46, 180, 255, .18) !important;
+}
+#app-container[data-se-theme="energy"] .empty-state-hint {
+  background: #10192a !important;
+  border-color: rgba(120, 170, 220, .22) !important;
+  color: #d5e4f7 !important;
+}
+#app-container[data-se-theme="energy"] #input-container,
+#app-container[data-se-theme="energy"] .chat-bubble-received,
+#app-container[data-se-theme="energy"] .chat-more-menu {
+  background: #10192a !important;
+  color: #e7f0ff;
+  border-color: rgba(120, 170, 220, .16) !important;
+}
+#app-container[data-se-theme="energy"] .se-call-row,
+#app-container[data-se-theme="energy"] .channel-admin-action {
+  background: #10192a;
+  color: #e7f0ff;
+  border-color: rgba(120, 170, 220, .16);
+}
+html[data-se-theme="energy"] { background: #070d16; }
+html[data-se-theme="energy"] #auth-screen {
+  background: radial-gradient(circle at 18% 18%, rgba(46,180,255,.16), transparent 32%), #070d16 !important;
+}
+html[data-se-theme="energy"] #auth-screen > div {
+  background: rgba(13, 22, 36, .92) !important;
+  border-color: rgba(80, 170, 230, .22) !important;
+  color: #e7f0ff;
+}
+html[data-se-theme="energy"] #auth-screen h2,
+html[data-se-theme="energy"] #auth-screen label { color: #f4f8ff !important; }
+html[data-se-theme="energy"] #auth-screen input {
+  background: #0d1726 !important;
+  color: #eaf4ff;
+  border-color: rgba(120, 170, 220, .2) !important;
+}
+html[data-se-theme="energy"] #auth-screen .auth-tabs { background: #10192a; }
+html[data-se-theme="energy"] #auth-screen .auth-tabs button { color: #93a4bd; }
+@media (max-width: 767px) {
+  #sync-engine-nav-rail .se-nav-theme { display: flex; min-width: 42px; }
+  #sync-engine-nav-rail .se-nav-theme span { display: none; }
+  #app-container[data-se-theme="energy"] #main-layout,
+  #app-container[data-se-theme="energy"] #sidebar-panel,
+  #app-container[data-se-theme="energy"] #chat-panel-container { background: #070d16 !important; }
+}

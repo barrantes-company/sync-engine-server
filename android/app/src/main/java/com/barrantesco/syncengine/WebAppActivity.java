@@ -7,8 +7,11 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -30,6 +33,7 @@ import java.util.List;
 public final class WebAppActivity extends Activity {
     private static final int MEDIA_PERMISSION = 42;
     private WebView webView;
+    private LinearLayout root;
     private ProgressBar progress;
     private TextView errorMessage;
     private PermissionRequest pendingMedia;
@@ -49,6 +53,7 @@ public final class WebAppActivity extends Activity {
 
     private void buildView() {
         LinearLayout root = new LinearLayout(this);
+        this.root = root;
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.WHITE);
 
@@ -68,6 +73,7 @@ public final class WebAppActivity extends Activity {
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setUserAgentString(settings.getUserAgentString() + " SYNCENGINE-Android");
+        webView.addJavascriptInterface(new ThemeBridge(), "SyncAndroid");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public void onProgressChanged(WebView view, int newProgress) {
                 progress.setProgress(newProgress);
@@ -179,6 +185,30 @@ public final class WebAppActivity extends Activity {
             webView = null;
         }
         super.onDestroy();
+    }
+
+    private final class ThemeBridge {
+        @JavascriptInterface
+        public void setTheme(String theme) {
+            boolean dark = "energy".equals(theme);
+            int color = Color.parseColor(dark ? "#070D16" : "#F4F8FD");
+            runOnUiThread(() -> applySystemTheme(color, dark));
+        }
+    }
+
+    private void applySystemTheme(int color, boolean dark) {
+        if (root != null) root.setBackgroundColor(color);
+        if (webView != null) webView.setBackgroundColor(color);
+        Window window = getWindow();
+        window.setStatusBarColor(color);
+        window.setNavigationBarColor(color);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && window.getInsetsController() != null) {
+            int appearance = dark ? 0 : android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                    | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+            window.getInsetsController().setSystemBarsAppearance(appearance,
+                    android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+        }
     }
 
     private int dp(int value) {

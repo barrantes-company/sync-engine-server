@@ -76,7 +76,7 @@
         <span class="se-nav-avatar">SE</span><span>Perfil</span>
       </button>
       <button class="se-nav-item se-nav-theme" id="se-theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2M12 19v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="4"/></svg><span>Tema Energy</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2M12 19v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="4"/></svg><span>Tema oscuro</span>
       </button>
     </nav>
 
@@ -5451,13 +5451,18 @@
     app.dataset.seTheme = selected;
     document.documentElement.dataset.seTheme = selected;
     if (themeButton) {
-      const label = selected === 'energy' ? 'Tema Sync Blue' : 'Tema Energy';
+      const label = selected === 'energy' ? 'Tema claro' : 'Tema oscuro';
       const span = themeButton.querySelector('span');
       if (span) span.textContent = label;
       themeButton.setAttribute('aria-label', label);
       themeButton.title = label;
     }
     try { localStorage.setItem('sync-engine-theme', selected); } catch (_) {}
+    const themeMeta = document.querySelector('meta[name="theme-color"]') || document.head.appendChild(Object.assign(document.createElement('meta'), { name: 'theme-color' }));
+    themeMeta.content = selected === 'energy' ? '#070d16' : '#071a38';
+    if (window.SyncAndroid && typeof window.SyncAndroid.setTheme === 'function') {
+      window.SyncAndroid.setTheme(selected);
+    }
   };
   let initialTheme = 'sync-blue';
   try { initialTheme = localStorage.getItem('sync-engine-theme') || 'sync-blue'; } catch (_) {}
