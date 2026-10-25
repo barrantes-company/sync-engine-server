@@ -21,6 +21,11 @@ process.on("message", async ({ id, op, payload }) => {
   try {
     let result;
     if (op === "deliver") result = deliverPubSubEvent(payload);
+    else if (op === "createChannel") {
+      const channel = db.createWorkspaceChannel("ack-persistence", "Disposable persistence test", "SYNC-1001");
+      await db.flushWrites();
+      result = channel.id;
+    }
     else if (op === "holdWrites") {
       let release;
       const promise = new Promise((resolve) => { release = resolve; });
