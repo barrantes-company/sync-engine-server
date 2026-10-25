@@ -91,10 +91,11 @@ test("storage failure emits an error without successful ACK or delivery", { time
     ["send-channel-message", "channel-message-received", { channelId: "chan-general", type: "text", text: "not durable" }]
   ]) {
     const f = await fixture(t);
+    const channelId = await f.command("createChannel");
     const before = fs.readFileSync(f.file, "utf8");
     const successes = [];
     if (request === "send-channel-message") {
-      payload.channelId = await f.command("createChannel");
+      payload.channelId = channelId;
       f.socket.emit("join-channel", { channelId: payload.channelId });
     }
     f.socket.on(success, (x) => successes.push(x));
