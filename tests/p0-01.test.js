@@ -330,7 +330,7 @@ test('channel subscriptions and history require an authenticated member', async 
 
   // Las cuentas empiezan sin canales predeterminados; los canales son creados por usuarios.
   assert.equal(db.getWorkspaceChannels(users[0].syncId).some((item) => item.isDefault), false);
-  assert.deepEqual(db.getWorkspaceChannels(users[1].syncId), []);
+  assert.equal(db.getWorkspaceChannels(users[1].syncId).length, 0);
   assert.equal(db.isChannelMember(channel.id, users[1].syncId), false);
 });
 
