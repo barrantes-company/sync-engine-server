@@ -204,7 +204,6 @@ async function sendMobilePushNotification(syncId, payload) {
 // ==== End of Firebase Cloud Messaging ====
 const fs = require("fs");
 const crypto = require("crypto");
-const dns = require("dns").promises;
 const http = require("http");
 const https = require("https");
 const os = require("os");
@@ -216,6 +215,8 @@ const { Server } = require("socket.io");
 const selfsigned = require("selfsigned");
 const db = require("./db");
 const { safeUrl } = require("./public/safe-content");
+const { createMetadataFetcher } = require("./metadata-fetch");
+const fetchMetadata = createMetadataFetcher();
 const { deliver } = require("./pubsub-routing");
 
 const asyncHandler = (fn) => (req, res, next) => {
@@ -230,47 +231,6 @@ function isAllowedCorsOrigin(origin) {
   if (!origin) return true;
   if (origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://")) return true;
   return configuredCorsOrigins.has(origin);
-}
-
-function isPrivateAddress(address) {
-  const value = String(address || "").toLowerCase().replace(/^\[|\]$/g, "");
-  if (!value) return true;
-  if (value === "localhost" || value.endsWith(".localhost") || value.endsWith(".local") ||
-      value === "::" || value === "::1" || value.startsWith("fc") || value.startsWith("fd") ||
-      value.startsWith("fe8") || value.startsWith("fe9") || value.startsWith("fea") ||
-      value.startsWith("feb") || value.startsWith("ff")) return true;
-  if (value.startsWith("::ffff:")) return isPrivateAddress(value.slice(7));
-  if (value.includes(":")) {
-    // Reject IPv6 non-global special-use ranges not covered above.
-    if (value.startsWith("2001:db8:") || value.startsWith("2001:10:") ||
-        value.startsWith("2001:2:") || value.startsWith("2002:") ||
-        value.startsWith("64:ff9b:") || value.startsWith("100:")) return true;
-    return false;
-  }
-  const octets = value.split(".").map(Number);
-  if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) return false;
-  return octets[0] === 10 || octets[0] === 127 || octets[0] === 0 ||
-    (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
-    (octets[0] === 192 && octets[1] === 168) ||
-    (octets[0] === 169 && octets[1] === 254) ||
-    (octets[0] === 100 && octets[1] >= 64 && octets[1] <= 127) ||
-    (octets[0] === 192 && octets[1] === 0 && octets[2] === 0) ||
-    (octets[0] === 198 && (octets[1] === 18 || octets[1] === 19)) ||
-    (octets[0] === 198 && octets[1] === 51 && octets[2] === 100) ||
-    (octets[0] === 203 && octets[1] === 0 && octets[2] === 113) ||
-    octets[0] >= 224;
-}
-
-async function assertPublicPreviewUrl(targetUrl) {
-  const parsed = new URL(targetUrl);
-  if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password || !parsed.hostname) {
-    throw new Error("URL de vista previa no válida");
-  }
-  if (isPrivateAddress(parsed.hostname)) throw new Error("El destino de la vista previa no está permitido");
-  const addresses = await dns.lookup(parsed.hostname, { all: true, verbatim: true });
-  if (!addresses.length || addresses.some((entry) => isPrivateAddress(entry.address))) {
-    throw new Error("El destino de la vista previa no está permitido");
-  }
 }
 
 function getLocalIPv4Addresses() {
@@ -291,12 +251,17 @@ function getLocalIPv4Addresses() {
   return addresses;
 }
 
+let shuttingDown = false;
+let stopPubSub = null;
+const messageTasks = new Set();
 const app = express();
+app.use((_req, res, next) => shuttingDown
+  ? res.status(503).json({ error: "Servidor cerrando" }) : next());
 app.disable("x-powered-by");
 app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(self), geolocation=()");
   next();
 });
 
@@ -575,13 +540,7 @@ app.get('/api/notifications/vapid-public-key', requireAuth, (_req, res) => {
   res.json({ ok: true, configured: webPushConfigured, publicKey: webPushConfigured ? VAPID_PUBLIC_KEY : null });
 });
 
-function isBlockedMetadataHost(hostname) {
-  const host = String(hostname || "").toLowerCase().replace(/[\[\]]/g, "");
-  if (host === "localhost" || host.endsWith(".localhost") || host === "metadata.google.internal") return true;
-  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(host)) return true;
-  const match = host.match(/^172\.(\d+)\./);
-  return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
-}
+
 
 // Extractor de Metadatos OpenGraph y Favicon para Rich Link Cards
 async function fetchUrlMetadata(text) {
@@ -592,23 +551,11 @@ async function fetchUrlMetadata(text) {
   const targetUrl = match[0];
   try {
     const parsed = new URL(targetUrl);
-    if (!['http:', 'https:'].includes(parsed.protocol) || isBlockedMetadataHost(parsed.hostname)) return null;
-    await assertPublicPreviewUrl(targetUrl);
+    if (!["http:", "https:"].includes(parsed.protocol)) return null;
     const domain = parsed.hostname;
     const defaultFavicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
-
-    const response = await fetch(targetUrl, {
-      signal: controller.signal,
-      redirect: "manual",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-      }
-    });
-    clearTimeout(timeout);
+    const response = await fetchMetadata(targetUrl);
 
     if (!response.ok) {
       return {
@@ -620,7 +567,7 @@ async function fetchUrlMetadata(text) {
       };
     }
 
-    const html = await response.text();
+    const html = response.body;
 
     // og:title o <title>
     const ogTitleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
@@ -640,7 +587,7 @@ async function fetchUrlMetadata(text) {
     let image = ogImgMatch ? ogImgMatch[1] : null;
 
     if (image && !image.startsWith("http://") && !image.startsWith("https://")) {
-      image = new URL(image, targetUrl).href;
+      image = new URL(image, response.url).href;
     }
     if (!image) {
       image = defaultFavicon;
@@ -670,6 +617,7 @@ async function fetchUrlMetadata(text) {
     }
   }
 }
+
 
 // Rutas de Autenticación
 app.post("/api/auth/register", authRateLimit, (req, res) => {
@@ -865,11 +813,11 @@ app.delete("/api/messages/:contactSyncId", requireAuth, (req, res) => {
 
   const userSockets = onlineUsers.get(req.user.syncId);
   if (userSockets) {
-    userSockets.forEach((sockId) => io.to(sockId).emit("chat-history-cleared", eventData));
+    userSockets.forEach((sockId) => authenticatedTo(sockId).emit("chat-history-cleared", eventData));
   }
   const targetSockets = onlineUsers.get(targetSyncId);
   if (targetSockets) {
-    targetSockets.forEach((sockId) => io.to(sockId).emit("chat-history-cleared", eventData));
+    targetSockets.forEach((sockId) => authenticatedTo(sockId).emit("chat-history-cleared", eventData));
   }
 
   res.json({ ok: true, deletedCount: deletedCount });
@@ -1027,7 +975,7 @@ app.post("/api/channels", requireAuth, (req, res) => {
     const channel = db.createWorkspaceChannel(name, description, req.user.syncId);
     const creatorSockets = onlineUsers.get(req.user.syncId);
     if (creatorSockets) {
-      creatorSockets.forEach((socketId) => io.to(socketId).emit("channel-created", channel));
+      creatorSockets.forEach((socketId) => authenticatedTo(socketId).emit("channel-created", channel));
     }
     res.json({ ok: true, channel: channel });
   } catch (err) {
@@ -1050,7 +998,7 @@ app.post("/api/channels/:channelId/members", requireAuth, (req, res) => {
     const channel = db.addWorkspaceChannelMember(req.params.channelId, req.user.syncId, req.body && req.body.syncId);
     const targetSyncId = String(req.body && req.body.syncId || "").trim().toUpperCase();
     const targetSockets = channelUserSockets(targetSyncId);
-    if (targetSockets) for (const socketId of targetSockets) io.to(socketId).emit("channel-membership-added", channel);
+    if (targetSockets) for (const socketId of targetSockets) authenticatedTo(socketId).emit("channel-membership-added", channel);
     emitToChannelMembers(channel, "channel-updated", targetSyncId);
     res.json({ ok: true, channel });
   } catch (err) {
@@ -1221,7 +1169,7 @@ function emitToChannelMembers(channel, event, excludedSyncId) {
     if (String(syncId || "").trim().toUpperCase() === excluded) continue;
     const sockets = channelUserSockets(syncId);
     if (!sockets) continue;
-    for (const socketId of sockets) io.to(socketId).emit(event, channel);
+    for (const socketId of sockets) authenticatedTo(socketId).emit(event, channel);
   }
 }
 
@@ -1231,7 +1179,7 @@ function revokeChannelSockets(channelId, syncIds, event, channel) {
     if (!sockets) continue;
     for (const socketId of sockets) {
       const client = io.sockets.sockets.get(socketId);
-      if (!client) continue;
+      if (!client || !currentSocketUser(client)) continue;
       client.leave("channel:" + channelId);
       client.emit(event, channel || { id: channelId });
     }
@@ -1270,7 +1218,44 @@ function emitChannelAuthorizationError(socket, code, message) {
   socket.emit("authorization-error", { code: code, message: message });
 }
 
+function currentSocketUser(socket) {
+  const previous = socketToUser.get(socket.id);
+  let user;
+  try { user = db.getUserByToken(socket.data.authToken); } catch (_) { user = null; }
+  if (!previous || !user || user.syncId !== previous.syncId) {
+    clearSocketIdentity(socket);
+    return null;
+  }
+  socketToUser.set(socket.id, user);
+  return user;
+}
+
+function authenticatedTo(room) {
+  return { emit(event, ...args) {
+    const ids = [...(io.sockets.adapter.rooms.get(room) || [])];
+    for (const id of ids) {
+      const recipient = io.sockets.sockets.get(id);
+      if (recipient && currentSocketUser(recipient)) recipient.emit(event, ...args);
+    }
+  } };
+}
+
+function onMessage(socket, event, handler) {
+  socket.on(event, (...args) => {
+    const task = Promise.resolve().then(() => handler(...args));
+    messageTasks.add(task);
+    task.catch(() => socket.emit("error-message", { message: "No se pudo persistir el mensaje" }))
+      .finally(() => messageTasks.delete(task));
+  });
+}
+
 io.on("connection", function (socket) {
+  socket.use(([event, payload], next) => {
+    if (!shuttingDown && (event === "authenticate" || currentSocketUser(socket))) return next();
+    socket.emit("auth-error", { message: "Sesión expirada o inválida" });
+    emitChannelAuthorizationError(socket, "UNAUTHENTICATED", "Autenticación requerida");
+    socket.emit("error-message", { id: payload?.clientMsgId, message: "No autenticado" });
+  });
   // Autenticación de Socket
   socket.on("authenticate", function (payload) {
     const token = payload && payload.token ? payload.token : null;
@@ -1308,7 +1293,7 @@ io.on("connection", function (socket) {
     if (!userSockets) return;
     userSockets.forEach((socketId) => {
       if (socketId !== socket.id) {
-        io.to(socketId).emit("clipboard-sync", {
+        authenticatedTo(socketId).emit("clipboard-sync", {
           text: payload.text,
           fromSyncId: sender.syncId,
           timestamp: Date.now()
@@ -1342,7 +1327,7 @@ io.on("connection", function (socket) {
     socket.join("channel:" + channelId);
   });
 
-  socket.on("send-channel-message", async function (payload) {
+  onMessage(socket, "send-channel-message", async function (payload) {
     const sender = socketToUser.get(socket.id);
     if (!sender) {
       emitChannelAuthorizationError(socket, "UNAUTHENTICATED", "Autenticación requerida");
@@ -1361,14 +1346,15 @@ io.on("connection", function (socket) {
 
     try {
       const msg = await db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });
-      io.to("channel:" + channelId).emit("channel-message-received", msg);
+      await db.flushWrites();
+      authenticatedTo("channel:" + channelId).emit("channel-message-received", msg);
     } catch (err) {
       socket.emit("error-message", { message: err.message });
     }
   });
 
   // Envío de Mensaje Privado (Texto, Audio de Voz o Archivo)
-  socket.on("send-private-message", async function (payload) {
+  onMessage(socket, "send-private-message", async function (payload) {
     const clientMsgId = payload && payload.clientMsgId;
     const emitMessageError = (message) => socket.emit("error-message", { id: clientMsgId, message });
     const sender = socketToUser.get(socket.id);
@@ -1476,6 +1462,12 @@ io.on("connection", function (socket) {
       emitMessageError(err.message || "No se pudo guardar el mensaje");
       return;
     }
+    try {
+      await db.flushWrites();
+    } catch (_) {
+      emitMessageError("No se pudo persistir el mensaje");
+      return;
+    }
 
     if (!isTargetOnline && !isRetry) {
       const pushPayload = {
@@ -1506,7 +1498,7 @@ io.on("connection", function (socket) {
     // Entregar a todos los sockets activos del destinatario
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("receive-private-message", messageObj);
+        authenticatedTo(sockId).emit("receive-private-message", messageObj);
       });
     }
 
@@ -1514,7 +1506,7 @@ io.on("connection", function (socket) {
     const senderSockets = onlineUsers.get(sender.syncId);
     if (senderSockets && senderSockets.size > 0) {
       senderSockets.forEach((sockId) => {
-        io.to(sockId).emit("receive-private-message", messageObj);
+        authenticatedTo(sockId).emit("receive-private-message", messageObj);
       });
     }
 
@@ -1537,14 +1529,14 @@ io.on("connection", function (socket) {
             const currentTargetSockets = onlineUsers.get(targetSyncId);
             if (currentTargetSockets && currentTargetSockets.size > 0) {
               currentTargetSockets.forEach((sockId) => {
-                io.to(sockId).emit("message-preview-updated", previewEvent);
+                authenticatedTo(sockId).emit("message-preview-updated", previewEvent);
               });
             }
 
             const currentSenderSockets = onlineUsers.get(sender.syncId);
             if (currentSenderSockets && currentSenderSockets.size > 0) {
               currentSenderSockets.forEach((sockId) => {
-                io.to(sockId).emit("message-preview-updated", previewEvent);
+                authenticatedTo(sockId).emit("message-preview-updated", previewEvent);
               });
             }
           }
@@ -1574,7 +1566,7 @@ io.on("connection", function (socket) {
       const senderSockets = onlineUsers.get(contactSyncId);
       if (senderSockets && senderSockets.size > 0) {
         senderSockets.forEach((sockId) => {
-          io.to(sockId).emit("messages-read-receipt", receiptData);
+          authenticatedTo(sockId).emit("messages-read-receipt", receiptData);
         });
       }
 
@@ -1582,7 +1574,7 @@ io.on("connection", function (socket) {
       const readerSockets = onlineUsers.get(reader.syncId);
       if (readerSockets && readerSockets.size > 0) {
         readerSockets.forEach((sockId) => {
-          io.to(sockId).emit("messages-read-receipt", receiptData);
+          authenticatedTo(sockId).emit("messages-read-receipt", receiptData);
         });
       }
     }
@@ -1606,14 +1598,14 @@ io.on("connection", function (socket) {
         const targetSockets = onlineUsers.get(targetSyncId);
         if (targetSockets && targetSockets.size > 0) {
           targetSockets.forEach((sockId) => {
-            io.to(sockId).emit("message-deleted-for-everyone", eventData);
+            authenticatedTo(sockId).emit("message-deleted-for-everyone", eventData);
           });
         }
 
         const senderSockets = onlineUsers.get(sender.syncId);
         if (senderSockets && senderSockets.size > 0) {
           senderSockets.forEach((sockId) => {
-            io.to(sockId).emit("message-deleted-for-everyone", eventData);
+            authenticatedTo(sockId).emit("message-deleted-for-everyone", eventData);
           });
         }
       }
@@ -1638,7 +1630,7 @@ io.on("connection", function (socket) {
       const targetSockets = onlineUsers.get(targetSyncId);
       if (targetSockets && targetSockets.size > 0) {
         targetSockets.forEach((sockId) => {
-          io.to(sockId).emit("message-pinned", {
+          authenticatedTo(sockId).emit("message-pinned", {
             pinnedMessage: pinned,
             conversationWith: sender.syncId
           });
@@ -1648,7 +1640,7 @@ io.on("connection", function (socket) {
       const senderSockets = onlineUsers.get(sender.syncId);
       if (senderSockets && senderSockets.size > 0) {
         senderSockets.forEach((sockId) => {
-          io.to(sockId).emit("message-pinned", eventData);
+          authenticatedTo(sockId).emit("message-pinned", eventData);
         });
       }
     } catch (err) {
@@ -1667,14 +1659,14 @@ io.on("connection", function (socket) {
     const targetSockets = onlineUsers.get(targetSyncId);
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("message-unpinned", { conversationWith: sender.syncId });
+        authenticatedTo(sockId).emit("message-unpinned", { conversationWith: sender.syncId });
       });
     }
 
     const senderSockets = onlineUsers.get(sender.syncId);
     if (senderSockets && senderSockets.size > 0) {
       senderSockets.forEach((sockId) => {
-        io.to(sockId).emit("message-unpinned", { conversationWith: targetSyncId });
+        authenticatedTo(sockId).emit("message-unpinned", { conversationWith: targetSyncId });
       });
     }
   });
@@ -1697,14 +1689,14 @@ io.on("connection", function (socket) {
       const targetSockets = onlineUsers.get(targetSyncId);
       if (targetSockets && targetSockets.size > 0) {
         targetSockets.forEach((sockId) => {
-          io.to(sockId).emit("message-reaction-updated", eventData);
+          authenticatedTo(sockId).emit("message-reaction-updated", eventData);
         });
       }
 
       const senderSockets = onlineUsers.get(sender.syncId);
       if (senderSockets && senderSockets.size > 0) {
         senderSockets.forEach((sockId) => {
-          io.to(sockId).emit("message-reaction-updated", eventData);
+          authenticatedTo(sockId).emit("message-reaction-updated", eventData);
         });
       }
     } catch (err) {
@@ -1728,7 +1720,7 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("call-made", {
+        authenticatedTo(sockId).emit("call-made", {
           offer: data.offer,
           fromSyncId: sender.syncId,
           fromName: sender.formattedName
@@ -1757,7 +1749,7 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("answer-made", {
+        authenticatedTo(sockId).emit("answer-made", {
           answer: data.answer,
           fromSyncId: sender.syncId,
           fromName: sender.formattedName
@@ -1775,7 +1767,7 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("ice-candidate", {
+        authenticatedTo(sockId).emit("ice-candidate", {
           candidate: data.candidate,
           fromSyncId: sender.syncId
         });
@@ -1793,7 +1785,7 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("call-rejected", {
+        authenticatedTo(sockId).emit("call-rejected", {
           fromSyncId: sender.syncId,
           fromName: sender.formattedName
         });
@@ -1812,7 +1804,7 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("call-ended", {
+        authenticatedTo(sockId).emit("call-ended", {
           fromSyncId: sender.syncId,
           fromName: sender.formattedName
         });
@@ -1840,13 +1832,13 @@ io.on("connection", function (socket) {
     if (userSockets && userSockets.size > 0) {
       userSockets.forEach((sockId) => {
         if (sockId !== socket.id) {
-          io.to(sockId).emit("notification-mirrored", notifData);
+          authenticatedTo(sockId).emit("notification-mirrored", notifData);
         }
       });
     }
   });
 
-  socket.on("quick-reply", async function (payload) {
+  onMessage(socket, "quick-reply", async function (payload) {
     const sender = socketToUser.get(socket.id);
     if (!sender || !payload || !payload.toSyncId || !payload.text) return;
 
@@ -1865,6 +1857,7 @@ io.on("connection", function (socket) {
         null,
         initialStatus
       );
+      await db.flushWrites();
     } catch (err) {
       socket.emit("error-message", { message: err.message || "No se pudo guardar el mensaje" });
       return;
@@ -1874,14 +1867,14 @@ io.on("connection", function (socket) {
 
     if (targetSockets && targetSockets.size > 0) {
       targetSockets.forEach((sockId) => {
-        io.to(sockId).emit("receive-private-message", savedMsg);
+        authenticatedTo(sockId).emit("receive-private-message", savedMsg);
       });
     }
 
     const senderSockets = onlineUsers.get(sender.syncId);
     if (senderSockets && senderSockets.size > 0) {
       senderSockets.forEach((sockId) => {
-        io.to(sockId).emit("receive-private-message", savedMsg);
+        authenticatedTo(sockId).emit("receive-private-message", savedMsg);
       });
     }
 
@@ -1903,12 +1896,12 @@ io.on("connection", function (socket) {
 
             const curTargets = onlineUsers.get(targetSyncId);
             if (curTargets && curTargets.size > 0) {
-              curTargets.forEach((sockId) => io.to(sockId).emit("message-preview-updated", previewEvent));
+              curTargets.forEach((sockId) => authenticatedTo(sockId).emit("message-preview-updated", previewEvent));
             }
 
             const curSenders = onlineUsers.get(sender.syncId);
             if (curSenders && curSenders.size > 0) {
-              curSenders.forEach((sockId) => io.to(sockId).emit("message-preview-updated", previewEvent));
+              curSenders.forEach((sockId) => authenticatedTo(sockId).emit("message-preview-updated", previewEvent));
             }
           }
         } catch (previewErr) {
@@ -1944,7 +1937,34 @@ function broadcastUserStatus(syncId, isOnline) {
   });
 }
 
+let shutdownTask = null;
+function shutdown() {
+  if (shutdownTask) return shutdownTask;
+  shuttingDown = true;
+  shutdownTask = (async () => {
+    let listenerError;
+    try {
+      if (typeof stopPubSub === "function") await stopPubSub();
+      else if (stopPubSub && typeof stopPubSub.close === "function") await stopPubSub.close();
+    } catch (error) {
+      listenerError = error;
+    }
+    await new Promise((resolve) => io.close(resolve));
+    if (httpsServer?.listening) await new Promise((resolve) => httpsServer.close(resolve));
+    await Promise.allSettled([...messageTasks]);
+    await db.closeWrites();
+    if (listenerError) throw listenerError;
+  })();
+  return shutdownTask;
+}
+
 if (typeof module !== "undefined" && require.main === module) {
+  for (const signal of ["SIGTERM", "SIGINT"]) process.once(signal, () => {
+    shutdown().catch(() => {
+      console.error("[Shutdown] Failed to drain persistent writes");
+      process.exitCode = 1;
+    });
+  });
   // DATA-01: fail before accepting traffic, including when /api/status is probed.
   db.readDb();
   server.listen(PORT, HOST, function () {
@@ -1967,7 +1987,7 @@ if (typeof module !== "undefined" && require.main === module) {
   try {
     if (process.env.PUBSUB_ENABLED === "false") return;
     const { startChatSubscriptionListener } = require("./pubsub-service");
-    startChatSubscriptionListener(function (pubsubPayload) {
+    stopPubSub = startChatSubscriptionListener(function (pubsubPayload) {
       const delivered = deliverPubSubEvent(pubsubPayload);
       console.log("[Pub/Sub → Socket.IO] Destinatarios autenticados:", delivered);
     });
@@ -1983,6 +2003,7 @@ if (typeof module !== "undefined") {
   module.exports.server = server;
   module.exports.io = io;
   module.exports.deliverPubSubEvent = deliverPubSubEvent;
+  module.exports.shutdown = shutdown;
 }
 
 if (process.env.RENDER_EXTERNAL_URL) {
