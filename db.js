@@ -19,10 +19,7 @@ function ensureDbFile() {
       files: [],
       pinnedMessages: {},
       subscriptions: {},
-      channels: [
-        { id: "chan-general", name: "general", description: "Espacio general de sincronización y equipo", createdAt: Date.now(), isDefault: true },
-        { id: "chan-anuncios", name: "anuncios", description: "Comunicados oficiales de Workspace y Empresa", createdAt: Date.now(), isDefault: true }
-      ],
+      channels: [],
       channelMessages: [],
       vaultItems: {},
       invoices: {}
@@ -66,18 +63,22 @@ function readDb() {
     if (!data.pinnedMessages) data.pinnedMessages = {};
     if (!data.subscriptions) data.subscriptions = {};
     if (!data.mobilePushTokens) data.mobilePushTokens = {};
-    if (!data.channels || data.channels.length === 0) {
-      data.channels = [
-        { id: "chan-general", name: "general", description: "Espacio general de sincronización y equipo", createdAt: Date.now(), isDefault: true },
-        { id: "chan-anuncios", name: "anuncios", description: "Comunicados oficiales de Workspace y Empresa", createdAt: Date.now(), isDefault: true }
-      ];
+    let legacyChannelsArchived = false;
+    if (!Array.isArray(data.channels)) data.channels = [];
+    const legacyDefaultChannels = data.channels.filter((channel) => channel && channel.isDefault && !channel.archivedAt);
+    if (legacyDefaultChannels.length > 0) {
+      const archivedAt = Date.now();
+      legacyDefaultChannels.forEach((channel) => {
+        channel.archivedAt = archivedAt;
+      });
+      legacyChannelsArchived = true;
     }
     if (!data.channelMessages) data.channelMessages = [];
     if (!data.vaultItems) data.vaultItems = {};
     if (!data.invoices) data.invoices = {};
     if (!Array.isArray(data.calls)) data.calls = [];
     cachedDb = data;
-    if (seedDevelopmentAdmin(cachedDb)) {
+    if (seedDevelopmentAdmin(cachedDb) || legacyChannelsArchived) {
       writeDb(cachedDb);
     }
     return cachedDb;
@@ -1056,7 +1057,7 @@ function deleteVaultItem(syncId, itemId) {
  */
 function getWorkspaceChannels(userSyncId) {
   const db = readDb();
-  return (db.channels || []).filter((channel) => isChannelMember(channel.id, userSyncId));
+  return (db.channels || []).filter((channel) => !channel.archivedAt && isChannelMember(channel.id, userSyncId));
 }
 
 function findChannel(channelId) {
@@ -1064,12 +1065,12 @@ function findChannel(channelId) {
   const db = readDb();
   const raw = String(channelId).trim();
   const clean = raw.replace(/^#/, "").toLowerCase();
-  return (db.channels || []).find((c) => 
-    c.id === raw || 
-    c.id === clean || 
-    c.id === ("chan-" + clean) || 
-    c.name.toLowerCase() === clean
-  ) || null;
+  return (db.channels || []).find((c) => !c.archivedAt && (
+    c.id === raw ||
+    c.id === clean ||
+    c.id === ("chan-" + clean) ||
+    String(c.name || "").toLowerCase() === clean
+  )) || null;
 }
 
 /**
@@ -1090,12 +1091,7 @@ function isChannelMember(channelId, userSyncId) {
 
   const raw = String(channelId).trim();
   const clean = raw.replace(/^#/, "").toLowerCase();
-  const channel = (db.channels || []).find((item) => 
-    item.id === raw || 
-    item.id === clean || 
-    item.id === ("chan-" + clean) || 
-    item.name.toLowerCase() === clean
-  );
+  const channel = findChannel(channelId);
   if (!channel) return false;
   if (channel.orgId) {
     const organization = (db.organizations || []).find((org) => org.id === channel.orgId);
@@ -1119,7 +1115,7 @@ function createWorkspaceChannel(name, description, creatorSyncId) {
     throw new Error("El nombre del canal debe tener al menos 2 caracteres alfanuméricos");
   }
 
-  const exists = db.channels.find((c) => c.name === cleanName);
+  const exists = db.channels.find((c) => !c.archivedAt && c.name === cleanName);
   if (exists) {
     throw new Error("Ya existe un canal con este nombre");
   }
@@ -1141,7 +1137,7 @@ function createWorkspaceChannel(name, description, creatorSyncId) {
 
 function canAdministerChannel(channel, actorSyncId) {
   const actor = String(actorSyncId || "").trim().toUpperCase();
-  if (!actor || channel.isDefault) return false;
+  if (!actor || channel.isDefault || channel.archivedAt) return false;
   if (String(channel.creatorSyncId || "").trim().toUpperCase() === actor) return true;
   return Array.isArray(channel.adminSyncIds) &&
     channel.adminSyncIds.some((id) => String(id).trim().toUpperCase() === actor);
@@ -1184,14 +1180,7 @@ function revokeWorkspaceChannelAdmin(channelId, actorSyncId, targetSyncId) {
 
 function updateWorkspaceChannel(channelId, actorSyncId, updates = {}) {
   const db = readDb();
-  const rawChannelId = String(channelId || "").trim();
-  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
-  const channel = (db.channels || []).find((item) =>
-    item.id === rawChannelId ||
-    item.id === cleanChannelId ||
-    item.id === ("chan-" + cleanChannelId) ||
-    String(item.name || "").toLowerCase() === cleanChannelId
-  );
+  const channel = findChannel(channelId);
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("Los canales predeterminados no se pueden editar");
   if (!canAdministerChannel(channel, actorSyncId)) {
@@ -1260,6 +1249,7 @@ function removeWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
   }
   const before = (channel.memberSyncIds || []).length;
   channel.memberSyncIds = (channel.memberSyncIds || []).filter((id) => String(id).trim().toUpperCase() !== target);
+  channel.adminSyncIds = (channel.adminSyncIds || []).filter((id) => String(id).trim().toUpperCase() !== target);
   if (channel.memberSyncIds.length !== before) writeDb(db);
   return channel;
 }
