@@ -328,8 +328,9 @@ test('channel subscriptions and history require an authenticated member', async 
   assert.equal((await bobMessageError).code, 'FORBIDDEN');
   assert.equal(db.testData.channelMessages.some((message) => message.text === 'Unauthorized'), false);
 
-  const defaultChannel = db.getWorkspaceChannels(users[1].syncId).find((item) => item.isDefault);
-  assert.equal(db.isChannelMember(defaultChannel.id, users[1].syncId), true);
+  // Las cuentas empiezan sin canales predeterminados; los canales son creados por usuarios.
+  assert.equal(db.getWorkspaceChannels(users[0].syncId).some((item) => item.isDefault), false);
+  assert.deepEqual(db.getWorkspaceChannels(users[1].syncId), []);
   assert.equal(db.isChannelMember(channel.id, users[1].syncId), false);
 });
 
@@ -380,13 +381,9 @@ test('channel creator can delegate and revoke channel administration securely', 
   });
   assert.equal(deniedEdit.status, 400);
 
-  // System/default channels remain protected from user administration.
-  const defaultChannel = db.getWorkspaceChannels(users[0].syncId).find((item) => item.isDefault);
-  assert.ok(defaultChannel);
-  const deniedDefaultEdit = await fetch(base + '/api/channels/' + defaultChannel.id, {
-    method: 'PUT', headers: aliceHeaders, body: JSON.stringify({ description: 'Should be denied' })
-  });
-  assert.equal(deniedDefaultEdit.status, 400);
+  // No existen canales de sistema predeterminados en cuentas nuevas.
+  assert.equal(db.getWorkspaceChannels(users[0].syncId).some((item) => item.isDefault), false);
+  assert.equal(db.getWorkspaceChannels(users[1].syncId).some((item) => item.isDefault), false);
 });
 
 test('vault API stores and returns only authenticated client-encrypted payloads', async () => {
