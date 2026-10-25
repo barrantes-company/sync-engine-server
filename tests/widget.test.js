@@ -194,7 +194,10 @@ test('WIDGET 6: Extension CORS headers are allowed for chrome-extension origin',
   assert.equal(res.headers.get('access-control-allow-credentials'), 'true');
 });
 
-test('WIDGET 7: Real Socket.IO client connects to #anuncios and receives announcements', async () => {
+test('WIDGET 7: Real Socket.IO client receives announcements from a user-created #anuncios channel', async () => {
+  // The app no longer seeds default channels; the fixture creates this channel explicitly.
+  db.createWorkspaceChannel('anuncios', 'Widget test announcements', users[0].syncId);
+
   const aliceSocket = connect(base, {
     transports: ['websocket'],
     forceNew: true
