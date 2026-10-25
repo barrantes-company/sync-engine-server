@@ -1074,9 +1074,7 @@ function findChannel(channelId) {
 }
 
 /**
- * Checks whether a registered user is allowed to access a workspace channel.
- * Default workspace channels are available to every registered user; custom
- * channels are limited to their creator and explicitly listed members.
+ * Checks whether a registered user is an explicit member of a workspace channel.
  * @param {string} channelId
  * @param {string} userSyncId
  * @returns {boolean}
@@ -1100,7 +1098,6 @@ function isChannelMember(channelId, userSyncId) {
       organization.memberSyncIds.some((id) => String(id).trim().toUpperCase() === normalizedUserId);
     if (!member) return false;
   }
-  if (channel.isDefault && !channel.orgId) return true;
   if (String(channel.creatorSyncId || "").trim().toUpperCase() === normalizedUserId) return true;
   return Array.isArray(channel.memberSyncIds) &&
     channel.memberSyncIds.some((memberId) => String(memberId).trim().toUpperCase() === normalizedUserId);
@@ -1204,14 +1201,7 @@ function updateWorkspaceChannel(channelId, actorSyncId, updates = {}) {
 
 function addWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
   const db = readDb();
-  const rawChannelId = String(channelId || "").trim();
-  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
-  const channel = (db.channels || []).find((item) =>
-    item.id === rawChannelId ||
-    item.id === cleanChannelId ||
-    item.id === ("chan-" + cleanChannelId) ||
-    String(item.name || "").toLowerCase() === cleanChannelId
-  );
+  const channel = findChannel(channelId);
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("La membresía de canales predeterminados no se puede modificar aquí");
   if (!canAdministerChannel(channel, actorSyncId)) {
@@ -1230,14 +1220,7 @@ function addWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
 
 function removeWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
   const db = readDb();
-  const rawChannelId = String(channelId || "").trim();
-  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
-  const channel = (db.channels || []).find((item) =>
-    item.id === rawChannelId ||
-    item.id === cleanChannelId ||
-    item.id === ("chan-" + cleanChannelId) ||
-    String(item.name || "").toLowerCase() === cleanChannelId
-  );
+  const channel = findChannel(channelId);
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("La membresía de canales predeterminados no se puede modificar aquí");
   if (!canAdministerChannel(channel, actorSyncId)) {
@@ -1256,14 +1239,7 @@ function removeWorkspaceChannelMember(channelId, actorSyncId, targetSyncId) {
 
 function deleteWorkspaceChannel(channelId, actorSyncId) {
   const db = readDb();
-  const rawChannelId = String(channelId || "").trim();
-  const cleanChannelId = rawChannelId.replace(/^#/, "").toLowerCase();
-  const channel = (db.channels || []).find((item) =>
-    item.id === rawChannelId ||
-    item.id === cleanChannelId ||
-    item.id === ("chan-" + cleanChannelId) ||
-    String(item.name || "").toLowerCase() === cleanChannelId
-  );
+  const channel = findChannel(channelId);
   if (!channel) throw new Error("Canal no encontrado");
   if (channel.isDefault) throw new Error("Los canales predeterminados no se pueden eliminar");
   if (!canAdministerChannel(channel, actorSyncId)) {
