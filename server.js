@@ -755,6 +755,7 @@ app.post("/api/channels", requireAuth, (req, res) => {
 app.put("/api/channels/:channelId", requireAuth, (req, res) => {
   try {
     const channel = db.updateWorkspaceChannel(req.params.channelId, req.user.syncId, req.body || {});
+    emitToChannelMembers(channel, "channel-updated", req.user.syncId);
     res.json({ ok: true, channel });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
@@ -764,6 +765,10 @@ app.put("/api/channels/:channelId", requireAuth, (req, res) => {
 app.post("/api/channels/:channelId/members", requireAuth, (req, res) => {
   try {
     const channel = db.addWorkspaceChannelMember(req.params.channelId, req.user.syncId, req.body && req.body.syncId);
+    const targetSyncId = String(req.body && req.body.syncId || "").trim().toUpperCase();
+    const targetSockets = onlineUsers.get(targetSyncId);
+    if (targetSockets) for (const socketId of targetSockets) authenticatedTo(socketId).emit("channel-membership-added", channel);
+    emitToChannelMembers(channel, "channel-updated", targetSyncId);
     res.json({ ok: true, channel });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
@@ -773,6 +778,7 @@ app.post("/api/channels/:channelId/members", requireAuth, (req, res) => {
 app.post("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) => {
   try {
     const channel = db.grantWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
+    emitToChannelMembers(channel, "channel-updated", req.user.syncId);
     res.json({ ok: true, channel });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
@@ -782,6 +788,7 @@ app.post("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) => {
 app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) => {
   try {
     const channel = db.revokeWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
+    emitToChannelMembers(channel, "channel-updated", req.user.syncId);
     res.json({ ok: true, channel });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
@@ -790,7 +797,12 @@ app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) =>
 
 app.delete("/api/channels/:channelId/members/:syncId", requireAuth, (req, res) => {
   try {
-    const channel = db.removeWorkspaceChannelMember(req.params.channelId, req.user.syncId, req.params.syncId);
+    const channelId = req.params.channelId;
+    const targetSyncId = String(req.params.syncId || "").trim().toUpperCase();
+    const previousChannel = db.findChannel(channelId);
+    const channel = db.removeWorkspaceChannelMember(channelId, req.user.syncId, targetSyncId);
+    if (previousChannel) revokeChannelSockets(previousChannel.id, [targetSyncId], "channel-membership-removed");
+    emitToChannelMembers(channel, "channel-updated", req.user.syncId);
     res.json({ ok: true, channel });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
@@ -800,6 +812,7 @@ app.delete("/api/channels/:channelId/members/:syncId", requireAuth, (req, res) =
 app.delete("/api/channels/:channelId", requireAuth, (req, res) => {
   try {
     const channel = db.deleteWorkspaceChannel(req.params.channelId, req.user.syncId);
+    revokeChannelSockets(channel.id, channel.memberSyncIds || [], "channel-deleted", channel);
     res.json({ ok: true, channel });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
@@ -953,6 +966,30 @@ function authenticatedTo(room) {
       if (recipient && currentSocketUser(recipient)) recipient.emit(event, ...args);
     }
   } };
+}
+
+function emitToChannelMembers(channel, event, excludedSyncId) {
+  if (!channel) return;
+  const excluded = String(excludedSyncId || "").trim().toUpperCase();
+  for (const syncId of channel.memberSyncIds || []) {
+    if (String(syncId || "").trim().toUpperCase() === excluded) continue;
+    const sockets = onlineUsers.get(String(syncId || "").trim().toUpperCase());
+    if (!sockets) continue;
+    for (const socketId of sockets) authenticatedTo(socketId).emit(event, channel);
+  }
+}
+
+function revokeChannelSockets(channelId, syncIds, event, channel) {
+  for (const syncId of syncIds || []) {
+    const sockets = onlineUsers.get(String(syncId || "").trim().toUpperCase());
+    if (!sockets) continue;
+    for (const socketId of sockets) {
+      const client = io.sockets.sockets.get(socketId);
+      if (!client || !currentSocketUser(client)) continue;
+      client.leave("channel:" + channelId);
+      client.emit(event, channel || { id: channelId });
+    }
+  }
 }
 
 function onMessage(socket, event, handler) {
