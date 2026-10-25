@@ -77,6 +77,17 @@ test("DATA-01: failed atomic rename rejects write and preserves last disk snapsh
   assert.equal(fs.readFileSync(file, "utf8"), original);
 });
 
+test("closing the write queue drains snapshots and rejects new writes", async (t) => {
+  const { file, load } = fixture(t);
+  const db = load();
+  const data = db.readDb();
+  data.messages.push({ id: "last-snapshot" });
+  db.writeDb(data);
+  await db.closeWrites();
+  assert.equal(JSON.parse(fs.readFileSync(file)).messages[0].id, "last-snapshot");
+  assert.throws(() => db.writeDb(data), /DB_CLOSED/);
+});
+
 test("DATA-01: a saved message is not confirmed until it survives a fresh read", async (t) => {
   const { file, load } = fixture(t);
   const db = load();
@@ -116,4 +127,26 @@ test("DATA-01: real server exits before listening when its DB is corrupt", { tim
   assert.match(stderr, /DB_READ_FAILED/);
   assert.doesNotMatch(stdout, /Server Activo/);
   assert.equal(fs.readFileSync(file, "utf8"), "{broken");
+});
+
+
+test("the real server handles SIGTERM with a clean exit", { timeout: 10000 }, async (t) => {
+  const { dir } = fixture(t);
+  const child = spawn(process.execPath, ["--require", path.join(__dirname, "helpers/no-network-interfaces.js"), path.join(root, "server.js")], {
+    cwd: root, env: { PATH: process.env.PATH, NODE_ENV: "test", PORT: "0", DATA_DIR: dir,
+      UPLOADS_DIR: path.join(dir, "uploads"), DISABLE_LOCAL_TLS: "true", PUBSUB_ENABLED: "false" },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  t.after(() => { if (child.exitCode === null) child.kill("SIGKILL"); });
+  let stderr = "";
+  child.stderr.on("data", (chunk) => { stderr += chunk; });
+  await new Promise((resolve, reject) => {
+    child.once("exit", (code, signal) => reject(new Error("Exited before ready: " + code + "/" + signal + " " + stderr)));
+    child.stdout.on("data", (chunk) => {
+      if (String(chunk).includes("Server Activo")) resolve();
+    });
+  });
+  const exited = once(child, "exit");
+  child.kill("SIGTERM");
+  assert.deepEqual(await exited, [0, null]);
 });

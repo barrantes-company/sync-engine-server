@@ -53,3 +53,27 @@ test("staging Pub/Sub rejects missing configuration and production defaults befo
   assert.throws(() => load({ APP_ENV: "staging", PUBSUB_PROJECT_ID: "sync-engine-hub", PUBSUB_TOPIC: "stage", PUBSUB_SUBSCRIPTION: "stage" }), /dedicated/);
   assert.doesNotThrow(() => load({ APP_ENV: "staging", PUBSUB_PROJECT_ID: "isolated-stage", PUBSUB_TOPIC: "stage", PUBSUB_SUBSCRIPTION: "stage" }));
 });
+
+
+test("Pub/Sub shutdown closes the SDK and subscription and cancels reconnection", async () => {
+  const { EventEmitter } = require("node:events");
+  const subscription = new EventEmitter();
+  let closed = 0, opened = 0, retry, cancelled = 0;
+  subscription.close = async () => { closed++; };
+  const module = { exports: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../pubsub-service.js"), "utf8"), {
+    module, process: { env: {} }, console: { log() {}, error() {}, warn() {} },
+    setTimeout(fn) { retry = fn; return 1; }, clearTimeout() { cancelled++; },
+    require() { return { PubSub: class {
+      subscription() { opened++; return subscription; }
+      async close() { closed++; }
+    } }; }
+  });
+  const stop = module.exports.startChatSubscriptionListener(() => {});
+  subscription.emit("error", { code: 14, message: "unavailable" });
+  await stop.close();
+  retry();
+  assert.equal(closed, 2);
+  assert.equal(cancelled, 1);
+  assert.equal(opened, 1);
+});

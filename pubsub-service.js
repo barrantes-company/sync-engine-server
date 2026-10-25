@@ -60,6 +60,7 @@ function startChatSubscriptionListener(onMessageCallback) {
   let backoffDelay = BACKOFF_BASE_MS;
   let retryTimer = null;
   let isConnected = false;
+  let stopped = false;
 
   function cleanup() {
     subscription.removeAllListeners("message");
@@ -72,6 +73,7 @@ function startChatSubscriptionListener(onMessageCallback) {
   }
 
   function openStream() {
+    if (stopped) return;
     cleanup();
 
     subscription.on("message", async (message) => {
@@ -103,6 +105,7 @@ function startChatSubscriptionListener(onMessageCallback) {
       isConnected = false;
       console.error("[Pub/Sub Stream Error]:", error.message);
       cleanup();
+      if (stopped) return;
 
       if (!isRetriableError(error)) {
         console.warn("[Pub/Sub] Error no recuperable, esperando reintento diferido...");
@@ -118,7 +121,7 @@ function startChatSubscriptionListener(onMessageCallback) {
     subscription.on("close", () => {
       isConnected = false;
       console.warn("[Pub/Sub Stream] Conexión cerrada. Reconectando...");
-      if (!retryTimer) {
+      if (!stopped && !retryTimer) {
         retryTimer = setTimeout(openStream, BACKOFF_BASE_MS);
       }
     });
@@ -127,7 +130,12 @@ function startChatSubscriptionListener(onMessageCallback) {
   openStream();
 
   return {
-    close: () => cleanup()
+    close: async () => {
+      stopped = true;
+      cleanup();
+      await subscription.close();
+      await client.close();
+    }
   };
 }
 
