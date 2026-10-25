@@ -3102,8 +3102,7 @@
       isSocketAuthenticated = true;
       hideNetworkLoading();
       loadContacts();
-      const currentChan = activeChannelId || '#anuncios';
-      socket.emit('join-channel', { channelId: currentChan });
+      if (activeChannelId) socket.emit('join-channel', { channelId: activeChannelId });
       if (activeContactSyncId) selectContact(activeContactSyncId);
       flushOfflineMessages();
       publishPresence();
@@ -3271,12 +3270,9 @@
     if (!msg || !msg.id) return;
     if (renderedMessageIds.has(msg.id)) return;
 
-    const currentChan = (activeChannelId || '#anuncios').toLowerCase();
-    const msgChan = (msg.channelId || '').toLowerCase();
-    const isCurrentChannel = !activeContactSyncId && (
-      msgChan === currentChan ||
-      (currentChan.includes('anuncios') && msgChan.includes('anuncios'))
-    );
+    const currentChan = String(activeChannelId || '').toLowerCase();
+    const msgChan = String(msg.channelId || '').toLowerCase();
+    const isCurrentChannel = Boolean(currentChan && !activeContactSyncId && msgChan === currentChan);
 
     if (isCurrentChannel) {
       if (!activeConversationMessages.some(m => m.id === msg.id)) {
@@ -4036,7 +4032,7 @@
   // ENVÍO DE MENSAJES
   async function handleSendMessage() {
     const text = chatTextarea.value.trim();
-    const targetChannel = activeChannelId || (!activeContactSyncId ? '#anuncios' : null);
+    const targetChannel = activeChannelId;
     if (!text || (!activeContactSyncId && !targetChannel)) return;
 
     if (targetChannel && !activeContactSyncId) {
@@ -5116,6 +5112,13 @@
     if (!channelsList) return;
     channelsList.innerHTML = '';
     if (channelsCountBadge) channelsCountBadge.textContent = workspaceChannels.length;
+    if (!workspaceChannels.length) {
+      const emptyState = document.createElement('p');
+      emptyState.className = 'px-3 py-4 text-xs text-[#64748B]';
+      emptyState.textContent = 'Aún no tienes canales. Crea uno para empezar.';
+      channelsList.appendChild(emptyState);
+      return;
+    }
 
     workspaceChannels.forEach((chan) => {
       const item = document.createElement('div');
@@ -5129,8 +5132,7 @@
             <p class="text-[10px] text-[#64748B] truncate">${escapeHtml(chan.description || '')}</p>
           </div>
         </div>
-        ${chan.isDefault ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono">Equipo</span>' : ''}
-        ${!chan.isDefault && currentUser && (String(chan.creatorSyncId || '').toUpperCase() === String(currentUser.syncId || '').toUpperCase() || (Array.isArray(chan.adminSyncIds) && chan.adminSyncIds.some(id => String(id).toUpperCase() === String(currentUser.syncId || '').toUpperCase()))) ? '<button type="button" class="channel-manage-btn rounded-lg px-2 py-1 text-xs text-[#64748B] hover:bg-[#F1F5F9]" aria-label="Administrar canal" title="Administrar canal">⋯</button>' : ''}
+        ${currentUser && (String(chan.creatorSyncId || '').toUpperCase() === String(currentUser.syncId || '').toUpperCase() || (Array.isArray(chan.adminSyncIds) && chan.adminSyncIds.some(id => String(id).toUpperCase() === String(currentUser.syncId || '').toUpperCase()))) ? '<button type="button" class="channel-manage-btn rounded-lg px-2 py-1 text-xs text-[#64748B] hover:bg-[#F1F5F9]" aria-label="Administrar canal" title="Administrar canal">⋯</button>' : ''}
       `;
       item.addEventListener('click', () => selectChannel(chan));
       const manageBtn = item.querySelector('.channel-manage-btn');
@@ -5446,6 +5448,48 @@
     socket.on('channel-created', (channel) => {
       loadChannels();
       triggerPopupNotification('Nuevo Canal', `#${channel.name} ha sido creado`, '📢');
+    });
+
+    socket.on('channel-membership-added', (channel) => {
+      loadChannels();
+      triggerPopupNotification('Canal añadido', `Ahora participas en #${channel.name}`, '📢');
+    });
+
+    socket.on('channel-updated', (channel) => {
+      loadChannels();
+      if (activeChannelId === channel.id) {
+        activeChatName.textContent = '#' + channel.name;
+        activeChatId.textContent = channel.description || 'Canal de equipo';
+      }
+    });
+
+    const forgetChannelView = (channelId) => {
+      const key = 'channel:' + channelId;
+      parkedThreads.delete(key);
+      if (activeChannelId !== channelId) return;
+      if (currentThreadKey() === key) {
+        chatMessages.replaceChildren(chatWelcome);
+        chatMessages.dataset.threadKey = '';
+      }
+      activeChannelId = null;
+      activeConversationMessages = [];
+      renderedMessageIds.clear();
+      document.getElementById('app-container').dataset.hasActiveConversation = 'false';
+      document.getElementById('chat-header-bar')?.classList.add('hidden');
+      document.getElementById('input-container')?.classList.add('hidden');
+      chatWelcome.classList.remove('hidden');
+      publishPresence();
+    };
+
+    socket.on('channel-membership-removed', (channel) => {
+      forgetChannelView(channel.id);
+      loadChannels();
+      triggerPopupNotification('Canal', 'Se retiró tu acceso a un canal.', 'ℹ️');
+    });
+
+    socket.on('channel-deleted', (channel) => {
+      forgetChannelView(channel.id);
+      loadChannels();
     });
 
     socket.on('channel-message-received', (msg) => {
