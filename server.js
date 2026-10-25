@@ -968,12 +968,20 @@ function authenticatedTo(room) {
   } };
 }
 
+function channelUserSockets(syncId) {
+  const normalized = String(syncId || "").trim().toUpperCase();
+  for (const [onlineSyncId, sockets] of onlineUsers) {
+    if (String(onlineSyncId || "").trim().toUpperCase() === normalized) return sockets;
+  }
+  return null;
+}
+
 function emitToChannelMembers(channel, event, excludedSyncId) {
   if (!channel) return;
   const excluded = String(excludedSyncId || "").trim().toUpperCase();
   for (const syncId of channel.memberSyncIds || []) {
     if (String(syncId || "").trim().toUpperCase() === excluded) continue;
-    const sockets = onlineUsers.get(String(syncId || "").trim().toUpperCase());
+    const sockets = channelUserSockets(syncId);
     if (!sockets) continue;
     for (const socketId of sockets) authenticatedTo(socketId).emit(event, channel);
   }
@@ -981,7 +989,7 @@ function emitToChannelMembers(channel, event, excludedSyncId) {
 
 function revokeChannelSockets(channelId, syncIds, event, channel) {
   for (const syncId of syncIds || []) {
-    const sockets = onlineUsers.get(String(syncId || "").trim().toUpperCase());
+    const sockets = channelUserSockets(syncId);
     if (!sockets) continue;
     for (const socketId of sockets) {
       const client = io.sockets.sockets.get(socketId);
@@ -1080,9 +1088,6 @@ io.on("connection", function (socket) {
     }
 
     socket.join("channel:" + channelId);
-    if (rawChannelId !== channelId) {
-      socket.join("channel:" + rawChannelId);
-    }
   });
 
   onMessage(socket, "send-channel-message", async function (payload) {
@@ -1106,9 +1111,6 @@ io.on("connection", function (socket) {
       const msg = db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });
       await db.flushWrites();
       authenticatedTo("channel:" + channelId).emit("channel-message-received", msg);
-      if (rawChannelId !== channelId) {
-        authenticatedTo("channel:" + rawChannelId).emit("channel-message-received", msg);
-      }
     } catch (err) {
       socket.emit("error-message", { message: err.message });
     }
