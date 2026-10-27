@@ -857,14 +857,14 @@ app.get('/api/status', function (_req, res) {
 });
 
 // ==== Endpoints de Monetización, Facturación y Planes ====
-app.post("/api/admin/licenses/assign", requireAuth, (req, res) => {
+app.post("/api/admin/licenses/assign", requireAuth, async (req, res) => {
   if (req.user.role !== "admin") return res.status(403).json({ error: "Permisos de administrador requeridos" });
   const { syncId, licenseToken } = req.body || {};
   if (typeof syncId !== "string" || typeof licenseToken !== "string") {
     return res.status(400).json({ error: "syncId y licenseToken son obligatorios" });
   }
   try {
-    const user = db.assignUserLicense(syncId, licenseToken);
+    const user = await db.assignUserLicense(syncId, licenseToken);
     return res.json({ ok: true, user });
   } catch (error) {
     return res.status(400).json({ error: error.message });
@@ -879,14 +879,7 @@ app.get("/api/billing/plan", requireAuth, (req, res) => {
     plan: user.plan || "free",
     role: user.role || "member",
     planExpiresAt: user.planExpiresAt || null,
-    features: {
-      maxUploadBytes: user.plan === "enterprise" ? 2147483648 : (user.plan === "pro" ? 2147483648 : 52428800),
-      maxVoiceSeconds: user.plan === "free" ? 60 : 600,
-      encryptedVault: user.plan !== "free",
-      teamChannels: user.plan === "enterprise" || user.plan === "pro",
-      exportAudit: true,
-      hdCalling: user.plan !== "free"
-    }
+    features: user.features
   });
 });
 
