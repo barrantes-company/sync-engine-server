@@ -17,13 +17,13 @@ Está terminantemente prohibido:
 - Crear derivados comerciales, productos competidores o versiones modificadas para venta.
 - Descompilar, desensamblar, hacer ingeniería inversa o extraer arquitectura/algoritmos.
 - Sublicenciar, arrendar, prestar o ceder derechos a terceros.
-- Usar en entornos SaaS, servicios en la nube o plataformas públicas sin licencia explícita.
+- Usar en entornos SaaS, servicios en la nube o plataformas públicas sin licencia explicta.
 - Remover, modificar u ocultar avisos de derechos de autor, marcas registradas o disclaimers.
 
 3. MONETIZACIÓN Y PAGO POR CARACTERÍSTICAS
-- Google Play Billing es el único canal autorizado para monetización de temas Pro y características avanzadas.
-- Las pasarelas de pago y modelos de suscripción son propiedad exclusiva de BARRANTES CO.
-- Cualquier comercialización alternativa requiere contrato de licencia comercial formal.
+- Google Play Billing es el canal autorizado para la monetización de temas Pro y características avanzadas en entornos móviles.
+- Las pasarelas de pago y modelos de suscripción integrados son propiedad exclusiva de BARRANTES CO.
+- Cualquier comercialización alternativa, despliegue corporativo o personalización a medida requiere un contrato de licencia comercial formal independiente.
 
 4. SINCRONIZACIÓN LOCAL Y COMUNICACIÓN
 - La sincronización local entre Android y dispositivos de escritorio es uso autorizado.
@@ -31,28 +31,21 @@ Está terminantemente prohibido:
 - Protocolos de comunicación WebRTC y Socket.IO están protegidos como secreto comercial.
 
 5. LIMITACIÓN DE RESPONSABILIDAD
-EL SOFTWARE SE PROPORCIONA "TAL CUAL" SIN GARANTÍA ALGUNA, EXPLÍCITA O IMPLÍCITA, INCLUYENDO
-(PERO NO LIMITADO A) GARANTÍAS DE COMERCIABILIDAD, IDONEIDAD PARA UN PROPÓSITO PARTICULAR
-O NO INFRACCIÓN.
+EL SOFTWARE SE PROPORCIONA "TAL CUAL" SIN GARANTÍA ALGUNA, EXPLÍCITA O IMPLÍCITA, INCLUYENDO (PERO NO LIMITADO A) GARANTÍAS DE COMERCIABILIDAD, IDONEIDAD PARA UN PROPÓSITO PARTICULAR O NO INFRACCIÓN.
 
-EN NINGÚN CASO BARRANTES CO. SERÁ RESPONSABLE POR DAÑOS DIRETOS, INDIRECTOS, INCIDENTALES,
-ESPECIALES, EJEMPLARES O CONSECUENTES (INCLUYENDO PÉRDIDA DE DATOS, GANANCIAS O NEGOCIOS)
-INCLUSO SI SE ADVIRTIÓ DE LA POSIBILIDAD DE TALES DAÑOS.
+EN NINGÚN CASO BARRANTES CO. SERÁ RESPONSABLE POR DAÑOS DIRECTOS, INDIRECTOS, INCIDENTALES, ESPECIALES, EJEMPLARES O CONSECUENTES (INCLUYENDO PÉRDIDA DE DATOS, GANANCIAS O NEGOCIOS) INCLUSO SI SE ADVIRTIÓ DE LA POSIBILIDAD DE TALES DAÑOS.
 
 6. TERMINACIÓN
-Esta licencia se termina automáticamente si viola cualquiera de estas condiciones. Al término,
-debe destruir todas las copias del software en su posesión.
+Esta licencia se termina automáticamente si viola cualquiera de estas condiciones. Al término, debe destruir todas las copias del software en su posesión.
 
 7. JURISDICCIÓN
-Estos términos se rigen por las leyes aplicables en la jurisdicción de BARRANTES CO.
-Cualquier disputa se resolverá exclusivamente en los tribunales competentes.
+Estos términos se rigen por las leyes aplicables en la jurisdicción de BARRANTES CO. Cualquier disputa se resolverá exclusivamente en los tribunales competentes.
 
 8. MODIFICACIONES
-BARRANTES CO. se reserva el derecho de modificar estos términos en cualquier momento
-notificando cambios en el repositorio. El uso continuado implica aceptación de cambios.
+BARRANTES CO. se reserva el derecho de modificar estos términos en cualquier momento notificando cambios en el repositorio o la aplicación. El uso continuado implica aceptación de cambios.
 
 PARA LICENCIAS COMERCIALES, INTEGRACIÓN EMPRESARIAL O CONSULTAS LEGALES, CONTACTE A:
-licensing@barrantes.co
+jbarrantesdlp@gmail.com
 
 ---
 AVISO: Este software contiene tecnología patentada. Se prohíbe su distribución no autorizada.
