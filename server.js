@@ -888,6 +888,8 @@ app.get("/api/billing/plan", requireAuth, (req, res) => {
     plan: user.plan || "free",
     role: user.role || "member",
     planExpiresAt: user.planExpiresAt || null,
+    licenseStatus: user.licenseStatus || "unlicensed",
+    modules: user.modules || [],
     features: user.features
   });
 });
@@ -1325,6 +1327,11 @@ io.on("connection", function (socket) {
       return;
     }
 
+    if (!user.features || user.features.teamChannels !== true) {
+      emitChannelAuthorizationError(socket, "PLAN_REQUIRED", "Tu plan no incluye canales de equipo");
+      return;
+    }
+
     const rawChannelId = payload && typeof payload.channelId === "string" ? payload.channelId.trim() : "";
     if (!rawChannelId) {
       emitChannelAuthorizationError(socket, "FORBIDDEN", "No tienes permisos para acceder a este canal");
@@ -1348,6 +1355,11 @@ io.on("connection", function (socket) {
       emitChannelAuthorizationError(socket, "UNAUTHENTICATED", "Autenticación requerida");
       return;
     }
+    if (!sender.features || sender.features.teamChannels !== true) {
+      emitChannelAuthorizationError(socket, "PLAN_REQUIRED", "Tu plan no incluye canales de equipo");
+      return;
+    }
+
     const { channelId: rawChannelId, text, type, fileData, audioData } = payload || {};
     if (!rawChannelId) return;
 
