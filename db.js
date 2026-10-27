@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { resolveUserEntitlements, verifyLicense } = require("./license");
 
 const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
 const DB_FILE = path.join(DATA_DIR, "sync_db.json");
@@ -221,14 +222,33 @@ function generateSyncId(users) {
 }
 
 function toPublicUser(user) {
+  const entitlements = resolveUserEntitlements(user);
   return {
     syncId: user.syncId,
     username: user.username,
     cleanDisplayName: user.cleanDisplayName,
     formattedName: user.formattedName || formatFullName(user.syncId, user.cleanDisplayName),
     avatarUrl: user.avatarUrl || null,
-    role: user.role || "member"
+    role: user.role || "member",
+    plan: entitlements.plan,
+    planExpiresAt: entitlements.planExpiresAt,
+    licenseStatus: entitlements.licenseStatus,
+    features: entitlements.features,
+    modules: entitlements.modules
   };
+}
+
+function assignUserLicense(syncId, licenseToken) {
+  const normalizedId = String(syncId || "").trim().toUpperCase();
+  const db = readDb();
+  const user = db.users.find((item) => String(item.syncId || "").trim().toUpperCase() === normalizedId);
+  if (!user) throw new Error("Usuario no encontrado");
+  const verified = verifyLicense(licenseToken);
+  if (!verified.valid) throw new Error("Licencia inválida: " + verified.reason);
+  if (String(verified.claims.subject).toUpperCase() !== normalizedId) throw new Error("La licencia no corresponde al usuario indicado");
+  user.licenseToken = licenseToken;
+  writeDb(db);
+  return toPublicUser(user);
 }
 
 function registerUser(username, password, rawDisplayName) {
@@ -1296,6 +1316,7 @@ module.exports = {
   getUserByToken,
   revokeSession,
   getUserBySyncId,
+  assignUserLicense,
   updateUserProfile,
   addContact,
   getUserContacts,
