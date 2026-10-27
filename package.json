@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "node scripts/dev.js",
     "start": "node server.js",

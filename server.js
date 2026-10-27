@@ -43,8 +43,7 @@ function storeSubscription(syncId, subscription) {
 // ==== FCM Mobile Push Setup ====
 let firebaseAdmin = null;
 try {
-  const adminModule = "firebase-admin";
-  firebaseAdmin = require(adminModule);
+  firebaseAdmin = require("firebase-admin");
   if (!firebaseAdmin.apps.length) {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
