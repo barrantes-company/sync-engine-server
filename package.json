@@ -16,7 +16,7 @@
     "test:staging": "node --test tests/security-fixes.test.js tests/staging-integration.test.js tests/persistence.test.js tests/ack-persistence.test.js tests/metadata-fetch.test.js",
     "license:keys": "node scripts/generate-license-keys.js",
     "test:license": "node --test tests/license.test.js tests/license-keys.test.js",
-    "test": "node --test tests/license.test.js && node --test tests/conversation-auth.test.js && node tests/browser-lifecycle.test.js && node tests/p0-01.test.js && node tests/p0-02.test.js && node tests/widget.test.js && node --test tests/widget-summary.test.js && node tests/no-speed-insights.test.js",
+    "test": "node --test tests/license.test.js tests/license-keys.test.js && node --test tests/conversation-auth.test.js && node tests/browser-lifecycle.test.js && node tests/p0-01.test.js && node tests/p0-02.test.js && node tests/widget.test.js && node --test tests/widget-summary.test.js && node tests/no-speed-insights.test.js",
     "security-audit": "npm audit"
   },
   "dependencies": {
