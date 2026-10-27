@@ -238,7 +238,7 @@ function toPublicUser(user) {
   };
 }
 
-function assignUserLicense(syncId, licenseToken) {
+async function assignUserLicense(syncId, licenseToken) {
   const normalizedId = String(syncId || "").trim().toUpperCase();
   const db = readDb();
   const user = db.users.find((item) => String(item.syncId || "").trim().toUpperCase() === normalizedId);
@@ -247,7 +247,7 @@ function assignUserLicense(syncId, licenseToken) {
   if (!verified.valid) throw new Error("Licencia inválida: " + verified.reason);
   if (String(verified.claims.subject).toUpperCase() !== normalizedId) throw new Error("La licencia no corresponde al usuario indicado");
   user.licenseToken = licenseToken;
-  writeDb(db);
+  await writeDb(db);
   return toPublicUser(user);
 }
 
