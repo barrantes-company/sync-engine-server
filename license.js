@@ -50,10 +50,15 @@ function verifyLicense(token, options = {}) {
 
   let signatureValid = false;
   try {
+    const keyObject = crypto.createPublicKey(publicKey);
+    const keyBits = keyObject.asymmetricKeyDetails && keyObject.asymmetricKeyDetails.modulusLength;
+    if (keyObject.asymmetricKeyType !== 'rsa' || !Number.isInteger(keyBits) || keyBits < 2048) {
+      return { valid: false, reason: 'weak-or-unsupported-public-key' };
+    }
     signatureValid = crypto.verify(
       'sha256',
       Buffer.from(TOKEN_VERSION + '.' + parts[1], 'utf8'),
-      { key: publicKey, padding: crypto.constants.RSA_PKCS1_PSS_PADDING, saltLength: 32 },
+      { key: keyObject, padding: crypto.constants.RSA_PKCS1_PSS_PADDING, saltLength: 32 },
       signature
     );
   } catch (_) {

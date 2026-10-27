@@ -28,7 +28,11 @@ function issueLicense(args) {
   const modules = args.modules ? args.modules.split(',').map((item) => item.trim()).filter(Boolean) : [];
   if (modules.some((item) => !ALLOWED_MODULES.has(item))) throw new Error('modules contiene un módulo no permitido');
 
-  const privateKey = fs.readFileSync(args['private-key'], 'utf8');
+  const privateKey = crypto.createPrivateKey(fs.readFileSync(args['private-key'], 'utf8'));
+  const keyBits = privateKey.asymmetricKeyDetails && privateKey.asymmetricKeyDetails.modulusLength;
+  if (privateKey.asymmetricKeyType !== 'rsa' || !Number.isInteger(keyBits) || keyBits < 2048) {
+    throw new Error('La clave privada debe ser RSA de al menos 2048 bits');
+  }
   const issuedAt = Math.floor(Date.now() / 1000);
   const claims = {
     schemaVersion: 1,

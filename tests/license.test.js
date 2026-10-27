@@ -55,3 +55,19 @@ test('rejects unsupported plans and malformed claims even when signed', () => {
 test('legacy users without a signed token remain on free', () => {
   assert.equal(resolveUserEntitlements({ syncId: 'SYNC-1234' }, { publicKey: '' }).plan, 'free');
 });
+
+test('rejects RSA public keys weaker than 2048 bits', () => {
+  const pair = crypto.generateKeyPairSync('rsa', { modulusLength: 1024 });
+  const now = 2000000000;
+  const claims = {
+    schemaVersion: 1, licenseId: 'lic_weak_key', product: PRODUCT, subject: 'SYNC-1234',
+    plan: 'enterprise', issuedAt: now - 60, expiresAt: now + 3600
+  };
+  const payload = Buffer.from(stableStringify(claims)).toString('base64url');
+  const signature = crypto.sign('sha256', Buffer.from(TOKEN_VERSION + '.' + payload), {
+    key: pair.privateKey, padding: crypto.constants.RSA_PKCS1_PSS_PADDING, saltLength: 32
+  }).toString('base64url');
+  const token = TOKEN_VERSION + '.' + payload + '.' + signature;
+  const publicKey = pair.publicKey.export({ type: 'spki', format: 'pem' });
+  assert.equal(verifyLicense(token, { publicKey, now }).reason, 'weak-or-unsupported-public-key');
+});
