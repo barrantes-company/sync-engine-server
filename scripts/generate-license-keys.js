@@ -19,6 +19,7 @@ function generateLicenseKeys(outputDirectory = path.join(os.homedir(), '.sync-en
   }
 
   fs.mkdirSync(outputDir, { recursive: true, mode: 0o700 });
+  if (process.platform !== 'win32') fs.chmodSync(outputDir, 0o700);
   const privatePath = path.join(outputDir, 'license-private.pem');
   const publicPath = path.join(outputDir, 'license-public.pem');
   if (fs.existsSync(privatePath) || fs.existsSync(publicPath)) {
