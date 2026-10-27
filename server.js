@@ -435,6 +435,15 @@ function requireAuth(req, res, next) {
   next();
 }
 
+function requireFeature(feature) {
+  return (req, res, next) => {
+    if (!req.user || !req.user.features || req.user.features[feature] !== true) {
+      return res.status(403).json({ error: "La función requiere un plan superior", feature });
+    }
+    next();
+  };
+}
+
 const FILE_COOKIE = "sync_engine_file_auth";
 const FILE_COOKIE_PATHS = ["/api/files", "/uploads"];
 
@@ -857,6 +866,20 @@ app.get('/api/status', function (_req, res) {
 });
 
 // ==== Endpoints de Monetización, Facturación y Planes ====
+app.post("/api/admin/licenses/assign", requireAuth, async (req, res) => {
+  if (req.user.role !== "admin") return res.status(403).json({ error: "Permisos de administrador requeridos" });
+  const { syncId, licenseToken } = req.body || {};
+  if (typeof syncId !== "string" || typeof licenseToken !== "string") {
+    return res.status(400).json({ error: "syncId y licenseToken son obligatorios" });
+  }
+  try {
+    const user = await db.assignUserLicense(syncId, licenseToken);
+    return res.json({ ok: true, user });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
 app.get("/api/billing/plan", requireAuth, (req, res) => {
   const user = db.getUserBySyncId(req.user.syncId);
   if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
@@ -865,14 +888,7 @@ app.get("/api/billing/plan", requireAuth, (req, res) => {
     plan: user.plan || "free",
     role: user.role || "member",
     planExpiresAt: user.planExpiresAt || null,
-    features: {
-      maxUploadBytes: user.plan === "enterprise" ? 2147483648 : (user.plan === "pro" ? 2147483648 : 52428800),
-      maxVoiceSeconds: user.plan === "free" ? 60 : 600,
-      encryptedVault: user.plan !== "free",
-      teamChannels: user.plan === "enterprise" || user.plan === "pro",
-      exportAudit: true,
-      hdCalling: user.plan !== "free"
-    }
+    features: user.features
   });
 });
 
@@ -940,13 +956,13 @@ app.post("/api/org/create", requireAuth, (req, res) => {
 });
 
 // ==== Endpoints de Bóveda Cifrada Privada ====
-app.get("/api/vault", requireAuth, (req, res) => {
+app.get("/api/vault", requireAuth, requireFeature("encryptedVault"), (req, res) => {
   res.setHeader("Cache-Control", "private, no-store");
   const items = db.getVaultItems(req.user.syncId);
   res.json({ ok: true, items: items });
 });
 
-app.post("/api/vault", requireAuth, (req, res) => {
+app.post("/api/vault", requireAuth, requireFeature("encryptedVault"), (req, res) => {
   res.setHeader("Cache-Control", "private, no-store");
   try {
     const item = db.saveVaultItem(req.user.syncId, req.body);
@@ -956,19 +972,19 @@ app.post("/api/vault", requireAuth, (req, res) => {
   }
 });
 
-app.delete("/api/vault/:itemId", requireAuth, (req, res) => {
+app.delete("/api/vault/:itemId", requireAuth, requireFeature("encryptedVault"), (req, res) => {
   res.setHeader("Cache-Control", "private, no-store");
   const success = db.deleteVaultItem(req.user.syncId, req.params.itemId);
   res.json({ ok: true, deleted: success });
 });
 
 // ==== Endpoints de Canales de Espacio de Trabajo ====
-app.get("/api/channels", requireAuth, (req, res) => {
+app.get("/api/channels", requireAuth, requireFeature("teamChannels"), (req, res) => {
   const channels = db.getWorkspaceChannels(req.user.syncId);
   res.json({ ok: true, channels: channels });
 });
 
-app.post("/api/channels", requireAuth, (req, res) => {
+app.post("/api/channels", requireAuth, requireFeature("teamChannels"), (req, res) => {
   const { name, description } = req.body || {};
   try {
     const channel = db.createWorkspaceChannel(name, description, req.user.syncId);
@@ -982,7 +998,7 @@ app.post("/api/channels", requireAuth, (req, res) => {
   }
 });
 
-app.put("/api/channels/:channelId", requireAuth, (req, res) => {
+app.put("/api/channels/:channelId", requireAuth, requireFeature("teamChannels"), (req, res) => {
   try {
     const channel = db.updateWorkspaceChannel(req.params.channelId, req.user.syncId, req.body || {});
     emitToChannelMembers(channel, "channel-updated", req.user.syncId);
@@ -992,7 +1008,7 @@ app.put("/api/channels/:channelId", requireAuth, (req, res) => {
   }
 });
 
-app.post("/api/channels/:channelId/members", requireAuth, (req, res) => {
+app.post("/api/channels/:channelId/members", requireAuth, requireFeature("teamChannels"), (req, res) => {
   try {
     const channel = db.addWorkspaceChannelMember(req.params.channelId, req.user.syncId, req.body && req.body.syncId);
     const targetSyncId = String(req.body && req.body.syncId || "").trim().toUpperCase();
@@ -1005,7 +1021,7 @@ app.post("/api/channels/:channelId/members", requireAuth, (req, res) => {
   }
 });
 
-app.post("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) => {
+app.post("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeature("teamChannels"), (req, res) => {
   try {
     const channel = db.grantWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
     emitToChannelMembers(channel, "channel-updated", req.user.syncId);
@@ -1015,7 +1031,7 @@ app.post("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) => {
   }
 });
 
-app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) => {
+app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeature("teamChannels"), (req, res) => {
   try {
     const channel = db.revokeWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
     emitToChannelMembers(channel, "channel-updated", req.user.syncId);
@@ -1025,7 +1041,7 @@ app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, (req, res) =>
   }
 });
 
-app.delete("/api/channels/:channelId/members/:syncId", requireAuth, (req, res) => {
+app.delete("/api/channels/:channelId/members/:syncId", requireAuth, requireFeature("teamChannels"), (req, res) => {
   try {
     const channelId = req.params.channelId;
     const targetSyncId = String(req.params.syncId || "").trim().toUpperCase();
@@ -1039,7 +1055,7 @@ app.delete("/api/channels/:channelId/members/:syncId", requireAuth, (req, res) =
   }
 });
 
-app.delete("/api/channels/:channelId", requireAuth, (req, res) => {
+app.delete("/api/channels/:channelId", requireAuth, requireFeature("teamChannels"), (req, res) => {
   try {
     const channel = db.deleteWorkspaceChannel(req.params.channelId, req.user.syncId);
     revokeChannelSockets(channel.id, channel.memberSyncIds || [], "channel-deleted", channel);
@@ -1049,7 +1065,7 @@ app.delete("/api/channels/:channelId", requireAuth, (req, res) => {
   }
 });
 
-app.get("/api/channels/:channelId/messages", requireAuth, (req, res) => {
+app.get("/api/channels/:channelId/messages", requireAuth, requireFeature("teamChannels"), (req, res) => {
   try {
     const messages = db.getChannelMessages(req.params.channelId, req.user.syncId);
     res.json({ ok: true, messages: messages });
