@@ -857,6 +857,20 @@ app.get('/api/status', function (_req, res) {
 });
 
 // ==== Endpoints de Monetización, Facturación y Planes ====
+app.post("/api/admin/licenses/assign", requireAuth, (req, res) => {
+  if (req.user.role !== "admin") return res.status(403).json({ error: "Permisos de administrador requeridos" });
+  const { syncId, licenseToken } = req.body || {};
+  if (typeof syncId !== "string" || typeof licenseToken !== "string") {
+    return res.status(400).json({ error: "syncId y licenseToken son obligatorios" });
+  }
+  try {
+    const user = db.assignUserLicense(syncId, licenseToken);
+    return res.json({ ok: true, user });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
 app.get("/api/billing/plan", requireAuth, (req, res) => {
   const user = db.getUserBySyncId(req.user.syncId);
   if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
