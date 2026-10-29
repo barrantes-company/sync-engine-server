@@ -1165,6 +1165,14 @@ html[data-se-theme="energy"] #contact-search-input:focus {
   flex: 0 0 88px;
 }
 
+#edit-profile-modal #profile-avatar-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
 #edit-profile-modal #profile-avatar-fallback {
   display: flex;
   align-items: center;
