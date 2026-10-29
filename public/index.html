@@ -1649,7 +1649,9 @@
   function drawAvatarCrop() {
     if (!avatarSource) return;
     const zoom = Math.max(1, Math.min(2.4, avatarZoom));
-    const side = Math.min(avatarSource.naturalWidth, avatarSource.naturalHeight) / zoom;
+    // Keep the full image visible at the default zoom; users can increase
+    // the crop with the slider instead of losing the subject immediately.
+    const side = Math.max(avatarSource.naturalWidth, avatarSource.naturalHeight) / zoom;
     const startX = (avatarSource.naturalWidth - side) / 2;
     const startY = (avatarSource.naturalHeight - side) / 2;
     const canvas = document.createElement('canvas');
@@ -1658,6 +1660,8 @@
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = '#0b172b';
+    ctx.fillRect(0, 0, 1080, 1080);
     ctx.drawImage(avatarSource, startX, startY, side, side, 0, 0, 1080, 1080);
     const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
     avatarEdit = croppedDataUrl;
@@ -1759,7 +1763,15 @@
     if (zoomRow) zoomRow.classList.add('hidden');
     const idLine = document.getElementById('profile-sync-id');
     if (idLine) idLine.textContent = currentUser ? currentUser.syncId : '';
-    if (setSafeUrl(profileAvatarPreview, 'src', currentUser && currentUser.avatarUrl, 'avatar')) {
+    const existingAvatarUrl = currentUser && currentUser.avatarUrl;
+    if (existingAvatarUrl && profileAvatarPreview) {
+      profileAvatarPreview.onerror = () => {
+        profileAvatarPreview.classList.add('hidden');
+        profileAvatarFallback.classList.remove('hidden');
+        profileAvatarFallback.textContent = currentUser ? currentUser.syncId.replace('SYNC-', '') : '0000';
+      };
+    }
+    if (setSafeUrl(profileAvatarPreview, 'src', existingAvatarUrl, 'avatar')) {
       profileAvatarPreview.classList.remove('hidden');
       profileAvatarFallback.classList.add('hidden');
     } else {
@@ -2654,6 +2666,11 @@
       const avatar = document.createElement('img');
       avatar.className = 'w-full h-full rounded-full object-cover avatar-circle';
       avatar.alt = 'Avatar';
+      avatar.addEventListener('error', () => {
+        const gradient = getAvatarColor(contact.syncId);
+        activeChatAvatar.className = `w-10 h-10 rounded-full bg-gradient-to-tr ${gradient} text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-md font-mono avatar-circle`;
+        activeChatAvatar.textContent = contact.syncId.replace('SYNC-', '');
+      }, { once: true });
       setSafeUrl(avatar, 'src', contact.avatarUrl, 'avatar');
       activeChatAvatar.replaceChildren(avatar);
     } else {
