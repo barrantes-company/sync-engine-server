@@ -53,7 +53,11 @@ test('rejects unsupported plans and malformed claims even when signed', () => {
 });
 
 test('legacy users without a signed token remain on free', () => {
-  assert.equal(resolveUserEntitlements({ syncId: 'SYNC-1234' }, { publicKey: '' }).plan, 'free');
+  const entitlements = resolveUserEntitlements({ syncId: 'SYNC-1234' }, { publicKey: '' });
+  assert.equal(entitlements.plan, 'free');
+  assert.equal(entitlements.features.teamChannels, true);
+  assert.equal(entitlements.features.encryptedVault, true);
+  assert.equal(entitlements.features.hdCalling, true);
 });
 
 test('rejects RSA public keys weaker than 2048 bits', () => {

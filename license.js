@@ -85,14 +85,15 @@ function verifyLicense(token, options = {}) {
 }
 
 function featuresForPlan(plan) {
-  const paid = plan === 'pro' || plan === 'enterprise';
+  // Billing is not active yet. Keep the product features available to every
+  // authenticated user while retaining the current technical limits.
   return {
-    maxUploadBytes: paid ? 2147483648 : 52428800,
-    maxVoiceSeconds: paid ? 600 : 60,
-    encryptedVault: paid,
-    teamChannels: paid,
+    maxUploadBytes: 52428800,
+    maxVoiceSeconds: 60,
+    encryptedVault: true,
+    teamChannels: true,
     exportAudit: true,
-    hdCalling: paid
+    hdCalling: true
   };
 }
 
