@@ -13,7 +13,7 @@ const { createRequire } = require('node:module');
 const { once } = require('node:events');
 const WebSocket = require('ws');
 const { io: connect } = require('socket.io-client');
-const { safeUrl } = require('../public/safe-content');
+const { safeUrl, safeLocalBlobUrl } = require('../public/safe-content');
 const isolatedDb = require('./helpers/isolated-db');
 const { tokenFor } = isolatedDb;
 const { startChromium } = require('./helpers/browser');
@@ -169,6 +169,9 @@ test('URL policy rejects executable schemes in every purpose and bounds data exc
   assert.equal(safeUrl('data:audio/webm;base64,AAAA', 'audio'), 'data:audio/webm;base64,AAAA');
   assert.equal(safeUrl('data:audio/webm;base64,AAAA', 'link'), '');
   assert.equal(safeUrl('https://user:password@example.test/x', 'image'), '');
+  assert.equal(safeLocalBlobUrl('blob:https://example.test/local-file', 'https://example.test/'), 'blob:https://example.test/local-file');
+  assert.equal(safeLocalBlobUrl('blob:https://evil.example/file', 'https://example.test/'), '');
+  assert.equal(safeLocalBlobUrl('https://example.test/file', 'https://example.test/'), '');
 });
 
 test('all inline application scripts parse, and the safe-content dependency is available offline', () => {
