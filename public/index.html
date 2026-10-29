@@ -381,9 +381,9 @@
 
         <!-- Navegación interna en 3 píldoras: Estilo, Chats y Notificaciones -->
         <div class="settings-pills-nav">
-          <button class="settings-pill-btn active" data-pane="pane-style" type="button">Estilo</button>
-          <button class="settings-pill-btn" data-pane="pane-chats" type="button">Chats</button>
-          <button class="settings-pill-btn" data-pane="pane-notifs" type="button">Notificaciones</button>
+          <button class="settings-pill-btn active" data-pane="pane-style" data-settings-tab="style" type="button">Estilo</button>
+          <button class="settings-pill-btn" data-pane="pane-chats" data-settings-tab="chats" type="button">Chats</button>
+          <button class="settings-pill-btn" data-pane="pane-notifs" data-settings-tab="notifs" type="button">Notificaciones</button>
         </div>
 
         <div class="wa-drawer-body">
@@ -1873,7 +1873,7 @@
     loadContacts();
     loadChannels();
 
-    if (window.innerWidth < 1024) {
+    if (window.innerWidth < 768) {
       document.body.classList.add('mobile-view-contacts');
       document.body.classList.remove('mobile-view-chat');
     } else {
@@ -2082,7 +2082,7 @@
 
   backToContactsBtn.addEventListener('click', () => {
     activeContactSyncId = null;
-    if (window.innerWidth < 1024) {
+    if (window.innerWidth < 768) {
       document.body.classList.add('mobile-view-contacts');
       document.body.classList.remove('mobile-view-chat');
     }
@@ -2200,7 +2200,7 @@
       contactsList.appendChild(item);
     });
 
-    if (window.innerWidth >= 1024 && !activeContactSyncId && validContacts.length > 0) {
+    if (window.innerWidth >= 768 && !activeContactSyncId && validContacts.length > 0) {
       selectContact(validContacts[0].syncId);
     }
   }
@@ -2922,7 +2922,7 @@
     const contact = contactsMap.get(syncId);
     if (!contact) return;
 
-    if (window.innerWidth < 1024) {
+    if (window.innerWidth < 768) {
       document.body.classList.add('mobile-view-chat');
       document.body.classList.remove('mobile-view-contacts');
     } else {
@@ -3782,8 +3782,8 @@
     list.replaceChildren();
     try {
       const res = await fetch('/api/calls?limit=40', { headers: { Authorization: 'Bearer ' + currentToken } });
-      const data = await res.json();
-      const calls = data.ok && Array.isArray(data.calls) ? data.calls : [];
+      const data = res.ok ? await res.json().catch(() => ({ ok: true, calls: [] })) : { ok: true, calls: [] };
+      const calls = data && data.ok && Array.isArray(data.calls) ? data.calls : [];
       if (!calls.length) {
         const empty = document.createElement('p');
         empty.className = 'se-calls-empty';
@@ -5620,7 +5620,7 @@
 
     renderChannelsList();
 
-    if (window.innerWidth < 1024) {
+    if (window.innerWidth < 768) {
       document.body.classList.add('mobile-view-chat');
       document.body.classList.remove('mobile-view-contacts');
     }
@@ -5934,9 +5934,10 @@
   const sidebar = document.getElementById('sidebar-panel');
   const showCalls = () => {
     closeDrawers();
-    document.body.classList.remove('mobile-view-contacts', 'mobile-view-chat');
+    document.body.classList.remove('mobile-view-chat');
+    if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
     document.body.classList.add('mobile-view-calls');
-    if (window.innerWidth < 1024 && split) split.classList.add('hidden');
+    if (split) split.classList.remove('hidden');
     if (sidebar) sidebar.classList.remove('hidden');
     document.getElementById('sidebar-dms-view')?.classList.add('hidden');
     document.getElementById('sidebar-channels-view')?.classList.add('hidden');
@@ -5975,7 +5976,7 @@
     if (view === 'profile') {
       showWorkspace();
       document.body.classList.remove('mobile-view-chat');
-      if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
+      if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
       drawerSettings?.classList.remove('open');
       document.getElementById('open-edit-profile-btn')?.click();
       setActiveNav('profile');
@@ -5984,7 +5985,7 @@
     if (view === 'settings') {
       showWorkspace();
       document.body.classList.remove('mobile-view-chat');
-      if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
+      if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
       if (drawerProfile) {
         drawerProfile.classList.remove('open');
         drawerProfile.classList.add('hidden');
@@ -6002,6 +6003,8 @@
     window.dispatchEvent(new CustomEvent('sync-engine-view-change', { detail: { view } }));
     const hasConversation = app.dataset.hasActiveConversation === 'true';
     if (view === 'channels') {
+      document.body.classList.remove('mobile-view-chat');
+      if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
       dmsView?.classList.add('hidden');
       channelsView?.classList.remove('hidden');
       if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Canales';
@@ -6011,10 +6014,12 @@
       channelsView?.classList.add('hidden');
       if (view === 'contacts') {
         document.body.classList.remove('mobile-view-chat');
-        if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
+        if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
         if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Contactos';
         document.getElementById('contact-search-input')?.focus();
       } else {
+        document.body.classList.remove('mobile-view-chat');
+        if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
         if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Conversaciones';
       }
       setActiveNav(view);
@@ -6032,6 +6037,7 @@
     const btn = document.getElementById(btnId);
     const input = document.getElementById(inputId);
     if (!btn || !input) return;
+    const row = input.closest('.wa-editable-row');
     if (storageKey) {
       try {
         const saved = localStorage.getItem(storageKey);
@@ -6039,19 +6045,21 @@
       } catch (_) {}
     }
     btn.addEventListener('click', () => {
-      const isReadonly = input.hasAttribute('readonly');
-      if (isReadonly) {
+      const isEditing = btn.classList.contains('saving-mode');
+      if (!isEditing) {
         input.removeAttribute('readonly');
         input.focus();
         btn.textContent = '✓';
         btn.classList.add('saving-mode');
+        row?.classList.add('editing');
       } else {
-        input.setAttribute('readonly', 'readonly');
-        btn.textContent = '✎';
-        btn.classList.remove('saving-mode');
         if (storageKey) {
+          input.setAttribute('readonly', 'readonly');
           try { localStorage.setItem(storageKey, input.value.trim()); } catch (_) {}
         }
+        btn.textContent = '✎';
+        btn.classList.remove('saving-mode');
+        row?.classList.remove('editing');
         if (onConfirm) onConfirm(input.value.trim());
       }
     });
@@ -6066,7 +6074,8 @@
   const btnCopyPhone = document.getElementById('btn-copy-phone');
   if (btnCopyPhone) {
     btnCopyPhone.addEventListener('click', async () => {
-      const phone = document.getElementById('profile-phone-display')?.textContent || '';
+      const phoneInput = document.getElementById('input-profile-phone');
+      const phone = phoneInput ? phoneInput.value : '';
       try { await navigator.clipboard.writeText(phone.trim()); } catch (_) {}
       const orig = btnCopyPhone.textContent;
       btnCopyPhone.textContent = '✓';
@@ -6087,7 +6096,8 @@
   };
   document.querySelectorAll('.settings-pill-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const tab = btn.dataset.settingsTab;
+      const rawPane = btn.dataset.pane || '';
+      const tab = btn.dataset.settingsTab || (rawPane.startsWith('pane-') ? rawPane.slice(5) : 'style');
       document.querySelectorAll('.settings-pill-btn').forEach(b => b.classList.toggle('active', b === btn));
       document.getElementById('pane-style')?.classList.toggle('hidden', tab !== 'style');
       document.getElementById('pane-chats')?.classList.toggle('hidden', tab !== 'chats');
@@ -6117,21 +6127,25 @@
 
   document.querySelectorAll('.style-preset-card').forEach(card => {
     card.addEventListener('click', () => {
-      document.querySelectorAll('.style-preset-card').forEach(c => c.classList.toggle('active', c === card));
+      document.querySelectorAll('.style-preset-card').forEach(c => {
+        const match = c === card;
+        c.classList.toggle('selected', match);
+        c.classList.toggle('active', match);
+      });
       applyCustomColors(card.dataset.bubble, card.dataset.bg);
     });
   });
 
-  document.querySelectorAll('#bubble-color-swatches .color-swatch').forEach(swatch => {
+  document.querySelectorAll('#bubble-color-swatches .color-swatch-btn').forEach(swatch => {
     swatch.addEventListener('click', () => {
-      document.querySelectorAll('#bubble-color-swatches .color-swatch').forEach(s => s.classList.toggle('active', s === swatch));
+      document.querySelectorAll('#bubble-color-swatches .color-swatch-btn').forEach(s => s.classList.toggle('active', s === swatch));
       applyCustomColors(swatch.dataset.color, null);
     });
   });
 
-  document.querySelectorAll('#bg-color-swatches .color-swatch').forEach(swatch => {
+  document.querySelectorAll('#bg-color-swatches .color-swatch-btn').forEach(swatch => {
     swatch.addEventListener('click', () => {
-      document.querySelectorAll('#bg-color-swatches .color-swatch').forEach(s => s.classList.toggle('active', s === swatch));
+      document.querySelectorAll('#bg-color-swatches .color-swatch-btn').forEach(s => s.classList.toggle('active', s === swatch));
       applyCustomColors(null, swatch.dataset.bg);
     });
   });
@@ -6143,15 +6157,21 @@
       localStorage.removeItem('sync_custom_bubble_bg');
       localStorage.removeItem('sync_custom_chat_bg');
     } catch (_) {}
-    const firstPreset = document.querySelector('.style-preset-card[data-preset="default"]');
-    document.querySelectorAll('.style-preset-card').forEach(c => c.classList.toggle('active', c === firstPreset));
+    const firstPreset = document.querySelector('.style-preset-card[data-preset="lavender"]');
+    document.querySelectorAll('.style-preset-card').forEach(c => {
+      const match = c === firstPreset;
+      c.classList.toggle('selected', match);
+      c.classList.toggle('active', match);
+    });
   });
 
   const switchDoodles = document.getElementById('switch-doodles');
+  const chatPanelEl = document.getElementById('chat-panel');
   const chatTimelineEl = document.getElementById('chat-messages');
-  if (switchDoodles && chatTimelineEl) {
+  if (switchDoodles) {
     switchDoodles.addEventListener('change', () => {
-      chatTimelineEl.classList.toggle('has-doodles', switchDoodles.checked);
+      chatPanelEl?.classList.toggle('doodles-enabled', switchDoodles.checked);
+      chatTimelineEl?.classList.toggle('has-doodles', switchDoodles.checked);
     });
   }
 
@@ -6165,7 +6185,7 @@
   if (btnMediaQuality && labelMediaQuality) {
     btnMediaQuality.addEventListener('click', () => {
       const isHd = labelMediaQuality.textContent.includes('HD');
-      labelMediaQuality.textContent = isHd ? 'Calidad estándar (Más rápido)' : 'Alta definición (HD · 1080p)';
+      labelMediaQuality.textContent = isHd ? 'Estándar (1600px)' : 'Alta definición (HD · 4096px)';
     });
   }
 
@@ -6173,8 +6193,8 @@
   const labelAutodownload = document.getElementById('label-autodownload');
   if (btnAutodownload && labelAutodownload) {
     btnAutodownload.addEventListener('click', () => {
-      const isAuto = labelAutodownload.textContent.includes('Activada');
-      labelAutodownload.textContent = isAuto ? 'Solo con Wi-Fi' : 'Activada (Fotos, Audio y Documentos)';
+      const isAuto = labelAutodownload.textContent.includes('activados');
+      labelAutodownload.textContent = isAuto ? 'Solo con Wi-Fi' : 'Fotos, audios y documentos activados';
     });
   }
 
@@ -6196,15 +6216,15 @@
       badge.classList.toggle('active', !active);
     });
   };
-  toggleNotifBadge('notif-row-msg', 'badge-notif-msg');
-  toggleNotifBadge('notif-row-groups', 'badge-notif-groups');
-  toggleNotifBadge('notif-row-calls', 'badge-notif-calls');
+  toggleNotifBadge('notif-row-msg', 'notif-msg-state');
+  toggleNotifBadge('notif-row-groups', 'notif-groups-state');
+  toggleNotifBadge('notif-row-calls', 'notif-calls-state');
 
   const switchBgSync = document.getElementById('switch-bg-sync');
   if (switchBgSync) {
     switchBgSync.addEventListener('change', () => {
       if (switchBgSync.checked) {
-        document.getElementById('enable-push-btn')?.click();
+        document.getElementById('enable-push-notifications-btn')?.click();
       }
     });
   }

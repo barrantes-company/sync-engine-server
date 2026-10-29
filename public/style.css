@@ -312,12 +312,17 @@ body {
   box-shadow: var(--shadow-shell);
   display: grid;
   grid-template-columns: 84px 360px 1fr;
+  grid-template-rows: 100%;
   overflow: hidden;
   position: relative;
 }
 
 /* Columna 1 — Rail de Navegación Lateral (84px, fondo #11131a) */
 .nav-rail {
+  grid-column: 1;
+  grid-row: 1;
+  height: 100%;
+  min-height: 0;
   background-color: var(--nav-rail-bg);
   display: flex;
   flex-direction: column;
@@ -474,6 +479,8 @@ body {
    FASE 4: COLUMNA INTERMEDIA (360px) Y DRAWERS DESLIZANTES ESTILO WHATSAPP WEB
    ============================================================================ */
 .middle-col {
+  grid-column: 2;
+  grid-row: 1;
   width: 360px;
   min-width: 360px;
   max-width: 360px;
@@ -1029,6 +1036,11 @@ body {
   background: var(--search-bg);
 }
 
+.wa-inline-edit-btn.saving-mode {
+  color: var(--wa-teal);
+  font-weight: 800;
+}
+
 /* Drawer 2: Edición (Estilo, Chats, Notificaciones) */
 .settings-pills-nav {
   display: flex;
@@ -1313,9 +1325,12 @@ body.dark-mode .wa-slider {
    FASE 5: PANEL CENTRAL DE CONVERSACIÓN (1fr)
    ============================================================================ */
 #chat-panel-container {
+  grid-column: 3;
+  grid-row: 1;
   flex: 1;
   min-width: 0;
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1872,8 +1887,25 @@ body.dark-mode .wa-slider {
   object-fit: contain;
 }
 
-/* Responsivo para pantallas móviles/tablets */
-@media (max-width: 1023px) {
+/* Responsivo para pantallas intermedias (768px - 1080px): preserva siempre 3 columnas */
+@media (max-width: 1080px) and (min-width: 768px) {
+  body {
+    padding: 8px;
+  }
+  .app-shell {
+    height: 96vh;
+    grid-template-columns: 76px 320px 1fr;
+    grid-template-rows: 100%;
+  }
+  .middle-col {
+    width: 320px;
+    min-width: 320px;
+    max-width: 320px;
+  }
+}
+
+/* Responsivo para teléfonos móviles (< 768px) */
+@media (max-width: 767px) {
   body {
     padding: 0;
   }
@@ -1882,17 +1914,25 @@ body.dark-mode .wa-slider {
     max-height: none;
     border-radius: 0;
     grid-template-columns: 68px 1fr;
+    grid-template-rows: 100%;
   }
   .middle-col {
+    grid-column: 2;
+    grid-row: 1;
     width: 100%;
     min-width: 0;
     max-width: none;
   }
-  body.mobile-view-chat .middle-col {
-    display: none;
+  #chat-panel-container {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
   }
-  body.mobile-view-contacts #chat-panel-container {
-    display: none;
+  body:not(.mobile-view-chat) #chat-panel-container {
+    display: none !important;
+  }
+  body.mobile-view-chat .middle-col {
+    display: none !important;
   }
 }
 
