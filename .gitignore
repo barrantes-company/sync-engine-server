@@ -1,4 +1,5 @@
 node_modules/
+.idea/
 data/sync_db.json
 data/ssl/
 *.pem

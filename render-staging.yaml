@@ -6,7 +6,7 @@ services:
     runtime: node
     plan: 0.5c-512mb
     region: ohio
-    repo: https://github.com/jbarrantesdlp-b2b/sync-engine-server
+    repo: https://github.com/barrantes-company/sync-engine-server
     branch: staging-sync-engine-2
     autoDeployTrigger: "off"
     numInstances: 1
