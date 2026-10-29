@@ -489,6 +489,79 @@
   }
 }
 
+/* visual-11: estado vacío de contactos coherente con el tema oscuro. */
+#contacts-list .empty-state {
+  box-sizing: border-box;
+  display: flex;
+  min-height: 158px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 12px !important;
+  padding: 24px 16px !important;
+  border: 1px solid rgba(8, 119, 249, .16);
+  border-radius: 16px;
+  background: #f8fbff;
+  color: #64748b;
+  text-align: center;
+  animation: se-empty-card-in .45s var(--se-motion-ease) both;
+}
+
+#contacts-list .empty-state .empty-title {
+  color: #10213d;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+#contacts-list .empty-state .empty-state-icon {
+  margin-bottom: 12px;
+  animation: se-empty-icon-float 3.2s ease-in-out infinite;
+}
+
+#app-container[data-se-theme="energy"] #contacts-list .empty-state,
+html[data-se-theme="energy"] #contacts-list .empty-state {
+  border-color: rgba(126, 231, 255, .18) !important;
+  background: #10192a !important;
+  color: #93a4bd !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .035), 0 14px 28px rgba(0, 0, 0, .18);
+}
+
+#app-container[data-se-theme="energy"] #contacts-list .empty-state .empty-title,
+html[data-se-theme="energy"] #contacts-list .empty-state .empty-title {
+  color: #e7f0ff !important;
+}
+
+#app-container[data-se-theme="energy"] #contacts-list .empty-state .empty-state-icon,
+html[data-se-theme="energy"] #contacts-list .empty-state .empty-state-icon {
+  background: #0d2236 !important;
+  border-color: rgba(126, 231, 255, .34) !important;
+  color: #7ee7ff !important;
+  box-shadow: 0 0 22px rgba(46, 180, 255, .18) !important;
+}
+
+#app-container[data-se-theme="energy"] #contact-search-input:focus,
+html[data-se-theme="energy"] #contact-search-input:focus {
+  border-color: #49c6ff !important;
+  box-shadow: 0 0 0 3px rgba(73, 198, 255, .12) !important;
+}
+
+@keyframes se-empty-card-in {
+  from { opacity: 0; transform: translateY(8px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes se-empty-icon-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #contacts-list .empty-state,
+  #contacts-list .empty-state .empty-state-icon {
+    animation: none !important;
+  }
+}
+
 .empty-state-action {
   border: 0;
   cursor: pointer;
