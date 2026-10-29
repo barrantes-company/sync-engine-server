@@ -539,6 +539,91 @@
   }
 }
 
+/* visual-17: per-conversation appearance with contrast-safe defaults. */
+#chat-messages {
+  background: var(--se-chat-bg, var(--se-surface-muted)) !important;
+}
+
+#chat-messages .chat-bubble-sent {
+  background: var(--se-chat-sent-bg, #dcecff) !important;
+  color: var(--se-chat-sent-text, #102d55) !important;
+}
+
+#chat-messages .chat-bubble-received {
+  background: var(--se-chat-received-bg, var(--se-surface)) !important;
+  color: var(--se-chat-received-text, var(--se-text)) !important;
+}
+
+#chat-messages .chat-bubble-sent *,
+#chat-messages .chat-bubble-received * {
+  color: inherit;
+}
+
+#open-chat-appearance-btn {
+  font-size: 16px;
+}
+
+.chat-appearance-sheet {
+  border: 1px solid #dce4ee;
+}
+
+.chat-appearance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.chat-appearance-grid label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chat-appearance-grid input[type="color"] {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.chat-appearance-contrast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+html[data-se-theme="energy"] .chat-appearance-sheet {
+  border-color: #293b53;
+  background: #111b2b;
+  color: #edf4ff;
+}
+
+html[data-se-theme="energy"] .chat-appearance-grid label {
+  border-color: #293b53;
+  color: #dbe8f7;
+}
+
+html[data-se-theme="energy"] .chat-appearance-contrast {
+  color: #9aabc0;
+}
+
+@media (max-width: 560px) {
+  .chat-appearance-grid { grid-template-columns: 1fr; }
+}
+
 /* visual-16-final: message rows span the thread; bubbles align per sender. */
 #chat-messages > * { width: 100% !important; max-width: none !important; margin-inline: 0 !important; }
 #chat-messages .msg-item { width: auto !important; max-width: min(72%, 760px) !important; margin-bottom: 8px !important; }
