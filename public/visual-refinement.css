@@ -1016,3 +1016,204 @@ html[data-se-theme="energy"] .workspace-overview-item {
     justify-content: center;
   }
 }
+
+/* visual-10: motion design sobrio para percepción de calidad. */
+:root {
+  --se-motion-ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+#app-container > header.sticky {
+  animation: se-header-in .48s var(--se-motion-ease) both;
+}
+
+#main-layout {
+  animation: se-workspace-in .56s .04s var(--se-motion-ease) both;
+}
+
+#sidebar-panel,
+#chat-panel-container {
+  will-change: opacity, transform;
+}
+
+#sidebar-panel {
+  animation: se-sidebar-in .48s .12s var(--se-motion-ease) both;
+}
+
+#chat-panel-container {
+  animation: se-content-in .56s .16s var(--se-motion-ease) both;
+}
+
+#sync-engine-nav-rail .se-nav-item {
+  position: relative;
+  overflow: hidden;
+}
+
+#sync-engine-nav-rail .se-nav-item::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .38);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+#sync-engine-nav-rail .se-nav-item:active::after {
+  animation: se-nav-ripple .42s ease-out;
+}
+
+#chat-welcome {
+  animation: se-welcome-in .62s .2s var(--se-motion-ease) both;
+}
+
+#chat-welcome .empty-state-icon {
+  animation: se-welcome-icon-in .7s .28s var(--se-motion-ease) both;
+}
+
+#chat-welcome .empty-state-icon svg {
+  animation: se-icon-breathe 3.6s 1s ease-in-out infinite;
+}
+
+.workspace-quick-actions button,
+#open-create-channel-btn,
+#add-contact-btn,
+#save-profile-btn {
+  transition: transform .2s var(--se-motion-ease), box-shadow .2s ease,
+    filter .2s ease, background-color .2s ease;
+}
+
+.workspace-quick-actions button:hover,
+#open-create-channel-btn:hover,
+#add-contact-btn:hover,
+#save-profile-btn:hover {
+  filter: saturate(1.08);
+  transform: translateY(-2px);
+}
+
+.workspace-quick-actions button:active,
+#open-create-channel-btn:active,
+#add-contact-btn:active,
+#save-profile-btn:active {
+  transform: translateY(0) scale(.98);
+}
+
+#contacts-list .contact-item,
+#channels-list .channel-item {
+  animation: se-list-item-in .36s var(--se-motion-ease) both;
+  transition: transform .2s var(--se-motion-ease), background-color .2s ease,
+    box-shadow .2s ease, border-color .2s ease;
+}
+
+#contacts-list .contact-item:hover,
+#channels-list .channel-item:hover {
+  transform: translateX(3px);
+}
+
+#contacts-list .contact-item:nth-child(2),
+#channels-list .channel-item:nth-child(2) { animation-delay: .04s; }
+#contacts-list .contact-item:nth-child(3),
+#channels-list .channel-item:nth-child(3) { animation-delay: .08s; }
+#contacts-list .contact-item:nth-child(4),
+#channels-list .channel-item:nth-child(4) { animation-delay: .12s; }
+
+#edit-profile-modal:not(.hidden) {
+  animation: se-modal-backdrop-in .24s ease-out both;
+}
+
+#edit-profile-modal:not(.hidden) .profile-sheet {
+  animation: se-modal-sheet-in .42s var(--se-motion-ease) both;
+}
+
+.workspace-connection-dot {
+  animation: se-connection-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes se-header-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes se-workspace-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes se-sidebar-in {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes se-content-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes se-welcome-in {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes se-welcome-icon-in {
+  from { opacity: 0; transform: translateY(10px) scale(.82); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes se-icon-breathe {
+  0%, 100% { transform: translateY(0); opacity: .9; }
+  50% { transform: translateY(-2px); opacity: 1; }
+}
+
+@keyframes se-nav-ripple {
+  from { opacity: .5; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(13); }
+}
+
+@keyframes se-list-item-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes se-modal-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes se-modal-sheet-in {
+  from { opacity: 0; transform: translateY(10px) scale(.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes se-connection-pulse {
+  0%, 100% { opacity: .72; transform: scale(.92); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app-container > header.sticky,
+  #main-layout,
+  #sidebar-panel,
+  #chat-panel-container,
+  #chat-welcome,
+  #chat-welcome .empty-state-icon,
+  #chat-welcome .empty-state-icon svg,
+  #contacts-list .contact-item,
+  #channels-list .channel-item,
+  #edit-profile-modal:not(.hidden),
+  #edit-profile-modal:not(.hidden) .profile-sheet,
+  .workspace-connection-dot {
+    animation: none !important;
+  }
+
+  #sync-engine-nav-rail .se-nav-item,
+  .workspace-quick-actions button,
+  #open-create-channel-btn,
+  #add-contact-btn,
+  #save-profile-btn,
+  #contacts-list .contact-item,
+  #channels-list .channel-item {
+    transition: none !important;
+  }
+}
