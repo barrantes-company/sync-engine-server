@@ -4,7 +4,7 @@ services:
   - type: web
     name: sync-engine-2-staging
     runtime: node
-    plan: 0.5c-512mb
+    plan: free
     region: ohio
     repo: https://github.com/barrantes-company/sync-engine-server
     branch: staging-sync-engine-2
@@ -13,10 +13,6 @@ services:
     buildCommand: npm ci --omit=dev
     startCommand: npm start
     healthCheckPath: /api/status
-    disk:
-      name: sync-engine-2-staging-data
-      mountPath: /var/data/sync-engine-2-staging
-      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 24.20.0
@@ -25,9 +21,9 @@ services:
       - key: APP_ENV
         value: staging
       - key: DATA_DIR
-        value: /var/data/sync-engine-2-staging/db
+        value: /tmp/sync-engine-2-staging/db
       - key: UPLOADS_DIR
-        value: /var/data/sync-engine-2-staging/uploads
+        value: /tmp/sync-engine-2-staging/uploads
       - key: DISABLE_LOCAL_TLS
         value: "true"
       - key: SEED_DEVELOPMENT_ADMIN
