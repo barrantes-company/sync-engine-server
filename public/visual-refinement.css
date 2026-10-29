@@ -1,5 +1,6 @@
 /* Visual refinement pass: layout, hierarchy and motion for the main workspace. */
 :root {
+  --vr-nav-width: 76px;
   --vr-space-1: 6px;
   --vr-space-2: 10px;
   --vr-space-3: 14px;
@@ -20,13 +21,86 @@
 
 #app-container {
   max-width: none !important;
+  width: 100% !important;
 }
 
 #sync-engine-nav-rail {
-  flex: 0 0 clamp(72px, 5vw, 88px);
-  width: clamp(72px, 5vw, 88px) !important;
+  flex: 0 0 var(--vr-nav-width);
+  width: var(--vr-nav-width) !important;
   background: linear-gradient(180deg, #0a2146 0%, #07172f 100%) !important;
   border-right: 1px solid rgba(66, 201, 255, 0.18);
+}
+
+/* Keep the desktop shell aligned with the fixed navigation rail. */
+@media (min-width: 1024px) {
+  #app-container > header.sticky {
+    width: calc(100% - var(--vr-nav-width)) !important;
+    margin-left: var(--vr-nav-width) !important;
+  }
+
+  #main-layout {
+    display: grid !important;
+    grid-template-columns: clamp(260px, 25vw, 360px) minmax(0, 1fr) !important;
+    width: calc(100% - var(--vr-nav-width)) !important;
+    margin-left: var(--vr-nav-width) !important;
+    margin-right: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  #sidebar-panel {
+    grid-column: 1;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    border-radius: 0 !important;
+  }
+
+  #chat-panel-container {
+    grid-column: 2;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+
+  #info-drawer-panel {
+    position: absolute !important;
+    inset: 0 0 0 auto !important;
+    width: min(360px, calc(100% - 24px)) !important;
+    min-width: 0 !important;
+    max-width: 360px !important;
+    height: 100% !important;
+    margin: 0 !important;
+  }
+
+  #info-drawer-panel.drawer-closed {
+    display: none !important;
+  }
+
+  #info-drawer-panel.drawer-open {
+    display: flex !important;
+    transform: translateX(0) !important;
+  }
+}
+
+/* The search controls must remain visible at 100% zoom and narrow desktops. */
+.search-row {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.search-field {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+#add-contact-btn {
+  flex: 0 0 64px !important;
+  width: 64px !important;
+  min-width: 64px !important;
+  position: static !important;
 }
 
 #sync-engine-nav-rail .se-nav-item,
@@ -321,8 +395,19 @@
   }
 
   #sync-engine-nav-rail {
+    --vr-nav-width: 68px;
     flex-basis: 68px;
     width: 68px !important;
+  }
+
+  #app-container > header.sticky,
+  #main-layout {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  #main-layout {
+    display: flex !important;
   }
 
   #chat-welcome {
@@ -357,6 +442,7 @@
   }
 
   #sync-engine-nav-rail {
+    --vr-nav-width: 60px;
     flex-basis: 60px;
     width: 60px !important;
   }
