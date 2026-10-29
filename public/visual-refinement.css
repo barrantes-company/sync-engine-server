@@ -489,6 +489,125 @@
   }
 }
 
+/* visual-13: profundidad premium y movimiento ambiental controlado. */
+#chat-panel-container,
+#sidebar-panel {
+  position: relative;
+}
+
+#chat-panel-container::before {
+  position: absolute;
+  z-index: 0;
+  top: -18%;
+  right: -8%;
+  width: 52%;
+  height: 64%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(73, 198, 255, .12), transparent 68%);
+  content: '';
+  filter: blur(18px);
+  pointer-events: none;
+  animation: se-aurora-drift 12s ease-in-out infinite alternate;
+}
+
+#chat-panel-container::after {
+  position: absolute;
+  z-index: 0;
+  bottom: -22%;
+  left: 14%;
+  width: 42%;
+  height: 56%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(8, 119, 249, .08), transparent 68%);
+  content: '';
+  filter: blur(24px);
+  pointer-events: none;
+  animation: se-aurora-drift 16s 1.2s ease-in-out infinite alternate-reverse;
+}
+
+#chat-panel-container > * {
+  position: relative;
+  z-index: 1;
+}
+
+#chat-welcome .empty-state-icon {
+  box-shadow: 0 0 0 1px rgba(73, 198, 255, .08),
+    0 14px 32px rgba(8, 119, 249, .14) !important;
+}
+
+#chat-welcome .empty-state-icon::before,
+#contacts-list .empty-state-icon::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 25%, rgba(255, 255, 255, .38) 48%, transparent 65%);
+  content: '';
+  opacity: 0;
+  transform: translateX(-120%);
+  pointer-events: none;
+  animation: se-surface-sheen 5.8s 1.6s ease-in-out infinite;
+}
+
+#contacts-list .empty-state {
+  overflow: hidden;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .62), 0 12px 30px rgba(8, 119, 249, .06) !important;
+}
+
+#app-container[data-se-theme="energy"] #contacts-list .empty-state,
+html[data-se-theme="energy"] #contacts-list .empty-state {
+  box-shadow: inset 0 1px rgba(255, 255, 255, .04), 0 16px 36px rgba(0, 0, 0, .26) !important;
+}
+
+#sync-engine-nav-rail .se-nav-item.is-active {
+  box-shadow: 0 0 0 1px rgba(126, 231, 255, .22),
+    0 10px 28px rgba(8, 119, 249, .26) !important;
+}
+
+#sync-engine-nav-rail .se-nav-item.is-active::before {
+  position: absolute;
+  inset: 8px auto 8px 3px;
+  width: 2px;
+  border-radius: 99px;
+  background: linear-gradient(#7ee7ff, #1677f2);
+  box-shadow: 0 0 14px rgba(126, 231, 255, .8);
+  content: '';
+  animation: se-active-beacon 1.8s ease-in-out infinite;
+}
+
+.workspace-quick-actions button:hover,
+#open-create-channel-btn:hover,
+#add-contact-btn:hover,
+#save-profile-btn:hover {
+  box-shadow: 0 12px 28px rgba(8, 119, 249, .24) !important;
+}
+
+@keyframes se-aurora-drift {
+  0% { transform: translate3d(-4%, -3%, 0) scale(.92); opacity: .55; }
+  50% { transform: translate3d(3%, 4%, 0) scale(1.08); opacity: .9; }
+  100% { transform: translate3d(-2%, 7%, 0) scale(.98); opacity: .62; }
+}
+
+@keyframes se-surface-sheen {
+  0%, 58% { opacity: 0; transform: translateX(-120%); }
+  68% { opacity: .9; }
+  82%, 100% { opacity: 0; transform: translateX(120%); }
+}
+
+@keyframes se-active-beacon {
+  0%, 100% { opacity: .55; transform: scaleY(.72); }
+  50% { opacity: 1; transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #chat-panel-container::before,
+  #chat-panel-container::after,
+  #chat-welcome .empty-state-icon::before,
+  #contacts-list .empty-state-icon::before,
+  #sync-engine-nav-rail .se-nav-item.is-active::before {
+    animation: none !important;
+  }
+}
+
 /* visual-12: microinteracciones visibles durante la navegación, con prioridad
    táctil en pantallas pequeñas y sin movimiento permanente invasivo. */
 #sync-engine-nav-rail .se-nav-item.is-active {
