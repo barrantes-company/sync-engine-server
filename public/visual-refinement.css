@@ -232,6 +232,68 @@
   background: rgba(248, 250, 252, 0.96) !important;
 }
 
+/* Profile dialog: keep the sheet inside the viewport at every browser zoom. */
+#edit-profile-modal.profile-settings-popover {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 200 !important;
+  display: flex;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: clamp(12px, 4vh, 42px) clamp(12px, 4vw, 48px) !important;
+  overflow: hidden !important;
+  background: rgba(4, 13, 27, 0.68) !important;
+  backdrop-filter: blur(10px);
+}
+
+#edit-profile-modal.profile-settings-popover .profile-sheet {
+  box-sizing: border-box;
+  width: min(440px, calc(100vw - 24px)) !important;
+  max-width: 440px !important;
+  max-height: min(680px, calc(100dvh - 24px)) !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(126, 231, 255, 0.18);
+  border-radius: 22px !important;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38) !important;
+}
+
+#edit-profile-modal .profile-sheet-body {
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+#edit-profile-modal .profile-sheet-body > *,
+#edit-profile-modal .profile-sheet-head > *,
+#edit-profile-modal .profile-sheet-foot > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#edit-profile-modal .avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+#edit-profile-modal .profile-sheet-foot {
+  position: relative;
+  z-index: 1;
+  background: inherit;
+}
+
+#edit-profile-modal #copy-sync-id-btn,
+#edit-profile-modal #enable-push-notifications-btn {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 #drawer-contact-avatar-box,
 .drawer-contact-card {
   border-radius: 18px !important;
@@ -297,6 +359,17 @@
   #sync-engine-nav-rail {
     flex-basis: 60px;
     width: 60px !important;
+  }
+
+  #edit-profile-modal.profile-settings-popover {
+    align-items: flex-end !important;
+    padding: 12px 10px max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  #edit-profile-modal.profile-settings-popover .profile-sheet {
+    width: 100% !important;
+    max-height: min(680px, calc(100dvh - 24px)) !important;
+    border-radius: 22px !important;
   }
 
   #chat-textarea {
