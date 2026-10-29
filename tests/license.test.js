@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const { TOKEN_VERSION, PRODUCT, stableStringify, verifyLicense, resolveUserEntitlements } = require('../license');
+const { TOKEN_VERSION, PRODUCT, stableStringify, verifyLicense, resolveUserEntitlements } = require('../license.js');
 
 function fixture(overrides = {}) {
   const pair = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });

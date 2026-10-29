@@ -1040,6 +1040,30 @@ body {
   font-weight: 800;
 }
 
+.wa-immutable-row .wa-inline-input {
+  cursor: default;
+  user-select: all;
+}
+
+.wa-immutable-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--search-bg);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.wa-immutable-badge.verified {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.14);
+}
+
 /* Drawer 2: Edición (Estilo, Chats, Notificaciones) */
 .settings-pills-nav {
   display: flex;

@@ -72,12 +72,17 @@
       </div>
 
       <form id="auth-form" class="auth-form">
-        <div class="auth-field">
-          <label for="auth-username">Nombre de Usuario</label>
-          <input type="text" id="auth-username" required title="Nombre de usuario" placeholder="ej. jbarrantes" autocomplete="username">
+        <div id="username-group" class="auth-field">
+          <label id="label-auth-username" for="auth-username">Nombre de Usuario o Correo</label>
+          <input type="text" id="auth-username" required title="Nombre de usuario o correo" placeholder="ej. jbarrantes o correo@dominio.com" autocomplete="username">
         </div>
 
-        <div class="auth-field">
+        <div id="email-group" class="auth-field hidden">
+          <label for="auth-email">Correo Electrónico (Verificación requerida)</label>
+          <input type="email" id="auth-email" title="Correo electrónico" placeholder="ej. usuario@dominio.com" autocomplete="email">
+        </div>
+
+        <div id="password-group" class="auth-field">
           <label for="auth-password">Contraseña</label>
           <input type="password" id="auth-password" required title="Contraseña" placeholder="••••••••" autocomplete="current-password">
         </div>
@@ -85,7 +90,17 @@
         <div id="display-name-group" class="auth-field hidden">
           <label for="auth-display-name">Nombre Personalizado (sin emojis)</label>
           <input type="text" id="auth-display-name" title="Nombre personalizado" placeholder="ej. Laptop de Jose" autocomplete="name">
-          <p class="text-[10px] text-[#94A3B8] mt-1 font-mono">Se generará automáticamente tu ID único (ej. SYNC-9482).</p>
+          <p class="text-[10px] text-[#94A3B8] mt-1 font-mono">Se generará automáticamente tu ID único inmutable (ej. SYNC-9482) tras verificar tu correo.</p>
+        </div>
+
+        <div id="otp-verification-group" class="auth-field hidden">
+          <label for="auth-otp-code">Código de Verificación (6 dígitos)</label>
+          <input type="text" id="auth-otp-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" autocomplete="one-time-code" class="font-mono text-center tracking-widest text-lg">
+          <p id="auth-otp-hint" class="text-[11px] text-[#38bdf8] mt-1 font-mono"></p>
+          <div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;">
+            <button type="button" id="auth-resend-otp-btn" class="auth-link-btn" style="font-size:0.75rem;">Reenviar código</button>
+            <button type="button" id="auth-back-from-otp-btn" class="auth-link-btn" style="font-size:0.75rem;color:#94a3b8;">Cambiar datos</button>
+          </div>
         </div>
 
         <p id="auth-error-msg" class="auth-error-msg hidden" role="alert" aria-live="polite"></p>
@@ -329,13 +344,22 @@
             </div>
           </div>
 
-          <!-- Username precedido por @ -->
+          <!-- Username precedido por @ (Inmutable) -->
           <div class="wa-info-block">
             <label class="wa-field-label" for="input-profile-username">Username</label>
-            <div class="wa-editable-row" id="row-edit-username">
+            <div class="wa-editable-row wa-immutable-row" id="row-edit-username">
               <span class="wa-prefix">@</span>
-              <input type="text" id="input-profile-username" class="wa-inline-input" value="sync_user" readonly>
-              <button class="wa-inline-edit-btn" id="btn-edit-username" type="button" title="Editar Username">✎</button>
+              <input type="text" id="input-profile-username" class="wa-inline-input" value="sync_user" readonly tabindex="-1">
+              <span class="wa-immutable-badge" title="Identificador de usuario fijo">🔒 Fijo</span>
+            </div>
+          </div>
+
+          <!-- Correo electrónico verificado (Inmutable) -->
+          <div class="wa-info-block" id="profile-email-block">
+            <label class="wa-field-label">Correo electrónico</label>
+            <div class="wa-editable-row wa-immutable-row">
+              <span id="profile-email-display" class="wa-inline-input">Sin correo vinculado</span>
+              <span id="profile-email-badge" class="wa-immutable-badge">🔒 Fijo</span>
             </div>
           </div>
 
@@ -348,12 +372,13 @@
             </div>
           </div>
 
-          <!-- Código ID Único -->
+          <!-- Código ID Único (Inmutable — Identidad criptográfica del nodo/usuario) -->
           <div class="wa-info-block">
-            <label class="wa-field-label">Código ID</label>
-            <div class="wa-editable-row">
+            <label class="wa-field-label">Código ID (Identificador Único)</label>
+            <div class="wa-editable-row wa-immutable-row">
               <span id="profile-sync-id" class="wa-inline-input font-mono">SYNC-0000</span>
-              <button id="copy-sync-id-btn" type="button" class="wa-inline-edit-btn" title="Copiar mi ID">📋</button>
+              <span class="wa-immutable-badge" title="Asignado por el servidor al crear la cuenta; no editable">🔒 Inmutable</span>
+              <button id="copy-sync-id-btn" type="button" class="wa-inline-edit-btn" title="Copiar mi Código SYNC">📋</button>
             </div>
           </div>
 
@@ -1703,17 +1728,52 @@
     });
   }
 
-  // Pestañas y Modo de Autenticación
+  // Pestañas y Modo de Autenticación + Verificación OTP de Correo
+  const emailGroup = document.getElementById('email-group');
+  const authEmail = document.getElementById('auth-email');
+  const labelAuthUsername = document.getElementById('label-auth-username');
+  const usernameGroup = document.getElementById('username-group');
+  const passwordGroup = document.getElementById('password-group');
+  const otpVerificationGroup = document.getElementById('otp-verification-group');
+  const authOtpCode = document.getElementById('auth-otp-code');
+  const authOtpHint = document.getElementById('auth-otp-hint');
+  const authResendOtpBtn = document.getElementById('auth-resend-otp-btn');
+  const authBackFromOtpBtn = document.getElementById('auth-back-from-otp-btn');
+  let isOtpStep = false;
+  let pendingRegisterEmail = '';
+
+  function resetOtpStepUI() {
+    isOtpStep = false;
+    pendingRegisterEmail = '';
+    if (otpVerificationGroup) otpVerificationGroup.classList.add('hidden');
+    if (authOtpCode) {
+      authOtpCode.value = '';
+      authOtpCode.required = false;
+    }
+    if (authOtpHint) authOtpHint.textContent = '';
+    if (usernameGroup) usernameGroup.classList.remove('hidden');
+    if (passwordGroup) passwordGroup.classList.remove('hidden');
+  }
+
   function setAuthMode(register) {
     isRegisterMode = register;
+    resetOtpStepUI();
     tabLogin.classList.toggle('is-active', !register);
     tabRegister.classList.toggle('is-active', register);
     if (isRegisterMode) {
+      if (labelAuthUsername) labelAuthUsername.textContent = 'Nombre de Usuario (handle único)';
+      authUsername.placeholder = 'ej. jbarrantes';
+      if (emailGroup) emailGroup.classList.remove('hidden');
+      if (authEmail) authEmail.required = true;
       displayNameGroup.classList.remove('hidden');
-      authSubmitBtn.textContent = 'Crear Cuenta y Obtener ID';
+      authSubmitBtn.textContent = 'Validar Correo y Enviar Código';
       if (authSwitchText) authSwitchText.textContent = '¿Ya tienes una cuenta?';
       if (authSwitchBtn) authSwitchBtn.textContent = 'Iniciar Sesión';
     } else {
+      if (labelAuthUsername) labelAuthUsername.textContent = 'Nombre de Usuario o Correo';
+      authUsername.placeholder = 'ej. jbarrantes o correo@dominio.com';
+      if (emailGroup) emailGroup.classList.add('hidden');
+      if (authEmail) authEmail.required = false;
       displayNameGroup.classList.add('hidden');
       authSubmitBtn.textContent = 'Ingresar al Chat';
       if (authSwitchText) authSwitchText.textContent = '¿No tienes una cuenta?';
@@ -1728,21 +1788,106 @@
     authSwitchBtn.addEventListener('click', () => setAuthMode(!isRegisterMode));
   }
 
-  authForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    authErrorMsg.classList.add('hidden');
+  async function requestRegistrationOtp() {
     const username = authUsername.value.trim();
     const password = authPassword.value;
     const displayName = purgeEmojis(authDisplayName.value);
-
-    const endpoint = isRegisterMode ? '/api/auth/register' : '/api/auth/login';
-    const payload = isRegisterMode ? { username, password, displayName } : { username, password };
-
+    const email = authEmail ? authEmail.value.trim().toLowerCase() : '';
+    if (!email) {
+      throw new Error('Ingresa un correo electrónico válido para verificar tu cuenta.');
+    }
+    authSubmitBtn.disabled = true;
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/auth/register/request-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ username, password, displayName, email })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'No se pudo enviar el código de verificación.');
+      }
+      isOtpStep = true;
+      pendingRegisterEmail = data.email || email;
+      if (usernameGroup) usernameGroup.classList.add('hidden');
+      if (emailGroup) emailGroup.classList.add('hidden');
+      if (passwordGroup) passwordGroup.classList.add('hidden');
+      displayNameGroup.classList.add('hidden');
+      if (otpVerificationGroup) otpVerificationGroup.classList.remove('hidden');
+      if (authOtpCode) {
+        authOtpCode.required = true;
+        authOtpCode.value = data.verificationCodeHint || '';
+        authOtpCode.focus();
+      }
+      if (authOtpHint) {
+        authOtpHint.textContent = data.verificationCodeHint
+          ? `${data.message || 'Dominio MX verificado.'} Código generado: ${data.verificationCodeHint}`
+          : (data.message || `Código enviado a ${pendingRegisterEmail}`);
+      }
+      authSubmitBtn.textContent = 'Verificar Código y Crear Cuenta';
+    } finally {
+      authSubmitBtn.disabled = false;
+    }
+  }
+
+  if (authResendOtpBtn) {
+    authResendOtpBtn.addEventListener('click', async () => {
+      authErrorMsg.classList.add('hidden');
+      try {
+        await requestRegistrationOtp();
+      } catch (err) {
+        authErrorMsg.textContent = err.message;
+        authErrorMsg.classList.remove('hidden');
+      }
+    });
+  }
+
+  if (authBackFromOtpBtn) {
+    authBackFromOtpBtn.addEventListener('click', () => {
+      setAuthMode(true);
+    });
+  }
+
+  authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    authErrorMsg.classList.add('hidden');
+
+    try {
+      if (isRegisterMode && !isOtpStep) {
+        await requestRegistrationOtp();
+        return;
+      }
+
+      if (isRegisterMode && isOtpStep) {
+        const code = authOtpCode ? authOtpCode.value.trim() : '';
+        authSubmitBtn.disabled = true;
+        try {
+          const res = await fetch('/api/auth/register/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: pendingRegisterEmail, code })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || 'Código de verificación inválido.');
+          }
+          resetOtpStepUI();
+          currentToken = data.token;
+          currentUser = data.user;
+          localStorage.setItem(TOKEN_KEY, currentToken);
+          showApp();
+        } finally {
+          authSubmitBtn.disabled = false;
+        }
+        return;
+      }
+
+      const username = authUsername.value.trim();
+      const password = authPassword.value;
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -1855,6 +2000,25 @@
     const usernameInput = document.getElementById('input-profile-username');
     if (usernameInput && currentUser.username) {
       usernameInput.value = currentUser.username;
+    }
+    const idLine = document.getElementById('profile-sync-id');
+    if (idLine) idLine.textContent = currentUser.syncId;
+    const emailDisplay = document.getElementById('profile-email-display');
+    const emailBadge = document.getElementById('profile-email-badge');
+    if (emailDisplay) {
+      if (currentUser.email) {
+        emailDisplay.textContent = currentUser.email;
+        if (emailBadge) {
+          emailBadge.textContent = currentUser.emailVerified ? '✓ Verificado' : 'Pendiente';
+          emailBadge.classList.toggle('verified', Boolean(currentUser.emailVerified));
+        }
+      } else {
+        emailDisplay.textContent = 'Cuenta creada sin correo vinculado';
+        if (emailBadge) {
+          emailBadge.textContent = '🔒 Fijo';
+          emailBadge.classList.remove('verified');
+        }
+      }
     }
 
     const railFallback = document.getElementById('rail-avatar-fallback');
@@ -2012,6 +2176,23 @@
     const usernameInput = document.getElementById('input-profile-username');
     if (usernameInput && currentUser) {
       usernameInput.value = currentUser.username || purgeEmojis(currentUser.cleanDisplayName).toLowerCase().replace(/\s+/g, '.');
+    }
+    const emailDisplay = document.getElementById('profile-email-display');
+    const emailBadge = document.getElementById('profile-email-badge');
+    if (emailDisplay) {
+      if (currentUser && currentUser.email) {
+        emailDisplay.textContent = currentUser.email;
+        if (emailBadge) {
+          emailBadge.textContent = currentUser.emailVerified ? '✓ Verificado' : 'Pendiente';
+          emailBadge.classList.toggle('verified', Boolean(currentUser.emailVerified));
+        }
+      } else {
+        emailDisplay.textContent = 'Cuenta creada sin correo vinculado';
+        if (emailBadge) {
+          emailBadge.textContent = '🔒 Fijo';
+          emailBadge.classList.remove('verified');
+        }
+      }
     }
     avatarEdit = null;
     avatarSource = null;
@@ -6069,7 +6250,6 @@
   setupInlineEdit('btn-edit-name', 'profile-name-input', null, () => {
     document.getElementById('save-profile-btn')?.click();
   });
-  setupInlineEdit('btn-edit-username', 'input-profile-username', 'sync_user_handle');
 
   const btnCopyPhone = document.getElementById('btn-copy-phone');
   if (btnCopyPhone) {

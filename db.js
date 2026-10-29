@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { resolveUserEntitlements, verifyLicense } = require("./license");
+const { resolveUserEntitlements, verifyLicense } = require("./license.js");
 
 const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
 const DB_FILE = path.join(DATA_DIR, "sync_db.json");
@@ -226,6 +226,8 @@ function toPublicUser(user) {
   return {
     syncId: user.syncId,
     username: user.username,
+    email: user.email || null,
+    emailVerified: Boolean(user.emailVerified),
     cleanDisplayName: user.cleanDisplayName,
     formattedName: user.formattedName || formatFullName(user.syncId, user.cleanDisplayName),
     avatarUrl: user.avatarUrl || null,
@@ -236,6 +238,30 @@ function toPublicUser(user) {
     features: entitlements.features,
     modules: entitlements.modules
   };
+}
+
+function checkRegistrationAvailability(username, email) {
+  if (!username) {
+    throw new Error("El nombre de usuario es obligatorio");
+  }
+  const cleanUsername = String(username).trim().toLowerCase();
+  if (cleanUsername.length < 3) {
+    throw new Error("El usuario debe tener al menos 3 caracteres");
+  }
+  const db = readDb();
+  if (db.users.some((u) => u.username === cleanUsername)) {
+    throw new Error("El nombre de usuario ya está registrado");
+  }
+  if (email) {
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail)) {
+      throw new Error("El formato del correo electrónico no es válido");
+    }
+    if (db.users.some((u) => u.email && String(u.email).trim().toLowerCase() === cleanEmail)) {
+      throw new Error("El correo electrónico ya está vinculado a otra cuenta");
+    }
+  }
+  return true;
 }
 
 async function assignUserLicense(syncId, licenseToken) {
@@ -251,7 +277,7 @@ async function assignUserLicense(syncId, licenseToken) {
   return toPublicUser(user);
 }
 
-function registerUser(username, password, rawDisplayName) {
+function registerUser(username, password, rawDisplayName, email = null, emailVerified = false) {
   if (!username || !password) {
     throw new Error("Usuario y contraseña son obligatorios");
   }
@@ -264,10 +290,21 @@ function registerUser(username, password, rawDisplayName) {
     throw new Error("La contraseña debe tener al menos 8 caracteres");
   }
 
+  const cleanEmail = email ? String(email).trim().toLowerCase() : null;
+  if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail)) {
+    throw new Error("El formato del correo electrónico no es válido");
+  }
+
   const db = readDb();
   const exists = db.users.find((u) => u.username === cleanUsername);
   if (exists) {
     throw new Error("El nombre de usuario ya está registrado");
+  }
+  if (cleanEmail) {
+    const emailExists = db.users.find((u) => u.email && String(u.email).trim().toLowerCase() === cleanEmail);
+    if (emailExists) {
+      throw new Error("El correo electrónico ya está vinculado a otra cuenta");
+    }
   }
 
   const syncId = generateSyncId(db.users);
@@ -280,6 +317,8 @@ function registerUser(username, password, rawDisplayName) {
     id: crypto.randomUUID ? crypto.randomUUID() : "usr_" + Date.now(),
     syncId: syncId,
     username: cleanUsername,
+    email: cleanEmail,
+    emailVerified: Boolean(emailVerified),
     cleanDisplayName: cleanDisplayName,
     formattedName: formattedName,
     salt: salt,
@@ -306,7 +345,10 @@ function loginUser(username, password) {
 
   const cleanUsername = String(username).trim().toLowerCase();
   const db = readDb();
-  const user = db.users.find((u) => u.username === cleanUsername);
+  const user = db.users.find((u) =>
+    u.username === cleanUsername ||
+    (u.email && String(u.email).trim().toLowerCase() === cleanUsername)
+  );
   if (!user) {
     throw new Error("Credenciales inválidas");
   }
@@ -1312,6 +1354,7 @@ module.exports = {
   removeEmojis,
   formatFullName,
   registerUser,
+  checkRegistrationAvailability,
   loginUser,
   getUserByToken,
   revokeSession,
