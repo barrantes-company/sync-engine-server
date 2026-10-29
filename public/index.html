@@ -914,7 +914,7 @@
   // ESTADO GLOBAL DE LA APLICACIÓN
   const SERVER_URL = window.location.origin;
   const TOKEN_KEY = 'sync_engine_auth_token';
-  const { safeUrl, setSafeUrl } = SyncSafeContent;
+  const { safeUrl, setSafeUrl, setSafeLocalBlobUrl } = SyncSafeContent;
 
   let currentUser = null;
   let currentToken = localStorage.getItem(TOKEN_KEY) || null;
@@ -4280,7 +4280,7 @@
       if (mediaModalImgPreview) {
         const objectUrl = URL.createObjectURL(file);
         mediaModalImgPreview.onload = mediaModalImgPreview.onerror = () => URL.revokeObjectURL(objectUrl);
-        mediaModalImgPreview.src = objectUrl; // Local file in an image context only.
+        setSafeLocalBlobUrl(mediaModalImgPreview, 'src', objectUrl);
         mediaModalImgPreview.classList.remove('hidden');
       }
       if (imageQualityOptions) {
@@ -4291,7 +4291,7 @@
       if (mediaModalTitle) mediaModalTitle.textContent = 'Enviar Video (Códec H.264 / AAC)';
       const blobUrl = URL.createObjectURL(file);
       if (mediaModalVideoPreview) {
-        mediaModalVideoPreview.src = blobUrl;
+        setSafeLocalBlobUrl(mediaModalVideoPreview, 'src', blobUrl);
         mediaModalVideoPreview.playsInline = true;
         mediaModalVideoPreview.classList.remove('hidden');
       }
