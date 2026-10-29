@@ -282,6 +282,29 @@
   box-shadow: 0 8px 24px rgba(10, 26, 58, 0.08);
 }
 
+/* Keep every composer control inside the viewport at 100% zoom. */
+#input-container,
+#chat-form,
+#normal-input-bar {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+#normal-input-bar {
+  display: grid !important;
+  grid-template-columns: auto auto auto minmax(0, 1fr) auto !important;
+  align-items: end !important;
+}
+
+#normal-input-bar > * {
+  min-width: 0;
+}
+
+#normal-input-bar > .flex-1 {
+  width: auto !important;
+}
+
 #chat-textarea {
   min-height: 46px;
   border-radius: var(--vr-radius-control) !important;
@@ -1418,11 +1441,35 @@ html[data-se-theme="energy"] .workspace-overview-item {
 }
 
 #send-btn {
+  flex: 0 0 auto !important;
   min-width: 92px !important;
   height: 42px !important;
   border-radius: 12px !important;
   background: linear-gradient(135deg, #0877f9, #0756bd) !important;
   box-shadow: 0 8px 18px rgba(8, 119, 249, .22) !important;
+}
+
+.message-footer-bar {
+  border-color: rgba(8, 119, 249, .14) !important;
+}
+
+.message-footer-bar button {
+  min-height: 28px;
+  padding: 4px 9px !important;
+  border: 1px solid rgba(8, 119, 249, .2);
+  border-radius: 8px !important;
+  color: #075fc9 !important;
+  background: rgba(234, 244, 255, .78);
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.message-footer-bar button:hover,
+.message-footer-bar button:focus-visible {
+  border-color: #0877f9;
+  color: #064da1 !important;
+  background: #e5f1ff;
+  box-shadow: 0 0 0 3px rgba(8, 119, 249, .1);
 }
 
 #send-btn:hover:not(:disabled) {
@@ -1459,6 +1506,12 @@ html[data-se-theme="energy"] #chat-textarea {
   color: #e7f2ff !important;
 }
 
+html[data-se-theme="energy"] .message-footer-bar button {
+  border-color: rgba(126, 231, 255, .24);
+  color: #a9ddff !important;
+  background: rgba(20, 52, 84, .82);
+}
+
 html[data-se-theme="energy"] #chat-textarea::placeholder {
   color: #91a5bd !important;
 }
@@ -1470,6 +1523,14 @@ html[data-se-theme="energy"] #chat-textarea::placeholder {
   .composer-btn { width: 38px !important; height: 38px !important; }
   #chat-textarea { min-height: 38px !important; padding-inline: 11px !important; }
   #send-btn { min-width: 42px !important; width: 42px !important; padding-inline: 0 !important; }
+}
+
+@media (max-width: 430px) {
+  #normal-input-bar {
+    grid-template-columns: auto auto minmax(0, 1fr) auto !important;
+  }
+
+  #attach-btn { display: none; }
 }
 
 /* visual-10: motion design sobrio para percepción de calidad. */

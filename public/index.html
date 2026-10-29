@@ -2654,6 +2654,11 @@
       const avatar = document.createElement('img');
       avatar.className = 'w-full h-full rounded-full object-cover avatar-circle';
       avatar.alt = 'Avatar';
+      avatar.addEventListener('error', () => {
+        const gradient = getAvatarColor(contact.syncId);
+        activeChatAvatar.className = `w-10 h-10 rounded-full bg-gradient-to-tr ${gradient} text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-md font-mono avatar-circle`;
+        activeChatAvatar.textContent = contact.syncId.replace('SYNC-', '');
+      }, { once: true });
       setSafeUrl(avatar, 'src', contact.avatarUrl, 'avatar');
       activeChatAvatar.replaceChildren(avatar);
     } else {
