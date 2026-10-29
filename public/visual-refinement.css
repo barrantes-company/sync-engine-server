@@ -492,6 +492,33 @@
   }
 }
 
+/* visual-16: preserve sender alignment across browser viewport engines. */
+#chat-messages {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+#chat-messages > * {
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+}
+
+#chat-messages .msg-item {
+  width: auto !important;
+  max-width: min(72%, 760px) !important;
+  margin-bottom: 8px !important;
+}
+
+#chat-messages .msg-item.msg-grouped {
+  margin-bottom: 2px !important;
+}
+
+@media (max-width: 640px) {
+  #chat-messages .msg-item { max-width: 88% !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #contacts-list > *,
   #channels-list > *,
@@ -510,6 +537,14 @@
   .chat-action-call:hover {
     transform: none !important;
   }
+}
+
+/* visual-16-final: message rows span the thread; bubbles align per sender. */
+#chat-messages > * { width: 100% !important; max-width: none !important; margin-inline: 0 !important; }
+#chat-messages .msg-item { width: auto !important; max-width: min(72%, 760px) !important; margin-bottom: 8px !important; }
+#chat-messages .msg-item.msg-grouped { margin-bottom: 2px !important; }
+@media (max-width: 640px) {
+  #chat-messages .msg-item { max-width: 88% !important; }
 }
 
 /* visual-15-final: keep the product shell contract last in the cascade. */
@@ -2063,4 +2098,23 @@ html[data-se-theme="energy"] #chat-textarea::placeholder {
   #channels-list .channel-item {
     transition: none !important;
   }
+}
+
+/* visual-16-final: message rows span the thread; bubbles align per sender. */
+#chat-messages > * {
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+}
+
+#chat-messages .msg-item {
+  width: auto !important;
+  max-width: min(72%, 760px) !important;
+  margin-bottom: 8px !important;
+}
+
+#chat-messages .msg-item.msg-grouped { margin-bottom: 2px !important; }
+
+@media (max-width: 640px) {
+  #chat-messages .msg-item { max-width: 88% !important; }
 }
