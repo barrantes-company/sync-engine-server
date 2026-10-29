@@ -19,7 +19,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/visual-refinement.css?v=visual-18">
 <script>
 (function () {
   const current = new URL(location.href);
@@ -54,559 +53,802 @@
 <script src="/private-files.js"></script>
 
 </head>
-<body class="font-sans text-[#0A1A3A] antialiased selection:bg-[#C5A059]/30 selection:text-[#0A1A3A] bg-white">
+<body class="font-sans antialiased">
 
-  <!-- APLICACIÓN PRINCIPAL -->
-  <div id="app-container" class="h-screen min-h-0 flex flex-col overflow-hidden hidden bg-white w-full max-w-[1600px] mx-auto shadow-sm">
-    <!-- NAVEGACIÓN GLOBAL SYNC ENGINE -->
-    <nav id="sync-engine-nav-rail" aria-label="Navegación principal">
-      <button class="se-nav-item is-active" data-se-view="chats" aria-label="Chats" title="Chats">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v12H8l-4 3v-15Z"/><path d="M8 9h8M8 13h6"/></svg><span>Chats</span>
-      </button>
-      <button class="se-nav-item" data-se-view="calls" aria-label="Llamadas" title="Llamadas">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H4.5A1.5 1.5 0 0 0 3 4.5C3 13.6 10.4 21 19.5 21a1.5 1.5 0 0 0 1.5-1.5V17l-5-2-2 2a15 15 0 0 1-4.5-4.5l2-2-2-5H7Z"/></svg><span>Llamadas</span>
-      </button>
-      <button class="se-nav-item" data-se-view="channels" aria-label="Canales" title="Canales">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v13H4z"/><path d="M8 9h8M8 12h8M8 15h5"/></svg><span>Canales</span>
-      </button>
-      <button class="se-nav-item" data-se-view="contacts" aria-label="Contactos" title="Contactos">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.5-3.2 2.3-5 5.5-5s5 1.8 5.5 5"/><circle cx="17" cy="9" r="2.2"/><path d="M16 14.5c2.5-.2 4.1 1.2 4.5 3.5"/></svg><span>Contactos</span>
-      </button>
-      <div class="se-nav-divider"></div>
-      <button class="se-nav-item se-nav-profile" data-se-view="profile" aria-label="Perfil y ajustes" title="Perfil y ajustes">
-        <span class="se-nav-avatar">SE</span><span>Perfil</span>
-      </button>
-      <button class="se-nav-item se-nav-theme" id="se-theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2M12 19v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4m0-12.8L17 7M7 17l-1.4 1.4"/><circle cx="12" cy="12" r="4"/></svg><span>Oscuro</span>
-      </button>
-    </nav>
+  <!-- ========================================================================
+       FASE 2: PANTALLA INICIAL DE INICIO DE SESIÓN Y CREACIÓN DE USUARIO
+       ======================================================================== -->
+  <div id="auth-screen" class="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-brand-header">
+        <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="SYNC ENGINE" class="auth-brand-logo">
+        <h1 class="auth-title">SYNC ENGINE</h1>
+        <p class="auth-subtitle">Plataforma Privada de Mensajería &amp; Workspace</p>
+      </div>
 
+      <div class="auth-tabs" role="tablist">
+        <button id="tab-login" type="button" class="auth-tab-btn active is-active" role="tab" aria-selected="true">Iniciar Sesión</button>
+        <button id="tab-register" type="button" class="auth-tab-btn" role="tab" aria-selected="false">Crear Cuenta</button>
+      </div>
 
-    <!-- ENCABEZADO SUPERIOR -->
-    <header class="sticky top-0 z-40 bg-white border-b border-[rgba(197,160,89,0.22)] text-[#0A1A3A] shadow-sm">
-      <div class="w-full max-w-[1600px] mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-3">
+      <form id="auth-form" class="auth-form">
+        <div class="auth-field">
+          <label for="auth-username">Nombre de Usuario</label>
+          <input type="text" id="auth-username" required title="Nombre de usuario" placeholder="ej. jbarrantes" autocomplete="username">
+        </div>
 
-        <!-- Zona 1: Marca y Wordmark Único -->
-        <div class="flex items-center gap-3">
-          <div class="flex items-center gap-2">
-            <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="SYNC ENGINE" class="w-6 h-6 object-contain">
-            <span class="font-title font-extrabold text-[15px] tracking-tight text-[#0A1A3A]">SYNC ENGINE</span>
+        <div class="auth-field">
+          <label for="auth-password">Contraseña</label>
+          <input type="password" id="auth-password" required title="Contraseña" placeholder="••••••••" autocomplete="current-password">
+        </div>
+
+        <div id="display-name-group" class="auth-field hidden">
+          <label for="auth-display-name">Nombre Personalizado (sin emojis)</label>
+          <input type="text" id="auth-display-name" title="Nombre personalizado" placeholder="ej. Laptop de Jose" autocomplete="name">
+          <p class="text-[10px] text-[#94A3B8] mt-1 font-mono">Se generará automáticamente tu ID único (ej. SYNC-9482).</p>
+        </div>
+
+        <p id="auth-error-msg" class="auth-error-msg hidden" role="alert" aria-live="polite"></p>
+
+        <button type="submit" id="auth-submit-btn" class="auth-submit-btn">
+          Ingresar al Chat
+        </button>
+
+        <div class="auth-footer-switch">
+          <span id="auth-switch-text">¿No tienes una cuenta?</span>
+          <button type="button" id="auth-switch-btn" class="auth-link-btn">Crear Cuenta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       FASE 3: LAYOUT PRINCIPAL DE 3 COLUMNAS (84px | 360px | 1fr — CERO COLUMNA DERECHA)
+       ======================================================================== -->
+  <div id="app-container" class="app-shell hidden">
+
+    <!-- COLUMNA 1: RAIL DE NAVEGACIÓN LATERAL (84px, #11131a) -->
+    <nav id="sync-engine-nav-rail" class="nav-rail" aria-label="Navegación principal">
+      <div class="nav-top-group">
+        <button class="brand-logo-btn" id="btn-brand-logo" type="button" title="Sync Engine">
+          <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="Sync Engine">
+        </button>
+
+        <ul class="nav-rail-list">
+          <li>
+            <button class="nav-rail-btn se-nav-item active is-active" data-se-view="chats" data-section="chats" type="button" aria-label="Chats" title="Chats">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span>Chats</span>
+              <span class="nav-badge" id="nav-unread-badge">0</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-rail-btn se-nav-item" data-se-view="calls" data-section="llamadas" type="button" aria-label="Llamadas" title="Llamadas">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              <span>Llamadas</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-rail-btn se-nav-item" data-se-view="channels" data-section="canales" type="button" aria-label="Canales" title="Canales">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <line x1="4" y1="9" x2="20" y2="9"/>
+                <line x1="4" y1="15" x2="20" y2="15"/>
+                <line x1="10" y1="3" x2="8" y2="21"/>
+                <line x1="16" y1="3" x2="14" y2="21"/>
+              </svg>
+              <span>Canales</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-rail-btn se-nav-item" data-se-view="contacts" data-section="contactos" type="button" aria-label="Contactos" title="Contactos">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <span>Contactos</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-bottom-group">
+        <div class="nav-divider se-nav-divider"></div>
+
+        <!-- Perfil: Miniatura circular del avatar del usuario + etiqueta Perfil -->
+        <button class="nav-rail-btn se-nav-item se-nav-profile" id="btn-profile" data-se-view="profile" type="button" aria-label="Perfil" title="Editar perfil">
+          <div class="rail-avatar-thumb" id="rail-avatar-box">
+            <img id="header-user-avatar" class="hidden" alt="Avatar">
+            <span id="rail-avatar-fallback" class="se-nav-avatar">SE</span>
           </div>
-          <span class="hidden md:inline text-xs text-[#94A3B8]">·</span>
-          <span class="hidden md:inline text-xs text-[#64748B] font-medium">Workspace Privado</span>
-        </div>
+          <span>Perfil</span>
+        </button>
 
-        <!-- Zona 2: estado de la sesión -->
-        <div class="hidden lg:flex items-center gap-3 text-xs font-medium text-[#64748B]">
-          <span class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
-            <span>Sesión autenticada</span>
-          </span>
-        </div>
+        <!-- Edición: Ajustes deslizantes + etiqueta Edición -->
+        <button class="nav-rail-btn se-nav-item" id="btn-edit-settings" data-se-view="settings" type="button" aria-label="Edición" title="Edición (Estilo, Chats y Notificaciones)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <line x1="4" y1="21" x2="4" y2="14"/>
+            <line x1="4" y1="10" x2="4" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12" y2="3"/>
+            <line x1="20" y1="21" x2="20" y2="16"/>
+            <line x1="20" y1="12" x2="20" y2="3"/>
+            <line x1="1" y1="14" x2="7" y2="14"/>
+            <line x1="9" y1="8" x2="15" y2="8"/>
+            <line x1="17" y1="16" x2="23" y2="16"/>
+          </svg>
+          <span>Edición</span>
+        </button>
 
-        <!-- Zona 3: Identidad y salir -->
-        <div id="header-session" class="flex items-center gap-2 flex-shrink-0">
-          <div id="header-identity" class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs shadow-sm">
-            <img id="header-user-avatar" class="w-6 h-6 rounded-full object-cover avatar-circle hidden" alt="Avatar">
-            <span id="user-identity-badge" class="font-bold tracking-wide truncate max-w-[140px] sm:max-w-[200px]">
-              <span id="header-user-sync-id" class="text-[#C5A059] font-mono">SYNC-0000</span>
-              <span class="text-gray-400 mx-1">-</span>
-              <span id="header-user-clean-name" class="text-[#0A1A3A]">Usuario</span>
+        <!-- Salir: Ejecuta logout y regresa a #auth-screen -->
+        <button class="nav-rail-btn logout-btn" id="logout-btn" type="button" aria-label="Salir" title="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          <span>Salir</span>
+        </button>
+
+        <!-- Selectores de identidad preservados para compatibilidad interna -->
+        <div id="header-session" class="sr-only" aria-hidden="true">
+          <div id="header-identity">
+            <span id="user-identity-badge">
+              <span id="header-user-sync-id">SYNC-0000</span>
+              <span id="header-user-clean-name">Usuario</span>
             </span>
           </div>
-
-          <button id="logout-btn" type="button" title="Cerrar sesión"
-            class="px-3 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-red-50 text-[#0A1A3A] hover:text-red-600 border border-[rgba(197,160,89,0.25)] hover:border-red-300 text-xs font-semibold transition-all cursor-pointer">
-            Salir
-          </button>
-
+          <button id="se-theme-toggle" type="button" class="se-nav-theme"><span>Oscuro</span></button>
+          <button id="open-edit-profile-btn" type="button" aria-haspopup="dialog">Perfil</button>
         </div>
-
       </div>
-    </header>
+    </nav>
 
-    <!-- CUERPO PRINCIPAL (DISTRIBUCIÓN EN 3 COLUMNAS) -->
-    <main id="main-layout" class="flex-1 min-h-0 w-full max-w-[1600px] mx-auto p-0 lg:p-3 flex flex-row overflow-hidden relative bg-white">
+    <!-- ======================================================================
+         FASE 4: COLUMNA INTERMEDIA (360px) Y DRAWERS DESLIZANTES WHATSAPP WEB
+         ====================================================================== -->
+    <aside id="sidebar-panel" class="middle-col">
 
-      <!-- COLUMNA 1: LISTA DE CONTACTOS Y CANALES (SIDEBAR) -->
-      <aside id="sidebar-panel" class="w-full lg:w-[280px] flex-shrink-0 bg-white border-r lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full min-h-0 overflow-hidden shadow-sm transition-all z-10">
+      <div class="sr-only" aria-hidden="true">
+        <span id="contacts-count-badge">0</span>
+        <span id="channels-count-badge">0</span>
+      </div>
 
-        <!-- Contadores conservados para la lógica de contactos y canales, sin pestañas duplicadas. -->
-        <div class="sr-only" aria-hidden="true">
-          <span id="contacts-count-badge">0</span>
-          <span id="channels-count-badge">0</span>
-        </div>
-
-        <!-- VISTA DE CHATS DIRECTOS (DMs) -->
-        <div id="sidebar-dms-view" class="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex flex-col gap-1.5 flex-shrink-0">
-            <div class="sidebar-view-heading">
-              <span class="sidebar-section-kicker">Workspace</span>
-              <span class="sidebar-view-title">Conversaciones</span>
-            </div>
-            <div class="search-row">
-              <div class="search-field">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
-              <input type="text" id="contact-search-input" maxlength="20" placeholder="Buscar o ID"
-                  class="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] outline-none text-xs text-[#0A1A3A] placeholder-gray-400 font-mono shadow-xs">
-              </div>
-              <button id="add-contact-btn" type="button" title="Agregar contacto por Código ID"
-                class="h-9 px-3 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-xs shadow-sm flex items-center justify-center transition-all flex-shrink-0 cursor-pointer whitespace-nowrap">
-                + ID
-              </button>
-            </div>
-            <p id="contact-action-msg" class="field-error hidden"></p>
+      <!-- Cabecera WORKSPACE con título dinámico y acciones -->
+      <div class="section-header-box">
+        <div class="section-header-top">
+          <div>
+            <span class="workspace-tag">WORKSPACE</span>
+            <h2 class="section-heading-title" id="section-heading-title">Conversaciones</h2>
           </div>
-
-          <div id="contacts-list" class="flex-1 min-h-0 overflow-y-auto p-1.5 px-2 bg-white"></div>
-        </div>
-
-        <!-- VISTA DE CANALES DE EQUIPO (# Canales) -->
-        <div id="sidebar-channels-view" class="flex-1 min-h-0 flex flex-col overflow-hidden hidden">
-          <div class="sidebar-section-header p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex items-center justify-between gap-2 flex-shrink-0">
-            <div class="sidebar-section-heading">
-              <span class="sidebar-section-kicker">Workspace</span>
-              <span class="sidebar-section-title text-xs font-bold text-[#0A1A3A] uppercase tracking-wider font-mono">Canales</span>
-            </div>
-            <button id="open-create-channel-btn" type="button" title="Crear nuevo canal de equipo"
-              class="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1">
-              <span>+</span> <span>Canal</span>
+          <div class="header-action-group">
+            <button id="add-contact-btn" type="button" class="icon-circle-btn" title="Agregar contacto por Código ID">
+              + ID
+            </button>
+            <button id="open-create-channel-btn" type="button" class="icon-circle-btn" title="Crear nuevo canal de equipo">
+              + Canal
             </button>
           </div>
-          <div id="channels-list" class="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-1 bg-white"></div>
+        </div>
+      </div>
+
+      <!-- Barra de búsqueda con icono de lupa -->
+      <div class="search-bar-container">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="contact-search-input" maxlength="20" placeholder="Buscar o ID" autocomplete="off">
+        </div>
+        <p id="contact-action-msg" class="field-error hidden"></p>
+      </div>
+
+      <!-- VISTA DE CONVERSACIONES Y CONTACTOS -->
+      <div id="sidebar-dms-view" class="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div id="contacts-list" class="cards-scroll-list"></div>
+      </div>
+
+      <!-- VISTA DE CANALES (# Canales) -->
+      <div id="sidebar-channels-view" class="flex-1 min-h-0 flex flex-col overflow-hidden hidden">
+        <div id="channels-list" class="cards-scroll-list"></div>
+      </div>
+
+      <!-- VISTA DE LLAMADAS (Call Log / WebRTC) -->
+      <section id="se-calls-home" class="hidden" aria-label="Llamadas">
+        <div class="se-calls-content">
+          <div id="se-calls-list" class="se-calls-list" role="list"></div>
+          <div class="se-calls-actions">
+            <button type="button" id="se-start-call-from-home" class="se-primary-action"><span>＋</span> Llamar a un contacto</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           DRAWER DESLIZANTE 1: EDITAR PERFIL (transform: translateX(0))
+           ==================================================================== -->
+      <div id="edit-profile-modal" class="wa-drawer" role="dialog" aria-modal="true" aria-labelledby="profile-settings-title">
+        <div class="wa-drawer-header">
+          <button class="wa-back-btn" id="close-profile-modal-btn" type="button" title="Volver" aria-label="Volver">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+          </button>
+          <h3 id="profile-settings-title">Editar perfil</h3>
         </div>
 
-      </aside>
-
-      <!-- COLUMNA 2: VENTANA DE CONVERSACIÓN ACTIVA (FLEX-GROW: 1, FONDO ADAPTADO 768 × 1024px O SUPERIOR) -->
-      <div id="chat-panel-container" class="flex-1 min-h-0 flex flex-col h-full min-w-0 relative">
-
-        <section id="se-calls-home" class="hidden" aria-label="Llamadas">
-          <div class="se-calls-content">
-            <div class="se-calls-heading">
-              <div class="se-calls-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H4.5A1.5 1.5 0 0 0 3 4.5C3 13.6 10.4 21 19.5 21a1.5 1.5 0 0 0 1.5-1.5V17l-5-2-2 2a15 15 0 0 1-4.5-4.5l2-2-2-5H7Z"/></svg></div>
-              <div>
-                <h1>Llamadas</h1>
-                <p>Las llamadas de voz que hiciste y recibiste.</p>
+        <div class="wa-drawer-body">
+          <!-- Foto de perfil circular centrada (136px) con superposición -->
+          <div id="avatar-drop-zone" class="profile-avatar-section" aria-label="Foto de perfil">
+            <div class="profile-photo-wrapper" id="btn-change-avatar" title="Cambiar foto de perfil">
+              <img id="profile-avatar-preview" src="" alt="Foto de perfil" class="hidden">
+              <div id="profile-avatar-fallback">0000</div>
+              <div class="profile-photo-overlay">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                <span>CAMBIAR FOTO DE PERFIL</span>
               </div>
             </div>
-            <div id="se-calls-list" class="se-calls-list" role="list"></div>
-            <div class="se-calls-actions">
-              <button type="button" id="se-start-call-from-home" class="se-primary-action"><span>＋</span> Llamar a un contacto</button>
+            <input type="file" id="profile-avatar-input" accept="image/*" title="Seleccionar foto de perfil" aria-label="Seleccionar foto de perfil" class="hidden">
+
+            <div id="avatar-zoom-row" class="hidden" style="width:100%;max-width:210px;">
+              <label for="avatar-zoom" class="wa-field-label">Recorte</label>
+              <input type="range" id="avatar-zoom" min="1" max="2.4" step="0.05" value="1" style="width:100%;">
+            </div>
+
+            <div class="avatar-actions" style="display:flex;gap:8px;">
+              <button id="select-avatar-btn" type="button" class="wa-action-btn-outline">Elegir foto</button>
+              <button id="remove-avatar-btn" type="button" class="wa-action-btn-outline">Quitar</button>
+              <button id="trigger-avatar-btn" type="button" class="sr-only">Cambiar</button>
             </div>
           </div>
-        </section>
 
-        <div id="workspace-split-container" class="flex flex-1 min-h-0 flex-col md:flex-row gap-0 lg:gap-3 overflow-hidden h-full min-w-0 transition-all duration-300">
+          <!-- Info. (About) -->
+          <div class="wa-info-block">
+            <label class="wa-field-label" for="input-profile-about">Info.</label>
+            <div class="wa-editable-row" id="row-edit-about">
+              <input type="text" id="input-profile-about" class="wa-inline-input" value="What's happening?" readonly>
+              <button class="wa-inline-edit-btn" id="btn-edit-about" type="button" title="Editar Info.">✎</button>
+            </div>
+          </div>
 
-          <!-- ÁREA CENTRAL DE CONVERSACIÓN (CHAT PANEL) -->
-          <section id="chat-panel" class="flex flex-1 min-h-0 bg-white lg:border border-[rgba(197,160,89,0.22)] lg:rounded-2xl flex flex-col h-full overflow-hidden shadow-sm relative min-w-0 transition-all">
+          <!-- Nombre (displayName conectado a POST /api/user/profile) -->
+          <div class="wa-info-block">
+            <label class="wa-field-label" for="profile-name-input">Nombre</label>
+            <div class="wa-editable-row" id="row-edit-name">
+              <input type="text" id="profile-name-input" maxlength="35" title="Nombre, sin emojis" placeholder="Tu nombre" class="wa-inline-input">
+              <button class="wa-inline-edit-btn" id="btn-edit-name" type="button" title="Guardar Nombre">✎</button>
+            </div>
+          </div>
 
-            <!-- Header del Chat Activo -->
-            <div id="chat-header-bar" class="chat-header-bar hidden px-3 sm:px-4 py-2.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-3 flex-shrink-0 z-10">
-              <div class="flex items-center gap-2.5 min-w-0">
+          <!-- Username precedido por @ -->
+          <div class="wa-info-block">
+            <label class="wa-field-label" for="input-profile-username">Username</label>
+            <div class="wa-editable-row" id="row-edit-username">
+              <span class="wa-prefix">@</span>
+              <input type="text" id="input-profile-username" class="wa-inline-input" value="sync_user" readonly>
+              <button class="wa-inline-edit-btn" id="btn-edit-username" type="button" title="Editar Username">✎</button>
+            </div>
+          </div>
 
-                <button id="back-to-contacts-btn" type="button" title="Volver a la lista de chats"
-                  class="icon-btn lg:hidden p-1.5 -ml-1 rounded-xl text-[#C5A059] hover:bg-[#F8FAFC] transition-colors flex items-center justify-center cursor-pointer">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
+          <!-- Teléfono con botón de copiar al portapapeles -->
+          <div class="wa-info-block">
+            <label class="wa-field-label" for="input-profile-phone">Teléfono</label>
+            <div class="wa-editable-row">
+              <input type="text" id="input-profile-phone" class="wa-inline-input" value="+51 977 838 232" readonly>
+              <button class="wa-inline-edit-btn" id="btn-copy-phone" type="button" title="Copiar teléfono">📋</button>
+            </div>
+          </div>
 
-                <div id="active-chat-info-trigger" class="flex items-center gap-3 min-w-0 cursor-pointer group" title="Ver datos y archivos del contacto">
-                  <div id="active-chat-avatar" class="chat-header-avatar w-11 h-11 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm font-mono avatar-circle overflow-hidden">
-                    💬
-                  </div>
+          <!-- Código ID Único -->
+          <div class="wa-info-block">
+            <label class="wa-field-label">Código ID</label>
+            <div class="wa-editable-row">
+              <span id="profile-sync-id" class="wa-inline-input font-mono">SYNC-0000</span>
+              <button id="copy-sync-id-btn" type="button" class="wa-inline-edit-btn" title="Copiar mi ID">📋</button>
+            </div>
+          </div>
 
-                  <div class="min-w-0">
-                    <h2 id="active-chat-name" class="font-bold text-sm sm:text-[15px] leading-tight text-[#0A1A3A] group-hover:text-[#C5A059] transition-colors truncate font-title">Selecciona un contacto</h2>
-                    <div class="flex items-center gap-2 mt-0.5">
-                      <span id="active-chat-id" class="chat-header-id text-[11px] text-[#64748B] font-mono truncate">ID: —</span>
-                      <span id="active-chat-status" class="chat-header-status text-[11px] font-semibold is-offline"><span class="status-dot"></span><span>Desconectado</span></span>
-                    </div>
+          <div style="margin-top:16px;display:flex;gap:8px;">
+            <button id="save-profile-btn" type="button" class="se-primary-action" style="flex:1;">Guardar</button>
+            <button id="profile-logout-btn" type="button" class="wa-action-btn-outline">Salir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           DRAWER DESLIZANTE 2: EDICIÓN (Estilo, Chats y Notificaciones)
+           ==================================================================== -->
+      <div id="drawer-settings" class="wa-drawer" role="dialog" aria-label="Edición y Ajustes">
+        <div class="wa-drawer-header">
+          <button class="wa-back-btn" id="btn-close-settings-drawer" type="button" title="Volver" aria-label="Volver">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+          </button>
+          <h3 id="settings-drawer-title">Estilo del chat</h3>
+          <button class="wa-icon-btn" id="btn-reset-styles" type="button" title="Restablecer estilo predeterminado">↻</button>
+        </div>
+
+        <!-- Navegación interna en 3 píldoras: Estilo, Chats y Notificaciones -->
+        <div class="settings-pills-nav">
+          <button class="settings-pill-btn active" data-pane="pane-style" type="button">Estilo</button>
+          <button class="settings-pill-btn" data-pane="pane-chats" type="button">Chats</button>
+          <button class="settings-pill-btn" data-pane="pane-notifs" type="button">Notificaciones</button>
+        </div>
+
+        <div class="wa-drawer-body">
+          <!-- PESTAÑA 1: ESTILO (Estilo del chat) -->
+          <div class="settings-tab-pane" id="pane-style">
+            <p class="settings-group-label">Temas predefinidos</p>
+
+            <!-- Cuadrícula 3x2 con 6 tarjetas de temas visuales predefinidos -->
+            <div class="chat-styles-grid">
+              <!-- 1. Lavanda Original -->
+              <div class="style-preset-card selected" data-preset="lavender" data-bg="#f7f6fb" data-bubble="#6b5ef4" title="Lavanda Original">
+                <div class="preset-preview-box" style="background:#f7f6fb;">
+                  <span class="mini-bubble-in" style="background:#ffffff;"></span>
+                  <span class="mini-bubble-out" style="background:#6b5ef4;"></span>
+                </div>
+                <span class="preset-check-badge">✓</span>
+              </div>
+              <!-- 2. Dark Emerald -->
+              <div class="style-preset-card" data-preset="emerald" data-bg="#0b141a" data-bubble="#005c4b" title="Dark Emerald">
+                <div class="preset-preview-box" style="background:#0b141a;">
+                  <span class="mini-bubble-in" style="background:#202c33;"></span>
+                  <span class="mini-bubble-out" style="background:#005c4b;"></span>
+                </div>
+                <span class="preset-check-badge">✓</span>
+              </div>
+              <!-- 3. Midnight Royal Blue -->
+              <div class="style-preset-card" data-preset="royal" data-bg="#0c1324" data-bubble="#1d4ed8" title="Midnight Royal Blue">
+                <div class="preset-preview-box" style="background:#0c1324;">
+                  <span class="mini-bubble-in" style="background:#1e293b;"></span>
+                  <span class="mini-bubble-out" style="background:#1d4ed8;"></span>
+                </div>
+                <span class="preset-check-badge">✓</span>
+              </div>
+              <!-- 4. Rose Dusk -->
+              <div class="style-preset-card" data-preset="rose" data-bg="#1a1016" data-bubble="#be185d" title="Rose Dusk">
+                <div class="preset-preview-box" style="background:#1a1016;">
+                  <span class="mini-bubble-in" style="background:#2d1a24;"></span>
+                  <span class="mini-bubble-out" style="background:#be185d;"></span>
+                </div>
+                <span class="preset-check-badge">✓</span>
+              </div>
+              <!-- 5. Warm Amber -->
+              <div class="style-preset-card" data-preset="amber" data-bg="#18130d" data-bubble="#b45309" title="Warm Amber">
+                <div class="preset-preview-box" style="background:#18130d;">
+                  <span class="mini-bubble-in" style="background:#292118;"></span>
+                  <span class="mini-bubble-out" style="background:#b45309;"></span>
+                </div>
+                <span class="preset-check-badge">✓</span>
+              </div>
+              <!-- 6. Ocean Breeze -->
+              <div class="style-preset-card" data-preset="ocean" data-bg="#eef6ff" data-bubble="#0284c7" title="Ocean Breeze">
+                <div class="preset-preview-box" style="background:#eef6ff;">
+                  <span class="mini-bubble-in" style="background:#ffffff;"></span>
+                  <span class="mini-bubble-out" style="background:#0284c7;"></span>
+                </div>
+                <span class="preset-check-badge">✓</span>
+              </div>
+            </div>
+
+            <!-- Switch Trama de fondo en el chat -->
+            <div class="wa-switch-row">
+              <span>Trama de fondo en el chat</span>
+              <label class="wa-switch">
+                <input type="checkbox" id="switch-doodles" checked>
+                <span class="wa-slider"></span>
+              </label>
+            </div>
+
+            <!-- Personalizar con selectores circulares de color en tiempo real -->
+            <p class="settings-group-label" style="margin-top:16px;">Personalizar</p>
+
+            <div class="custom-color-block">
+              <span>Burbuja de chat</span>
+              <div class="color-swatches-row" id="bubble-color-swatches">
+                <button class="color-swatch-btn active" data-color="#6b5ef4" style="background:#6b5ef4;" type="button" title="Lavanda"></button>
+                <button class="color-swatch-btn" data-color="#005c4b" style="background:#005c4b;" type="button" title="Esmeralda"></button>
+                <button class="color-swatch-btn" data-color="#0284c7" style="background:#0284c7;" type="button" title="Azul Cielo"></button>
+                <button class="color-swatch-btn" data-color="#be185d" style="background:#be185d;" type="button" title="Rosa"></button>
+                <button class="color-swatch-btn" data-color="#ea580c" style="background:#ea580c;" type="button" title="Naranja"></button>
+              </div>
+            </div>
+
+            <div class="custom-color-block">
+              <span>Fondo</span>
+              <div class="color-swatches-row" id="bg-color-swatches">
+                <button class="color-swatch-btn active" data-bg="#f7f6fb" style="background:#f7f6fb;" type="button" title="Claro Topográfico"></button>
+                <button class="color-swatch-btn" data-bg="#eef6ff" style="background:#eef6ff;" type="button" title="Brisa"></button>
+                <button class="color-swatch-btn" data-bg="#0b141a" style="background:#0b141a;" type="button" title="Noche"></button>
+                <button class="color-swatch-btn" data-bg="#0c1324" style="background:#0c1324;" type="button" title="Azul Profundo"></button>
+                <button class="color-swatch-btn" data-bg="#141418" style="background:#141418;" type="button" title="Carbón"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PESTAÑA 2: CHATS (Ajustes de chats) -->
+          <div class="settings-tab-pane hidden" id="pane-chats">
+            <button class="wa-setting-card-btn" id="btn-cycle-system-theme" type="button">
+              <div class="wa-setting-icon">☀️</div>
+              <div class="wa-setting-info">
+                <strong>Estilo de la interfaz</strong>
+                <small id="label-current-theme">Modo Claro Topográfico</small>
+              </div>
+              <span class="wa-chevron">›</span>
+            </button>
+
+            <button class="wa-setting-card-btn" id="btn-cycle-media-quality" type="button">
+              <div class="wa-setting-icon">🖼️</div>
+              <div class="wa-setting-info">
+                <strong>Calidad de subida de los archivos multimedia</strong>
+                <small id="label-media-quality">Estándar (1600px)</small>
+              </div>
+              <span class="wa-chevron">›</span>
+            </button>
+
+            <button class="wa-setting-card-btn" id="btn-toggle-autodownload" type="button">
+              <div class="wa-setting-icon">⬇️</div>
+              <div class="wa-setting-info">
+                <strong>Descarga automática de archivos multimedia</strong>
+                <small id="label-autodownload">Fotos, audios y documentos activados</small>
+              </div>
+              <span class="wa-chevron">›</span>
+            </button>
+
+            <div class="wa-divider-line"></div>
+
+            <div class="wa-switch-row">
+              <div class="wa-switch-text">
+                <strong>Corrección ortográfica</strong>
+                <small>Revisa la ortografía mientras escribes</small>
+              </div>
+              <label class="wa-switch">
+                <input type="checkbox" id="switch-spellcheck" checked>
+                <span class="wa-slider"></span>
+              </label>
+            </div>
+
+            <div class="wa-switch-row">
+              <div class="wa-switch-text">
+                <strong>Reemplaza texto con emojis</strong>
+                <small>El texto de los emoticones se convertirá en emojis mientras escribes</small>
+              </div>
+              <label class="wa-switch">
+                <input type="checkbox" id="switch-emoji-replace" checked>
+                <span class="wa-slider"></span>
+              </label>
+            </div>
+
+            <div class="wa-switch-row">
+              <div class="wa-switch-text">
+                <strong>Enter para enviar</strong>
+                <small>Se enviará tu mensaje cuando presiones la tecla Enter</small>
+              </div>
+              <label class="wa-switch">
+                <input type="checkbox" id="switch-enter-send" checked>
+                <span class="wa-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- PESTAÑA 3: NOTIFICACIONES -->
+          <div class="settings-tab-pane hidden" id="pane-notifs">
+            <button class="wa-setting-card-btn" id="notif-row-msg" type="button">
+              <div class="wa-setting-info">
+                <strong>Mensajes</strong>
+                <small id="notif-msg-state">Activadas</small>
+              </div>
+              <span class="wa-chevron">›</span>
+            </button>
+
+            <button class="wa-setting-card-btn" id="notif-row-groups" type="button">
+              <div class="wa-setting-info">
+                <strong>Grupos y Canales</strong>
+                <small id="notif-groups-state">Activadas</small>
+              </div>
+              <span class="wa-chevron">›</span>
+            </button>
+
+            <button class="wa-setting-card-btn" id="notif-row-calls" type="button">
+              <div class="wa-setting-info">
+                <strong>Llamadas</strong>
+                <small id="notif-calls-state">Activadas</small>
+              </div>
+              <span class="wa-chevron">›</span>
+            </button>
+
+            <div class="wa-divider-line"></div>
+
+            <div class="wa-switch-row">
+              <div class="wa-switch-text">
+                <strong>Mostrar vista previa</strong>
+                <small>Muestra el texto del mensaje dentro de las notificaciones nuevas</small>
+              </div>
+              <label class="wa-switch">
+                <input type="checkbox" id="switch-notif-preview" checked>
+                <span class="wa-slider"></span>
+              </label>
+            </div>
+
+            <div class="wa-switch-row">
+              <div class="wa-switch-text">
+                <strong>Reproduce un sonido cuando hay mensajes salientes</strong>
+              </div>
+              <label class="wa-switch">
+                <input type="checkbox" id="switch-notif-sound">
+                <span class="wa-slider"></span>
+              </label>
+            </div>
+
+            <div class="wa-switch-row">
+              <div class="wa-switch-text">
+                <strong>Sincronización en segundo plano</strong>
+                <small>Obtén un rendimiento más rápido al sincronizar mensajes en segundo plano</small>
+              </div>
+              <label class="wa-switch">
+                <input type="checkbox" id="switch-bg-sync" checked>
+                <span class="wa-slider"></span>
+              </label>
+            </div>
+
+            <div id="push-notifications-block" style="margin-top:8px;">
+              <button id="enable-push-notifications-btn" type="button" class="wa-action-btn-outline" style="width:100%;">Activar notificaciones Web Push</button>
+              <p id="push-notifications-status" role="status" aria-live="polite" style="font-size:0.75rem;margin-top:4px;"></p>
+            </div>
+
+            <div class="wa-divider-line"></div>
+
+            <div class="wa-switch-row">
+              <div class="wa-switch-text">
+                <strong>Enviar notificación de prueba</strong>
+                <small>Comprueba que las alertas del navegador funcionan</small>
+              </div>
+              <button class="wa-action-btn-outline" id="btn-test-notification" type="button">Enviar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ======================================================================
+         FASE 5: PANEL CENTRAL DE CONVERSACIÓN (1fr — CERO COLUMNA DERECHA)
+         ====================================================================== -->
+    <main id="chat-panel-container">
+      <div id="workspace-split-container">
+        <section id="chat-panel" class="chat-view doodles-enabled">
+
+          <!-- Cabecera del Chat (70px) -->
+          <header id="chat-header-bar" class="chat-header hidden">
+            <div class="chat-header-left">
+              <button id="back-to-contacts-btn" type="button" title="Volver a la lista de chats" class="header-tool-btn lg:hidden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <div id="active-chat-info-trigger" class="chat-header-left cursor-pointer" title="Ver archivos y medios compartidos">
+                <div id="active-chat-avatar" class="thread-avatar-circle">
+                  💬
+                </div>
+                <div class="chat-peer-meta">
+                  <h2 id="active-chat-name" class="chat-peer-title">Selecciona un contacto</h2>
+                  <div class="chat-peer-subtitle">
+                    <span id="active-chat-id" class="font-mono">ID: —</span>
+                    <span id="active-chat-status" class="chat-header-status is-offline"><span class="status-dot"></span><span>Desconectado</span></span>
                   </div>
                 </div>
               </div>
-
-              <div class="chat-header-actions flex items-center gap-1.5 sm:gap-2">
-                <button id="open-chat-appearance-btn" type="button" title="Personalizar apariencia del chat" aria-label="Personalizar apariencia del chat"
-                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#E8F1FF] text-[#0877F9] border border-[rgba(8,119,249,0.18)] flex items-center justify-center text-sm font-bold cursor-pointer">◐</button>
-                <button id="start-call-btn" type="button" title="Iniciar llamada de voz" aria-label="Iniciar llamada de voz"
-                  class="icon-btn chat-action-call h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
-                  📞
-                </button>
-                <details class="chat-more">
-                  <summary class="chat-more-summary" aria-label="Más acciones">⋯</summary>
-                  <div class="chat-more-menu">
-                    <button id="open-media-hub-btn" type="button" title="Archivos y medios compartidos" aria-label="Archivos y medios compartidos"
-                      class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
-                      📁
-                    </button>
-                    <button id="export-chat-btn" type="button" title="Exportar la conversación" aria-label="Exportar conversación"
-                      class="icon-btn h-9 px-2.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] hover:text-[#C5A059] border border-[rgba(197,160,89,0.25)] flex items-center gap-1.5 text-xs font-semibold shadow-xs transition-all cursor-pointer">
-                      <span>📜</span>
-                      <span class="hidden xl:inline">Exportar</span>
-                    </button>
-                    <button id="toggle-chat-search-btn" type="button" title="Buscar en la conversación" aria-label="Buscar en la conversación"
-                      class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
-                      🔍
-                    </button>
-                  </div>
-                </details>
-                <button id="toggle-drawer-btn" type="button" title="Información del Contacto y Medios" aria-label="Información y Centro de Medios"
-                  class="icon-btn h-9 px-3 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center gap-1.5 text-xs font-bold shadow-xs transition-all cursor-pointer">
-                  <span>ℹ️</span>
-                  <span class="hidden xl:inline">Info & Medios</span>
-                </button>
-              </div>
             </div>
 
-          <!-- BARRA SUPERIOR DE MENSAJE FIJADO (PINNED MESSAGE BAR) -->
-          <div id="pinned-message-bar" class="hidden px-4 py-2 bg-[#FFFBEB] border-b border-[rgba(197,160,89,0.3)] flex items-center justify-between gap-3 shadow-xs z-20 cursor-pointer hover:bg-[#FEF3C7] transition-colors">
+            <div class="chat-header-actions">
+              <button id="toggle-chat-search-btn" type="button" class="header-tool-btn" title="Buscar en mensajes" aria-label="Buscar en la conversación">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </button>
+
+              <button id="start-call-btn" type="button" class="header-tool-btn" title="Iniciar llamada de audio WebRTC" aria-label="Iniciar llamada de voz">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+              </button>
+
+              <details class="chat-more">
+                <summary class="chat-more-summary" aria-label="Opciones del chat">⋯</summary>
+                <div class="chat-more-menu">
+                  <button id="open-media-hub-btn" type="button" title="Archivos y medios compartidos" aria-label="Archivos y medios compartidos">
+                    <span>📁</span> <span>Archivos y medios</span>
+                  </button>
+                  <button id="export-chat-btn" type="button" title="Exportar la conversación" aria-label="Exportar conversación">
+                    <span>📜</span> <span>Exportar chat</span>
+                  </button>
+                </div>
+              </details>
+
+              <button id="toggle-drawer-btn" type="button" class="sr-only" aria-hidden="true">Info</button>
+            </div>
+          </header>
+
+          <!-- BARRA SUPERIOR DE MENSAJE FIJADO -->
+          <div id="pinned-message-bar" class="hidden px-4 py-2 bg-[#FFFBEB] border-b border-[rgba(107,94,244,0.2)] flex items-center justify-between gap-3 z-20 cursor-pointer">
             <div class="flex items-center gap-2 min-w-0 flex-1">
-              <span class="text-[#C5A059] font-bold text-sm flex-shrink-0">📌</span>
+              <span class="font-bold text-sm flex-shrink-0">📌</span>
               <div class="min-w-0 flex-1">
-                <span class="text-[10px] uppercase font-bold text-[#99793D] tracking-wider block">Mensaje Fijado</span>
-                <p id="pinned-message-text" class="text-xs text-[#0A1A3A] truncate font-medium">Contenido del mensaje...</p>
+                <span class="text-[10px] uppercase font-bold tracking-wider block">Mensaje Fijado</span>
+                <p id="pinned-message-text" class="text-xs truncate font-medium">Contenido del mensaje...</p>
               </div>
             </div>
-            <button id="unpin-message-btn" type="button" title="Desfijar mensaje" class="p-1 text-[#64748B] hover:text-red-500 rounded-lg text-xs font-bold transition-colors cursor-pointer flex-shrink-0">
-              ✕
-            </button>
+            <button id="unpin-message-btn" type="button" title="Desfijar mensaje" class="p-1 text-xs font-bold cursor-pointer flex-shrink-0">✕</button>
           </div>
 
           <!-- BARRA DE BÚSQUEDA INTERNA -->
-          <div id="chat-search-bar" class="hidden px-3 sm:px-4 py-2 bg-white border-b border-[rgba(197,160,89,0.22)] flex items-center gap-2 shadow-xs z-20">
-            <span class="text-[#C5A059] text-sm flex-shrink-0">🔍</span>
+          <div id="chat-search-bar" class="hidden px-4 py-2 border-b border-[var(--border-subtle)] bg-[var(--chat-header-bg)] flex items-center gap-2 z-20">
+            <span class="text-sm flex-shrink-0">🔍</span>
             <input id="chat-search-input" type="text" placeholder="Buscar en la conversación actual..."
-              class="flex-1 bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] rounded-xl px-3 py-1.5 text-xs text-[#0A1A3A] focus:outline-none focus:border-[#C5A059] transition-all" />
-            <span id="chat-search-count" class="text-[11px] text-[#64748B] font-medium select-none whitespace-nowrap">0 de 0</span>
+              class="flex-1 bg-[var(--search-bg)] border border-[var(--border-subtle)] rounded-xl px-3 py-1.5 text-xs focus:outline-none" />
+            <span id="chat-search-count" class="text-[11px] font-medium select-none whitespace-nowrap">0 de 0</span>
             <div class="flex items-center gap-1 flex-shrink-0">
-              <button id="chat-search-prev-btn" type="button" title="Coincidencia anterior (Shift+Enter)"
-                class="h-7 w-7 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-colors cursor-pointer">
-                ▲
-              </button>
-              <button id="chat-search-next-btn" type="button" title="Coincidencia siguiente (Enter)"
-                class="h-7 w-7 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-colors cursor-pointer">
-                ▼
-              </button>
-              <button id="chat-search-close-btn" type="button" title="Cerrar búsqueda (Esc)"
-                class="h-7 w-7 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-colors cursor-pointer">
-                ✕
-              </button>
+              <button id="chat-search-prev-btn" type="button" title="Coincidencia anterior" class="h-7 w-7 rounded-lg border border-[var(--border-subtle)] flex items-center justify-center text-xs font-bold cursor-pointer">▲</button>
+              <button id="chat-search-next-btn" type="button" title="Coincidencia siguiente" class="h-7 w-7 rounded-lg border border-[var(--border-subtle)] flex items-center justify-center text-xs font-bold cursor-pointer">▼</button>
+              <button id="chat-search-close-btn" type="button" title="Cerrar búsqueda" class="h-7 w-7 rounded-lg border border-[var(--border-subtle)] flex items-center justify-center text-xs font-bold cursor-pointer">✕</button>
             </div>
           </div>
 
-          <!-- HILO DE CONVERSACIÓN -->
-          <div id="chat-messages" class="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 scroll-smooth chat-canvas">
-            <div id="chat-welcome" class="empty-state h-full flex flex-col items-center justify-center text-center p-6 text-[#64748B]">
-              <div class="empty-state-icon w-16 h-16 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] flex items-center justify-center text-[#C5A059] mb-4 shadow-xs">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                </svg>
+          <!-- TIMELINE DE MENSAJES (Cero <svg> dentro de #chat-messages para contrato XSS p0-01) -->
+          <div id="chat-messages" class="chat-timeline">
+            <div id="chat-welcome" class="empty-state h-full flex flex-col items-center justify-center text-center p-6">
+              <div class="empty-state-icon w-16 h-16 rounded-2xl bg-[var(--search-bg)] border border-[var(--border-subtle)] flex items-center justify-center text-2xl mb-4">
+                💬
               </div>
-              <p class="empty-state-title text-base font-bold text-[#0A1A3A] font-title">SYNC ENGINE para Web &amp; Móvil</p>
-              <p class="empty-state-text text-xs text-[#64748B] max-w-sm mt-1.5 leading-relaxed">Elige un contacto en la lista. Si todavía no tienes, escribe su Código ID en el buscador de la izquierda.</p>
-              <div class="workspace-quick-actions">
-                <button id="empty-add-contact-btn" type="button" class="empty-state-action inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0877F9] text-white text-xs font-bold shadow-sm transition-all">＋ Agregar contacto</button>
-                <button id="empty-create-channel-btn" type="button" class="empty-state-secondary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all">＋ Crear canal</button>
-              </div>
-              <div class="workspace-overview" aria-label="Resumen del workspace">
-                <div class="workspace-overview-item"><strong id="workspace-contact-total">0</strong><span>contactos</span></div>
-                <div class="workspace-overview-item"><strong id="workspace-channel-total">0</strong><span>canales</span></div>
-                <div class="workspace-overview-item"><strong class="workspace-connection-dot">●</strong><span>conectado</span></div>
-              </div>
-              <span class="empty-state-hint inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[10px] font-bold uppercase tracking-wider text-[#C5A059]">🔒 Solo contactos con Código ID</span>
+              <p class="empty-state-title text-base font-bold">SYNC ENGINE para Web &amp; Escritorio</p>
+              <p class="empty-state-text text-xs text-[var(--text-secondary)] max-w-sm mt-1.5 leading-relaxed">Elige una conversación o canal en la columna izquierda, o agrega un contacto con su Código ID.</p>
+              <span class="empty-state-hint mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--search-bg)] border border-[var(--border-subtle)] text-[10px] font-bold uppercase tracking-wider">🔒 Mensajería Privada &amp; Sincronizada</span>
             </div>
           </div>
 
-          <!-- BARRA DE ENTRADA INFERIOR -->
-          <div id="input-container" class="hidden mb-0 p-3 bg-white border-t border-[rgba(197,160,89,0.22)] flex flex-col gap-2 relative flex-shrink-0">
+          <!-- BARRA INFERIOR DE COMPOSICIÓN -->
+          <footer id="input-container" class="chat-composer-bar hidden">
 
             <!-- Previsualización de Mensaje Citado (Reply) -->
-            <div id="reply-preview-bar" class="hidden items-center justify-between p-2 sm:p-2.5 rounded-xl bg-[#F8FAFC] border-l-4 border-[#C5A059] border border-[rgba(197,160,89,0.25)] shadow-xs">
+            <div id="reply-preview-bar" class="hidden items-center justify-between p-2.5 mb-2 rounded-xl bg-[var(--col-list-bg)] border-l-4 border-[var(--bubble-outgoing-bg)] border border-[var(--border-subtle)]">
               <div class="flex flex-col min-w-0 flex-1 pr-2">
                 <div class="flex items-center gap-1.5">
-                  <span class="text-[10px] uppercase font-bold text-[#99793D]">Respondiendo a:</span>
-                  <span id="reply-preview-name" class="text-xs font-bold text-[#0A1A3A] truncate">Usuario</span>
+                  <span class="text-[10px] uppercase font-bold">Respondiendo a:</span>
+                  <span id="reply-preview-name" class="text-xs font-bold truncate">Usuario</span>
                 </div>
-                <p id="reply-preview-text" class="text-xs text-[#64748B] truncate mt-0.5">Mensaje...</p>
+                <p id="reply-preview-text" class="text-xs text-[var(--text-secondary)] truncate mt-0.5">Mensaje...</p>
               </div>
-              <button id="cancel-reply-btn" type="button" title="Cancelar respuesta"
-                class="h-7 w-7 rounded-lg hover:bg-gray-200 text-[#64748B] hover:text-[#0A1A3A] flex items-center justify-center text-sm font-bold flex-shrink-0 cursor-pointer">
-                ✕
-              </button>
+              <button id="cancel-reply-btn" type="button" title="Cancelar respuesta" class="h-7 w-7 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 cursor-pointer">✕</button>
             </div>
 
             <!-- Selector Flotante de Emoticones -->
-            <div id="emoji-picker" class="hidden absolute bottom-20 left-3 sm:left-6 z-50 p-3 rounded-2xl bg-white border border-[rgba(197,160,89,0.3)] shadow-xl w-72 max-w-[90vw]">
-              <div class="flex items-center justify-between pb-2 mb-2 border-b border-[rgba(197,160,89,0.18)] text-xs font-bold text-[#C5A059]">
+            <div id="emoji-picker" class="hidden absolute bottom-20 left-6 z-50 p-3 rounded-2xl bg-[var(--col-list-bg)] border border-[var(--border-subtle)] shadow-xl w-72 max-w-[90vw]">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-subtle)] text-xs font-bold">
                 <span>Emoticones</span>
-                <button id="close-emoji-btn" type="button" aria-label="Cerrar emoticones" class="h-6 w-6 rounded-md text-gray-400 hover:text-[#0A1A3A] hover:bg-[#F8FAFC] flex items-center justify-center transition-colors cursor-pointer">✕</button>
+                <button id="close-emoji-btn" type="button" aria-label="Cerrar emoticones" class="h-6 w-6 rounded-md flex items-center justify-center cursor-pointer">✕</button>
               </div>
               <div class="grid grid-cols-6 gap-1.5 text-xl select-none">
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">😀</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">😂</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">😍</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">😎</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">👍</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">🔥</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">🎉</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">❤️</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">🚀</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">💡</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">✅</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">💻</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">📱</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">🔒</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">✨</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">☕</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">🎧</button>
-                <button type="button" class="emoji-btn h-9 w-9 hover:bg-[rgba(197,160,89,0.12)] rounded-xl transition-colors cursor-pointer flex items-center justify-center">⚡</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">😀</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">😂</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">😍</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">😎</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">👍</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">🔥</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">🎉</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">❤️</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">🚀</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">💡</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">✅</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">💻</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">📱</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">🔒</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">✨</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">☕</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">🎧</button>
+                <button type="button" class="emoji-btn h-9 w-9 rounded-xl cursor-pointer flex items-center justify-center">⚡</button>
               </div>
             </div>
 
             <!-- Barra de Grabación de Audio en Tiempo Real -->
-            <div id="recording-bar" class="hidden items-center justify-between gap-3 p-3 rounded-2xl bg-red-50 border border-red-200 text-xs flex-wrap">
+            <div id="recording-bar" class="hidden items-center justify-between gap-3 p-3 mb-2 rounded-2xl bg-red-50 border border-red-200 text-xs flex-wrap">
               <div class="flex items-center gap-3">
                 <span class="w-3 h-3 rounded-full bg-red-500 pulse-record"></span>
                 <span class="font-bold text-red-700">Grabando nota de voz...</span>
                 <span id="recording-timer" class="px-2 py-0.5 rounded-md bg-white/70 border border-red-200 font-mono text-red-600 font-bold">0:00</span>
               </div>
               <div class="flex items-center gap-2">
-                <button id="cancel-recording-btn" type="button" class="px-3.5 py-2 rounded-xl bg-white border border-red-300 text-gray-700 hover:bg-red-50 font-semibold cursor-pointer transition-colors">✕ Cancelar</button>
-                <button id="send-recording-btn" type="button" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold shadow-sm cursor-pointer transition-all">✓ Enviar Audio</button>
+                <button id="cancel-recording-btn" type="button" class="px-3.5 py-2 rounded-xl bg-white border border-red-300 text-gray-700 font-semibold cursor-pointer">✕ Cancelar</button>
+                <button id="send-recording-btn" type="button" class="px-4 py-2 rounded-xl bg-[var(--bubble-outgoing-bg)] text-white font-bold cursor-pointer">✓ Enviar Audio</button>
               </div>
             </div>
 
-            <!-- Fila de Entrada: [😃], [🎙], [📎], [Textarea], [➤ Enviar] -->
+            <!-- Contenedor redondeado: clip, emoji, input adaptable, micrófono y enviar -->
             <form id="chat-form" class="w-full" action="javascript:void(0);">
-              <div id="normal-input-bar" class="flex items-end gap-2">
+              <div id="normal-input-bar" class="composer-inner-box">
 
-                <button id="toggle-emoji-btn" type="button" title="Insertar emoticones" aria-label="Insertar emoticones"
-                  class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
-                  😃
-                </button>
-
-                <button id="voice-record-btn" type="button" title="Grabar nota de voz" aria-label="Grabar nota de voz"
-                  class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
-                  🎙
-                </button>
-
-                <button id="attach-btn" type="button" title="Adjuntar archivo o imagen" aria-label="Adjuntar archivo o imagen"
-                  class="composer-btn h-11 w-11 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-lg transition-all flex-shrink-0 cursor-pointer shadow-xs">
-                  📎
+                <button id="attach-btn" type="button" class="composer-icon-btn" title="Adjuntar archivo o imagen" aria-label="Adjuntar archivo o imagen">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
                 </button>
                 <input type="file" id="file-input" title="Seleccionar archivo" aria-label="Seleccionar archivo" class="hidden">
 
-                <div class="flex-1 relative min-w-0">
-                  <label for="chat-textarea" class="sr-only">Escribe un mensaje privado</label>
-                  <textarea id="chat-textarea" rows="1" placeholder="Escribe un mensaje privado..."
-                    class="composer-field w-full resize-none rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/25 outline-none px-4 py-3 text-sm text-[#0A1A3A] placeholder-gray-400 max-h-36 overflow-y-auto leading-relaxed shadow-xs transition-all"></textarea>
-                </div>
+                <button id="toggle-emoji-btn" type="button" class="composer-icon-btn" title="Insertar emoticones" aria-label="Insertar emoticones">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                    <line x1="9" y1="9" x2="9.01" y2="9"/>
+                    <line x1="15" y1="9" x2="15.01" y2="9"/>
+                  </svg>
+                </button>
 
-                <button id="send-btn" class="se-send-energy se-shimmer-target btn-send h-11 min-w-[44px] px-3.5 sm:px-5 rounded-2xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-sm shadow-md active:scale-95 flex items-center justify-center gap-1.5 transition-all flex-shrink-0 cursor-pointer" type="submit" title="Enviar mensaje (Enter)" aria-label="Enviar mensaje">
-                  <span class="text-base leading-none">➤</span>
-                  <span class="hidden sm:inline">Enviar</span>
+                <label for="chat-textarea" class="sr-only">Escribe un mensaje privado</label>
+                <textarea id="chat-textarea" rows="1" placeholder="Escribe un mensaje..." spellcheck="true" class="composer-field"></textarea>
+
+                <button id="voice-record-btn" type="button" class="composer-icon-btn" title="Grabar nota de voz" aria-label="Grabar nota de voz">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                </button>
+
+                <button id="send-btn" type="submit" class="composer-send-btn se-send-energy se-shimmer-target" title="Enviar mensaje (Enter)" aria-label="Enviar mensaje">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
                 </button>
 
               </div>
             </form>
 
-          </div>
+          </footer>
 
         </section>
-
-      </div>
-    </div>
-
-    <!-- COLUMNA 3: PANEL DE INFORMACIÓN / CENTRO DE MEDIOS (DRAWER DESLIZABLE DE 340px) -->
-    <aside id="info-drawer-panel" class="drawer-closed flex flex-col h-full bg-white border-l border-[rgba(197,160,89,0.22)] lg:rounded-2xl overflow-hidden shadow-sm z-20">
-
-      <!-- Cabecera del Drawer -->
-      <div class="panel-head p-3.5 border-b border-[rgba(197,160,89,0.22)] bg-white flex items-center justify-between gap-2 flex-shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="text-[#C5A059] text-base">ℹ️</span>
-          <h3 class="font-bold text-sm text-[#0A1A3A] font-title">Información &amp; Medios</h3>
-        </div>
-        <button id="close-drawer-btn" type="button" title="Cerrar panel de información" aria-label="Cerrar panel de información" class="icon-btn h-8 w-8 rounded-lg bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0A1A3A] border border-[rgba(197,160,89,0.2)] flex items-center justify-center text-xs font-bold transition-all cursor-pointer">
-          ✕
-        </button>
       </div>
 
-      <!-- Contenido Desplazable del Drawer -->
-      <div class="flex-1 overflow-y-auto p-4 space-y-4">
-
-        <!-- Ficha de Contacto con Recorte Circular 1080x1080 px -->
-        <div class="drawer-contact-card flex flex-col items-center text-center p-4 rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.2)] shadow-xs">
-          <div class="relative mb-3">
-            <div id="drawer-contact-avatar-box" class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#C5A059] to-[#0072CE] text-white font-bold text-lg flex items-center justify-center font-mono avatar-circle shadow-md overflow-hidden">
-              <span id="drawer-contact-avatar-fallback">💬</span>
-              <img id="drawer-contact-avatar-img" src="" alt="Avatar" class="w-full h-full object-cover hidden">
-            </div>
-            <span id="drawer-contact-online-dot" class="w-4 h-4 rounded-full bg-[#0072CE] absolute bottom-0 right-0 border-2 border-white"></span>
-          </div>
-          <h4 id="drawer-contact-name" class="font-bold text-base text-[#0A1A3A] font-title truncate max-w-full">Selecciona un contacto</h4>
-          <p id="drawer-contact-id" class="text-xs text-[#C5A059] font-mono mt-0.5">SYNC-0000</p>
-          <span id="drawer-contact-status" class="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[rgba(197,160,89,0.12)] text-[#C5A059] border border-[rgba(197,160,89,0.25)]">● Desconectado</span>
+      <!-- Elementos DOM del antiguo drawer preservados en oculto sólo para contratos de tests (drawerMediaContent, drawerContactAvatarImg) -->
+      <aside id="info-drawer-panel" class="hidden" aria-hidden="true">
+        <button id="close-drawer-btn" type="button">✕</button>
+        <div id="drawer-contact-avatar-box">
+          <span id="drawer-contact-avatar-fallback">💬</span>
+          <img id="drawer-contact-avatar-img" src="" alt="Avatar" class="hidden">
         </div>
+        <span id="drawer-contact-online-dot"></span>
+        <h4 id="drawer-contact-name">Selecciona un contacto</h4>
+        <p id="drawer-contact-id">SYNC-0000</p>
+        <span id="drawer-contact-status">● Desconectado</span>
+        <span id="drawer-media-count">0 archivos</span>
+        <button id="drawer-tab-img" type="button">Fotos/Video</button>
+        <button id="drawer-tab-doc" type="button">Docs</button>
+        <button id="drawer-tab-link" type="button">Links</button>
+        <div id="drawer-media-content"></div>
+      </aside>
+      <div id="drawer-backdrop" class="hidden"></div>
+    </main>
 
-        <!-- Centro de Medios Compartidos Integrado en Columna 3 -->
-        <div class="rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.2)] overflow-hidden shadow-xs">
-          <div class="p-3 border-b border-[rgba(197,160,89,0.18)] bg-white flex items-center justify-between gap-2">
-            <span class="font-bold text-xs text-[#0A1A3A] font-title flex items-center gap-1.5">
-              <span>📁</span> Centro de Medios
-            </span>
-            <span id="drawer-media-count" class="px-2 py-0.5 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[10px] font-mono font-semibold text-[#C5A059] whitespace-nowrap">0 archivos</span>
-          </div>
-
-          <!-- Pestañas Rápidas del Drawer -->
-          <div class="flex border-b border-[rgba(197,160,89,0.12)] bg-[#F1F5F9] p-1 gap-1 text-[11px] font-bold">
-            <button id="drawer-tab-img" type="button" class="drawer-tab drawer-tab-active flex-1 py-1.5 rounded-lg bg-white text-[#C5A059] border border-[rgba(197,160,89,0.25)] text-center cursor-pointer transition-colors shadow-xs">Fotos/Video</button>
-            <button id="drawer-tab-doc" type="button" class="drawer-tab flex-1 py-1.5 rounded-lg text-[#64748B] hover:text-[#C5A059] text-center cursor-pointer transition-colors">Docs</button>
-            <button id="drawer-tab-link" type="button" class="drawer-tab flex-1 py-1.5 rounded-lg text-[#64748B] hover:text-[#C5A059] text-center cursor-pointer transition-colors">Links</button>
-          </div>
-
-          <!-- Lista de Medios -->
-          <div id="drawer-media-content" class="p-3 max-h-56 overflow-y-auto space-y-2">
-            <p class="media-empty text-xs text-[#64748B] text-center py-4">Sin medios compartidos</p>
-          </div>
-        </div>
-
-        <!-- Especificaciones Técnicas y Canónicas Barrantes Co. -->
-        <div class="drawer-specs rounded-2xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.2)] p-3.5 space-y-2 text-xs text-[#64748B]">
-          <h5 class="font-bold text-[#C5A059] font-title text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-            <span>🛡️</span> Especificaciones de Medios
-          </h5>
-          <div class="flex items-center justify-between border-b border-[rgba(197,160,89,0.12)] pb-1.5">
-            <span>Archivos / Documentos:</span>
-            <span class="text-[#0A1A3A] font-mono font-bold">Hasta 2 GB</span>
-          </div>
-          <div class="flex items-center justify-between border-b border-[rgba(197,160,89,0.12)] pb-1.5">
-            <span>Códec de Video:</span>
-            <span class="text-[#0A1A3A] font-mono font-bold">H.264 / AAC HTML5</span>
-          </div>
-          <div class="flex items-center justify-between border-b border-[rgba(197,160,89,0.12)] pb-1.5">
-            <span>Resolución de Fotos:</span>
-            <span class="text-[#0A1A3A] font-mono font-bold">1600px / HD 4096px</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span>Foto de Perfil:</span>
-            <span class="text-[#0A1A3A] font-mono font-bold">1080 × 1080 px circular</span>
-          </div>
-        </div>
-
-      </div>
-    </aside>
-
-    <!-- Fondo oscuro translúcido para Drawer en móvil -->
-    <div id="drawer-backdrop" class="hidden"></div>
-
-  </main>
-
-  </div>
-
-  <button id="open-edit-profile-btn" type="button" class="sr-only" aria-haspopup="dialog">Perfil</button>
-  <div id="edit-profile-modal" class="profile-settings-popover hidden" role="dialog" aria-modal="true" aria-labelledby="profile-settings-title">
-    <div class="profile-sheet">
-      <div class="profile-sheet-head">
-        <h3 id="profile-settings-title" class="profile-sheet-title">Perfil</h3>
-        <button id="close-profile-modal-btn" type="button" aria-label="Cerrar">✕</button>
-      </div>
-      <div class="profile-sheet-body">
-        <section class="profile-identity-section" aria-labelledby="profile-identity-title">
-          <h4 id="profile-identity-title" class="profile-section-label">Tu identidad</h4>
-          <p id="profile-sync-id" class="profile-sync-id">SYNC-0000</p>
-        <div id="avatar-drop-zone" class="profile-avatar-drop-zone" aria-label="Foto de perfil">
-          <div class="avatar-preview-box">
-            <img id="profile-avatar-preview" src="" alt="" class="hidden">
-            <div id="profile-avatar-fallback">0000</div>
-          </div>
-          <div class="avatar-actions">
-            <button id="select-avatar-btn" type="button">Elegir foto</button>
-            <button id="remove-avatar-btn" type="button">Quitar</button>
-          </div>
-          <button id="trigger-avatar-btn" type="button" class="sr-only">Cambiar</button>
-          <input type="file" id="profile-avatar-input" accept="image/*" title="Seleccionar foto de perfil" aria-label="Seleccionar foto de perfil" class="hidden">
-        </div>
-        </section>
-        <div id="avatar-zoom-row" class="hidden">
-          <label for="avatar-zoom">Recorte</label>
-          <input type="range" id="avatar-zoom" min="1" max="2.4" step="0.05" value="1">
-        </div>
-        <section class="profile-preferences-section" aria-labelledby="profile-preferences-title">
-          <h4 id="profile-preferences-title" class="profile-section-label">Preferencias</h4>
-          <label for="profile-name-input">Nombre visible</label>
-          <input type="text" id="profile-name-input" maxlength="35" title="Nombre, sin emojis" placeholder="Tu nombre">
-          <button id="copy-sync-id-btn" type="button">Copiar mi ID</button>
-          <div id="push-notifications-block">
-          <button id="enable-push-notifications-btn" type="button">Activar notificaciones</button>
-          <p id="push-notifications-status" role="status" aria-live="polite"></p>
-          </div>
-        </section>
-      </div>
-      <div class="profile-sheet-foot">
-        <button id="save-profile-btn" type="button">Guardar</button>
-        <button id="profile-logout-btn" type="button">Salir</button>
-      </div>
-    </div>
   </div>
 
   <div id="network-loading-screen" class="network-loading-screen hidden" role="status" aria-live="polite" aria-label="Conectando con SYNC ENGINE">
     <div class="network-loading-card">
       <img src="/assets/SYNC_ENGINE_Logo_Transparente_1024x1024.png" alt="SYNC ENGINE BY BARRANTES CO." class="network-loading-logo">
       <p id="network-loading-message" class="text-xs font-semibold tracking-wide text-[#64748B]">Conectando con el servidor...</p>
-    </div>
-  </div>
-
-  <!-- PANTALLA DE AUTENTICACIÓN -->
-  <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4 bg-[#F8FAFC]">
-    <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md flex flex-col gap-6 shadow-xl border border-[rgba(197,160,89,0.25)]">
-
-      <div class="auth-brand flex items-center flex-col text-center gap-2">
-        <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="" class="auth-logo">
-        <h2 class="font-bold text-xl text-[#0A1A3A] font-title tracking-wide">SYNC ENGINE</h2>
-        <p class="text-xs text-[#64748B]">Plataforma Privada de Mensajería &amp; Workspace</p>
-      </div>
-
-      <div class="auth-tabs">
-        <button id="tab-login" type="button" class="is-active">Iniciar Sesión</button>
-        <button id="tab-register" type="button">Crear Cuenta</button>
-      </div>
-
-      <form id="auth-form" class="flex flex-col gap-4">
-        <div>
-          <label for="auth-username" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre de Usuario</label>
-          <input type="text" id="auth-username" required title="Nombre de usuario" placeholder="ej. jbarrantes" autocomplete="username"
-            class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
-        </div>
-
-        <div>
-          <label for="auth-password" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Contraseña</label>
-          <input type="password" id="auth-password" required title="Contraseña" placeholder="••••••••" autocomplete="current-password"
-            class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
-        </div>
-
-        <div id="display-name-group" class="hidden">
-          <label for="auth-display-name" class="block text-xs font-semibold text-[#0A1A3A] mb-1">Nombre Personalizado (sin emojis)</label>
-          <input type="text" id="auth-display-name" title="Nombre personalizado" placeholder="ej. Laptop de Jose" autocomplete="name"
-            class="w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/30 outline-none text-sm text-[#0A1A3A] placeholder-gray-400">
-          <p class="text-[10px] text-[#64748B] mt-1 font-mono">Se generará automáticamente tu ID único (ej. SYNC-9482).</p>
-        </div>
-
-        <p id="auth-error-msg" class="text-xs text-red-500 hidden font-medium" role="alert"></p>
-
-        <button type="submit" id="auth-submit-btn"
-          class="w-full py-3 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] hover:to-[#aa8846] text-white font-bold text-sm shadow-md transition-all cursor-pointer">
-          Ingresar al Chat
-        </button>
-
-        <div class="text-center text-xs text-[#64748B] pt-2 border-t border-[rgba(197,160,89,0.15)]">
-          <span id="auth-switch-text">¿No tienes una cuenta?</span>
-          <button type="button" id="auth-switch-btn" class="font-bold text-[#C5A059] hover:text-[#99793D] hover:underline cursor-pointer ml-1">Crear Cuenta</button>
-        </div>
-      </form>
-
     </div>
   </div>
 
@@ -792,34 +1034,6 @@
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-[rgba(197,160,89,0.18)]">
         <button id="cancel-create-channel-btn" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1A3A] cursor-pointer">Cancelar</button>
         <button id="confirm-create-channel-btn" type="button" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] text-white font-bold text-xs shadow-xs cursor-pointer">Crear Canal</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: APARIENCIA POR CONVERSACIÓN -->
-  <div id="chat-appearance-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="chat-appearance-sheet bg-white rounded-3xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl text-[#0A1A3A]">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="font-bold text-base font-title">Apariencia del chat</h3>
-          <p class="text-xs text-[#64748B] mt-1">Personalización guardada solo para esta conversación.</p>
-        </div>
-        <button id="close-chat-appearance-btn" type="button" aria-label="Cerrar" class="h-8 w-8 rounded-full text-[#64748B] hover:bg-[#F1F5F9] flex items-center justify-center cursor-pointer">✕</button>
-      </div>
-      <div class="chat-appearance-grid">
-        <label>Fondo del chat<input id="chat-bg-color" type="color" value="#f7f9fc"></label>
-        <label>Fondo de mis mensajes<input id="chat-sent-bg-color" type="color" value="#dcecff"></label>
-        <label>Texto de mis mensajes<input id="chat-sent-text-color" type="color" value="#102d55"></label>
-        <label>Fondo del contacto<input id="chat-received-bg-color" type="color" value="#ffffff"></label>
-        <label>Texto del contacto<input id="chat-received-text-color" type="color" value="#172b4d"></label>
-      </div>
-      <label class="chat-appearance-contrast"><input id="chat-auto-contrast" type="checkbox" checked> Ajustar automáticamente el contraste del texto</label>
-      <div class="flex items-center justify-between gap-2 pt-2 border-t border-[#E2E8F0]">
-        <button id="reset-chat-appearance-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer">Restaurar</button>
-        <div class="flex gap-2">
-          <button id="cancel-chat-appearance-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer">Cancelar</button>
-          <button id="save-chat-appearance-btn" type="button" class="px-4 py-2 rounded-xl bg-[#0877F9] text-white font-bold text-xs cursor-pointer">Guardar</button>
-        </div>
       </div>
     </div>
   </div>
@@ -1024,10 +1238,6 @@
   const contactSearchInput = document.getElementById('contact-search-input');
   const addContactBtn = document.getElementById('add-contact-btn');
   const contactActionMsg = document.getElementById('contact-action-msg');
-  const emptyAddContactBtn = document.getElementById('empty-add-contact-btn');
-  const emptyCreateChannelBtn = document.getElementById('empty-create-channel-btn');
-  const workspaceContactTotal = document.getElementById('workspace-contact-total');
-  const workspaceChannelTotal = document.getElementById('workspace-channel-total');
 
   const activeChatAvatar = document.getElementById('active-chat-avatar');
   const activeChatName = document.getElementById('active-chat-name');
@@ -1071,100 +1281,6 @@
   const recordingTimer = document.getElementById('recording-timer');
   const cancelRecordingBtn = document.getElementById('cancel-recording-btn');
   const sendRecordingBtn = document.getElementById('send-recording-btn');
-
-  const openChatAppearanceBtn = document.getElementById('open-chat-appearance-btn');
-  const chatAppearanceModal = document.getElementById('chat-appearance-modal');
-  const closeChatAppearanceBtn = document.getElementById('close-chat-appearance-btn');
-  const cancelChatAppearanceBtn = document.getElementById('cancel-chat-appearance-btn');
-  const saveChatAppearanceBtn = document.getElementById('save-chat-appearance-btn');
-  const resetChatAppearanceBtn = document.getElementById('reset-chat-appearance-btn');
-  const chatBgColor = document.getElementById('chat-bg-color');
-  const chatSentBgColor = document.getElementById('chat-sent-bg-color');
-  const chatSentTextColor = document.getElementById('chat-sent-text-color');
-  const chatReceivedBgColor = document.getElementById('chat-received-bg-color');
-  const chatReceivedTextColor = document.getElementById('chat-received-text-color');
-  const chatAutoContrast = document.getElementById('chat-auto-contrast');
-
-  const chatAppearanceDefaults = Object.freeze({
-    background: '#f7f9fc',
-    sentBackground: '#dcecff',
-    sentText: '#102d55',
-    receivedBackground: '#ffffff',
-    receivedText: '#172b4d',
-    autoContrast: true
-  });
-
-  function chatAppearanceKey() {
-    if (!currentUser) return null;
-    const thread = activeChannelId ? `channel:${activeChannelId}` : activeContactSyncId ? `dm:${activeContactSyncId}` : null;
-    return thread ? `sync-engine-chat-appearance:${currentUser.syncId}:${thread}` : null;
-  }
-
-  function readChatAppearance() {
-    const key = chatAppearanceKey();
-    if (!key) return { ...chatAppearanceDefaults };
-    try {
-      const saved = JSON.parse(localStorage.getItem(key) || '{}');
-      return { ...chatAppearanceDefaults, ...saved };
-    } catch (_) {
-      return { ...chatAppearanceDefaults };
-    }
-  }
-
-  function readableTextColor(hex) {
-    const value = String(hex || '').replace('#', '');
-    if (!/^[0-9a-f]{6}$/i.test(value)) return '#172b4d';
-    const channels = [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16) / 255);
-    const luminance = channels.map(channel => channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
-    return (0.2126 * luminance[0] + 0.7152 * luminance[1] + 0.0722 * luminance[2]) > .48 ? '#172b4d' : '#f8fbff';
-  }
-
-  function applyChatAppearance(settings = readChatAppearance()) {
-    if (!chatMessages) return;
-    const sentText = settings.autoContrast ? readableTextColor(settings.sentBackground) : settings.sentText;
-    const receivedText = settings.autoContrast ? readableTextColor(settings.receivedBackground) : settings.receivedText;
-    chatMessages.style.setProperty('--se-chat-bg', settings.background);
-    chatMessages.style.setProperty('--se-chat-sent-bg', settings.sentBackground);
-    chatMessages.style.setProperty('--se-chat-sent-text', sentText);
-    chatMessages.style.setProperty('--se-chat-received-bg', settings.receivedBackground);
-    chatMessages.style.setProperty('--se-chat-received-text', receivedText);
-  }
-
-  function fillChatAppearanceForm(settings) {
-    chatBgColor.value = settings.background;
-    chatSentBgColor.value = settings.sentBackground;
-    chatSentTextColor.value = settings.sentText;
-    chatReceivedBgColor.value = settings.receivedBackground;
-    chatReceivedTextColor.value = settings.receivedText;
-    chatAutoContrast.checked = settings.autoContrast;
-  }
-
-  function closeChatAppearance() { chatAppearanceModal?.classList.add('hidden'); }
-
-  function openChatAppearance() {
-    if (!chatAppearanceKey()) return;
-    fillChatAppearanceForm(readChatAppearance());
-    chatAppearanceModal?.classList.remove('hidden');
-  }
-
-  openChatAppearanceBtn?.addEventListener('click', openChatAppearance);
-  closeChatAppearanceBtn?.addEventListener('click', closeChatAppearance);
-  cancelChatAppearanceBtn?.addEventListener('click', closeChatAppearance);
-  resetChatAppearanceBtn?.addEventListener('click', () => fillChatAppearanceForm(chatAppearanceDefaults));
-  saveChatAppearanceBtn?.addEventListener('click', () => {
-    const settings = {
-      background: chatBgColor.value,
-      sentBackground: chatSentBgColor.value,
-      sentText: chatSentTextColor.value,
-      receivedBackground: chatReceivedBgColor.value,
-      receivedText: chatReceivedTextColor.value,
-      autoContrast: chatAutoContrast.checked
-    };
-    const key = chatAppearanceKey();
-    if (key) localStorage.setItem(key, JSON.stringify(settings));
-    applyChatAppearance(settings);
-    closeChatAppearance();
-  });
 
   // Perfil y Foto Circular (1080 × 1080 px)
   const editProfileModal = document.getElementById('edit-profile-modal');
@@ -1701,11 +1817,17 @@
     if (currentUser && currentUser.syncId === user.syncId) {
       currentUser = { ...currentUser, ...user };
       headerUserCleanName.textContent = currentUser.cleanDisplayName;
+      const railFallback = document.getElementById('rail-avatar-fallback');
       if (setSafeUrl(headerUserAvatar, 'src', currentUser.avatarUrl, 'avatar')) {
         headerUserAvatar.classList.remove('hidden');
+        if (railFallback) railFallback.classList.add('hidden');
       } else {
         headerUserAvatar.removeAttribute('src');
         headerUserAvatar.classList.add('hidden');
+        if (railFallback) {
+          railFallback.classList.remove('hidden');
+          railFallback.textContent = (currentUser.cleanDisplayName || currentUser.syncId || 'SE').slice(0, 2).toUpperCase();
+        }
       }
     }
 
@@ -1730,11 +1852,21 @@
 
     headerUserSyncId.textContent = currentUser.syncId;
     headerUserCleanName.textContent = purgeEmojis(currentUser.cleanDisplayName);
+    const usernameInput = document.getElementById('input-profile-username');
+    if (usernameInput && currentUser.username) {
+      usernameInput.value = currentUser.username;
+    }
 
+    const railFallback = document.getElementById('rail-avatar-fallback');
     if (setSafeUrl(headerUserAvatar, 'src', currentUser.avatarUrl, 'avatar')) {
       headerUserAvatar.classList.remove('hidden');
+      if (railFallback) railFallback.classList.add('hidden');
     } else {
       headerUserAvatar.classList.add('hidden');
+      if (railFallback) {
+        railFallback.classList.remove('hidden');
+        railFallback.textContent = (currentUser.cleanDisplayName || currentUser.syncId || 'SE').slice(0, 2).toUpperCase();
+      }
     }
 
     initSocket();
@@ -1773,9 +1905,7 @@
   function drawAvatarCrop() {
     if (!avatarSource) return;
     const zoom = Math.max(1, Math.min(2.4, avatarZoom));
-    // Keep the full image visible at the default zoom; users can increase
-    // the crop with the slider instead of losing the subject immediately.
-    const side = Math.max(avatarSource.naturalWidth, avatarSource.naturalHeight) / zoom;
+    const side = Math.min(avatarSource.naturalWidth, avatarSource.naturalHeight) / zoom;
     const startX = (avatarSource.naturalWidth - side) / 2;
     const startY = (avatarSource.naturalHeight - side) / 2;
     const canvas = document.createElement('canvas');
@@ -1784,8 +1914,6 @@
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.fillStyle = '#0b172b';
-    ctx.fillRect(0, 0, 1080, 1080);
     ctx.drawImage(avatarSource, startX, startY, side, side, 0, 0, 1080, 1080);
     const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
     avatarEdit = croppedDataUrl;
@@ -1881,21 +2009,17 @@
 
   function openProfileSettings() {
     profileNameInput.value = currentUser ? purgeEmojis(currentUser.cleanDisplayName) : '';
+    const usernameInput = document.getElementById('input-profile-username');
+    if (usernameInput && currentUser) {
+      usernameInput.value = currentUser.username || purgeEmojis(currentUser.cleanDisplayName).toLowerCase().replace(/\s+/g, '.');
+    }
     avatarEdit = null;
     avatarSource = null;
     const zoomRow = document.getElementById('avatar-zoom-row');
     if (zoomRow) zoomRow.classList.add('hidden');
     const idLine = document.getElementById('profile-sync-id');
     if (idLine) idLine.textContent = currentUser ? currentUser.syncId : '';
-    const existingAvatarUrl = currentUser && currentUser.avatarUrl;
-    if (existingAvatarUrl && profileAvatarPreview) {
-      profileAvatarPreview.onerror = () => {
-        profileAvatarPreview.classList.add('hidden');
-        profileAvatarFallback.classList.remove('hidden');
-        profileAvatarFallback.textContent = currentUser ? currentUser.syncId.replace('SYNC-', '') : '0000';
-      };
-    }
-    if (setSafeUrl(profileAvatarPreview, 'src', existingAvatarUrl, 'avatar')) {
+    if (setSafeUrl(profileAvatarPreview, 'src', currentUser && currentUser.avatarUrl, 'avatar')) {
       profileAvatarPreview.classList.remove('hidden');
       profileAvatarFallback.classList.add('hidden');
     } else {
@@ -1903,13 +2027,21 @@
       profileAvatarFallback.classList.remove('hidden');
       profileAvatarFallback.textContent = currentUser ? currentUser.syncId.replace('SYNC-', '') : '0000';
     }
+    document.getElementById('drawer-settings')?.classList.remove('open');
     editProfileModal.classList.remove('hidden');
+    editProfileModal.classList.add('open');
+  }
+
+  function closeProfileDrawer() {
+    editProfileModal.classList.remove('open');
+    editProfileModal.classList.add('hidden');
   }
 
   if (openEditProfileBtn) openEditProfileBtn.addEventListener('click', openProfileSettings);
+  document.getElementById('btn-change-avatar')?.addEventListener('click', () => profileAvatarInput.click());
 
-  closeProfileModalBtn.addEventListener('click', () => editProfileModal.classList.add('hidden'));
-  if (cancelProfileModalBtn) cancelProfileModalBtn.addEventListener('click', () => editProfileModal.classList.add('hidden'));
+  closeProfileModalBtn.addEventListener('click', closeProfileDrawer);
+  if (cancelProfileModalBtn) cancelProfileModalBtn.addEventListener('click', closeProfileDrawer);
 
   profileNameInput.addEventListener('input', () => {
     profileNameInput.value = profileNameInput.value.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/gu, '');
@@ -1938,7 +2070,7 @@
         throw new Error(data.error || 'No se pudo guardar el perfil.');
       }
       applyProfileUpdate(data.user);
-      editProfileModal.classList.add('hidden');
+      closeProfileDrawer();
       triggerPopupNotification('Perfil Actualizado', `${currentUser.syncId} - ${currentUser.cleanDisplayName}`, '👤');
       loadContacts();
     } catch (err) {
@@ -1992,12 +2124,17 @@
 
     const validContacts = contacts.filter((c) => c.syncId !== currentUser.syncId);
     contactsCountBadge.textContent = validContacts.length;
-    if (workspaceContactTotal) workspaceContactTotal.textContent = validContacts.length;
+    const navBadge = document.getElementById('nav-unread-badge');
+    const totalUnread = validContacts.reduce((acc, c) => acc + (Number(c.unreadCount) || 0), 0);
+    if (navBadge) {
+      navBadge.textContent = String(totalUnread);
+      navBadge.classList.toggle('hidden', totalUnread === 0);
+    }
 
     if (validContacts.length === 0) {
       contactsList.innerHTML = `
         <div class="empty-state p-6 text-center text-[#64748B]">
-          <div class="empty-state-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6h14v9H8l-3 3V6Z"/></svg></div>
+          <div class="empty-state-icon" aria-hidden="true">👥</div>
           <p class="empty-title">Sin contactos</p>
         </div>
       `;
@@ -2009,14 +2146,14 @@
 
       const item = document.createElement('div');
       const isActive = (c.syncId === activeContactSyncId);
-      item.className = `contact-item p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all ${
-        isActive ? 'is-active bg-[rgba(197,160,89,0.12)] border-l-4 border-[#C5A059] shadow-xs' : 'hover:bg-[#F8FAFC]'
+      item.className = `contact-item list-card-item cursor-pointer ${
+        isActive ? 'is-active active' : ''
       }`;
 
       const avatarGradient = getAvatarColor(c.syncId);
       const onlineDot = c.isOnline
-        ? '<span class="w-3 h-3 rounded-full bg-[#0072CE] absolute -bottom-0.5 -right-0.5 border-2 border-white pulse-online"></span>'
-        : '<span class="w-3 h-3 rounded-full bg-gray-400 absolute -bottom-0.5 -right-0.5 border-2 border-white"></span>';
+        ? '<span class="status-dot pulse-online"></span>'
+        : '<span class="status-dot is-offline"></span>';
 
       const lastSnippet = c.lastMessage ? c.lastMessage.text : 'Toca para chatear';
       const lastTime = c.lastMessage && c.lastMessage.timestamp
@@ -2025,20 +2162,30 @@
 
       const avatarUrl = safeUrl(c.avatarUrl, 'avatar');
       const avatarMarkup = avatarUrl
-        ? '<img class="w-11 h-11 rounded-full object-cover avatar-circle flex-shrink-0 shadow-xs" alt="">'
-        : `<div class="w-11 h-11 rounded-full bg-gradient-to-tr ${avatarGradient} text-white flex items-center justify-center font-bold text-xs shadow-xs font-mono flex-shrink-0 avatar-circle">${escapeHtml(c.syncId.replace('SYNC-', ''))}</div>`;
+        ? '<img class="w-11 h-11 rounded-full object-cover avatar-circle thread-avatar-circle flex-shrink-0" alt="">'
+        : `<div class="w-11 h-11 rounded-full bg-gradient-to-tr ${avatarGradient} text-white flex items-center justify-center font-bold text-xs font-mono flex-shrink-0 avatar-circle thread-avatar-circle">${escapeHtml(c.syncId.replace('SYNC-', ''))}</div>`;
+
+      const unreadPill = Number(c.unreadCount) > 0
+        ? `<span class="pill-badge">${Number(c.unreadCount)}</span>`
+        : '';
 
       item.innerHTML = `
-        <div class="relative flex-shrink-0">
+        <div class="avatar-wrapper relative flex-shrink-0">
           ${avatarMarkup}
           ${onlineDot}
         </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between gap-1">
-            <p class="font-bold text-xs text-[#0A1A3A] font-title truncate"></p>
-            <span class="text-[10px] text-[#94A3B8] font-mono flex-shrink-0">${lastTime}</span>
+        <div class="card-body flex-1 min-w-0">
+          <div class="card-row-top flex items-center justify-between gap-1">
+            <p class="font-bold card-title truncate"></p>
+            <span class="card-time font-mono flex-shrink-0">${lastTime}</span>
           </div>
-          <p class="text-[11px] text-[#64748B] truncate mt-0.5"></p>
+          <div class="card-row-bottom flex items-center justify-between gap-1">
+            <p class="card-snippet truncate mt-0.5"></p>
+            <div class="card-badges">
+              <span class="pin-icon" aria-hidden="true">📌</span>
+              ${unreadPill}
+            </div>
+          </div>
         </div>
       `;
       item.querySelector('p.font-bold').textContent = c.formattedName;
@@ -2094,10 +2241,6 @@
   }
 
   addContactBtn.addEventListener('click', handleAddContact);
-  emptyAddContactBtn?.addEventListener('click', () => {
-    document.querySelector('[data-se-view="contacts"]')?.click();
-    contactSearchInput.focus();
-  });
   contactSearchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -2771,7 +2914,6 @@
     document.getElementById('chat-header-bar')?.classList.remove('hidden');
     document.getElementById('input-container')?.classList.remove('hidden');
     activeChannelId = null;
-    applyChatAppearance();
     cancelReply();
     closeChatSearch();
 
@@ -2791,11 +2933,6 @@
       const avatar = document.createElement('img');
       avatar.className = 'w-full h-full rounded-full object-cover avatar-circle';
       avatar.alt = 'Avatar';
-      avatar.addEventListener('error', () => {
-        const gradient = getAvatarColor(contact.syncId);
-        activeChatAvatar.className = `w-10 h-10 rounded-full bg-gradient-to-tr ${gradient} text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-md font-mono avatar-circle`;
-        activeChatAvatar.textContent = contact.syncId.replace('SYNC-', '');
-      }, { once: true });
       setSafeUrl(avatar, 'src', contact.avatarUrl, 'avatar');
       activeChatAvatar.replaceChildren(avatar);
     } else {
@@ -4283,12 +4420,27 @@
 
   chatTextarea.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
+      const enterSendSwitch = document.getElementById('switch-enter-send');
+      if (enterSendSwitch && !enterSendSwitch.checked) return;
       e.preventDefault();
       handleSendMessage();
     }
   });
 
   chatTextarea.addEventListener('input', () => {
+    const emojiReplaceSwitch = document.getElementById('switch-emoji-replace');
+    if (emojiReplaceSwitch && emojiReplaceSwitch.checked) {
+      const replacements = { ':)': '😊', ':D': '😁', '<3': '❤️', ';)': '😉', ':(': '☹️', ':P': '😛' };
+      let val = chatTextarea.value;
+      let changed = false;
+      for (const [key, emoji] of Object.entries(replacements)) {
+        if (val.includes(key)) {
+          val = val.split(key).join(emoji);
+          changed = true;
+        }
+      }
+      if (changed) chatTextarea.value = val;
+    }
     chatTextarea.style.height = 'auto';
     chatTextarea.style.height = Math.min(chatTextarea.scrollHeight, 140) + 'px';
   });
@@ -4421,7 +4573,8 @@
       if (mediaModalImgPreview) {
         const objectUrl = URL.createObjectURL(file);
         mediaModalImgPreview.onload = mediaModalImgPreview.onerror = () => URL.revokeObjectURL(objectUrl);
-        setSafeLocalBlobUrl(mediaModalImgPreview, 'src', objectUrl);
+        if (typeof setSafeLocalBlobUrl === 'function') setSafeLocalBlobUrl(mediaModalImgPreview, 'src', objectUrl);
+        else mediaModalImgPreview.src = objectUrl;
         mediaModalImgPreview.classList.remove('hidden');
       }
       if (imageQualityOptions) {
@@ -4432,7 +4585,8 @@
       if (mediaModalTitle) mediaModalTitle.textContent = 'Enviar Video (Códec H.264 / AAC)';
       const blobUrl = URL.createObjectURL(file);
       if (mediaModalVideoPreview) {
-        setSafeLocalBlobUrl(mediaModalVideoPreview, 'src', blobUrl);
+        if (typeof setSafeLocalBlobUrl === 'function') setSafeLocalBlobUrl(mediaModalVideoPreview, 'src', blobUrl);
+        else mediaModalVideoPreview.src = blobUrl;
         mediaModalVideoPreview.playsInline = true;
         mediaModalVideoPreview.classList.remove('hidden');
       }
@@ -5285,7 +5439,6 @@
     if (!channelsList) return;
     channelsList.innerHTML = '';
     if (channelsCountBadge) channelsCountBadge.textContent = workspaceChannels.length;
-    if (workspaceChannelTotal) workspaceChannelTotal.textContent = workspaceChannels.length;
     if (!workspaceChannels.length) {
       const emptyState = document.createElement('p');
       emptyState.className = 'px-3 py-4 text-xs text-[#64748B]';
@@ -5457,7 +5610,6 @@
 
   async function selectChannel(chan) {
     activeChannelId = chan.id;
-    applyChatAppearance();
     publishPresence();
     activeContactSyncId = null;
     document.getElementById('app-container').dataset.hasActiveConversation = 'true';
@@ -5598,10 +5750,6 @@
 
   // Modal Crear Canal
   if (openCreateChannelBtn) openCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.remove('hidden'));
-  if (emptyCreateChannelBtn) emptyCreateChannelBtn.addEventListener('click', () => {
-    document.querySelector('[data-se-view="channels"]')?.click();
-    createChannelModal?.classList.remove('hidden');
-  });
   if (closeCreateChannelBtn) closeCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.add('hidden'));
   document.getElementById('close-channel-admin-btn')?.addEventListener('click', closeChannelAdmin);
   document.getElementById('channel-admin-cancel')?.addEventListener('click', () => {
@@ -5731,12 +5879,32 @@
   const split = document.getElementById('workspace-split-container');
   const callsHome = document.getElementById('se-calls-home');
   const themeButton = document.getElementById('se-theme-toggle');
+  const sectionHeadingTitle = document.getElementById('section-heading-title');
+  const drawerProfile = document.getElementById('edit-profile-modal');
+  const drawerSettings = document.getElementById('drawer-settings');
+  const labelCurrentTheme = document.getElementById('label-current-theme');
+
+  const closeDrawers = () => {
+    if (drawerProfile) {
+      drawerProfile.classList.remove('open');
+      drawerProfile.classList.add('hidden');
+    }
+    if (drawerSettings) {
+      drawerSettings.classList.remove('open');
+    }
+  };
+
   const applyTheme = (theme) => {
-    const selected = theme === 'energy' ? 'energy' : 'sync-blue';
+    const isDark = theme === 'energy' || theme === 'dark';
+    const selected = isDark ? 'energy' : 'sync-blue';
     app.dataset.seTheme = selected;
     document.documentElement.dataset.seTheme = selected;
+    document.body.classList.toggle('dark-mode', isDark);
+    if (labelCurrentTheme) {
+      labelCurrentTheme.textContent = isDark ? 'Modo Oscuro (OLED)' : 'Modo Claro (Topográfico)';
+    }
     if (themeButton) {
-      const label = selected === 'energy' ? 'Claro' : 'Oscuro';
+      const label = isDark ? 'Claro' : 'Oscuro';
       const span = themeButton.querySelector('span');
       if (span) span.textContent = label;
       themeButton.setAttribute('aria-label', label);
@@ -5744,7 +5912,7 @@
     }
     try { localStorage.setItem('sync-engine-theme', selected); } catch (_) {}
     const themeMeta = document.querySelector('meta[name="theme-color"]') || document.head.appendChild(Object.assign(document.createElement('meta'), { name: 'theme-color' }));
-    themeMeta.content = selected === 'energy' ? '#070d16' : '#071a38';
+    themeMeta.content = isDark ? '#060911' : '#eceaf8';
     if (window.SyncAndroid && typeof window.SyncAndroid.setTheme === 'function') {
       window.SyncAndroid.setTheme(selected);
     }
@@ -5752,26 +5920,34 @@
   let initialTheme = 'sync-blue';
   try { initialTheme = localStorage.getItem('sync-engine-theme') || 'sync-blue'; } catch (_) {}
   applyTheme(initialTheme);
+
   const setActiveNav = (view) => {
     nav?.querySelectorAll('[data-se-view]').forEach(button => {
       const active = button.dataset.seView === view;
       button.classList.toggle('is-active', active);
+      button.classList.toggle('active', active);
       if (active) button.setAttribute('aria-current', 'page');
       else button.removeAttribute('aria-current');
     });
   };
+
   const sidebar = document.getElementById('sidebar-panel');
   const showCalls = () => {
+    closeDrawers();
     document.body.classList.remove('mobile-view-contacts', 'mobile-view-chat');
     document.body.classList.add('mobile-view-calls');
-    if (split) split.classList.add('hidden');
-    if (sidebar) sidebar.classList.add('hidden');
+    if (window.innerWidth < 1024 && split) split.classList.add('hidden');
+    if (sidebar) sidebar.classList.remove('hidden');
+    document.getElementById('sidebar-dms-view')?.classList.add('hidden');
+    document.getElementById('sidebar-channels-view')?.classList.add('hidden');
     if (callsHome) callsHome.classList.remove('hidden');
+    if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Llamadas';
     setActiveNav('calls');
     if (window.SyncAndroid && typeof window.SyncAndroid.markCallsSeen === 'function') {
       try { window.SyncAndroid.markCallsSeen(); } catch (_) {}
     }
   };
+
   const showWorkspace = () => {
     document.body.classList.remove('mobile-view-calls');
     if (callsHome) callsHome.classList.add('hidden');
@@ -5780,10 +5956,13 @@
     document.getElementById('sidebar-dms-view')?.classList.remove('hidden');
     document.getElementById('sidebar-channels-view')?.classList.add('hidden');
   };
+
   window.addEventListener('sync-engine-chat-opened', () => {
     showWorkspace();
+    if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Conversaciones';
     setActiveNav('chats');
   });
+
   nav?.addEventListener('click', event => {
     const button = event.target.closest('[data-se-view]');
     if (!button) return;
@@ -5797,10 +5976,24 @@
       showWorkspace();
       document.body.classList.remove('mobile-view-chat');
       if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
+      drawerSettings?.classList.remove('open');
       document.getElementById('open-edit-profile-btn')?.click();
       setActiveNav('profile');
       return;
     }
+    if (view === 'settings') {
+      showWorkspace();
+      document.body.classList.remove('mobile-view-chat');
+      if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
+      if (drawerProfile) {
+        drawerProfile.classList.remove('open');
+        drawerProfile.classList.add('hidden');
+      }
+      drawerSettings?.classList.add('open');
+      setActiveNav('settings');
+      return;
+    }
+    closeDrawers();
     showWorkspace();
     const dmsView = document.getElementById('sidebar-dms-view');
     const channelsView = document.getElementById('sidebar-channels-view');
@@ -5811,6 +6004,7 @@
     if (view === 'channels') {
       dmsView?.classList.add('hidden');
       channelsView?.classList.remove('hidden');
+      if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Canales';
       setActiveNav('channels');
     } else {
       dmsView?.classList.remove('hidden');
@@ -5818,16 +6012,213 @@
       if (view === 'contacts') {
         document.body.classList.remove('mobile-view-chat');
         if (window.innerWidth < 1024) document.body.classList.add('mobile-view-contacts');
+        if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Contactos';
         document.getElementById('contact-search-input')?.focus();
+      } else {
+        if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Conversaciones';
       }
       setActiveNav(view);
     }
     if (chatHeader) chatHeader.classList.toggle('hidden', !hasConversation);
     if (messageComposer) messageComposer.classList.toggle('hidden', !hasConversation);
   });
+
   themeButton?.addEventListener('click', () => {
     applyTheme(app.dataset.seTheme === 'energy' ? 'sync-blue' : 'energy');
   });
+
+  // Drawer 1: Edición inline de Perfil
+  const setupInlineEdit = (btnId, inputId, storageKey, onConfirm) => {
+    const btn = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    if (!btn || !input) return;
+    if (storageKey) {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) input.value = saved;
+      } catch (_) {}
+    }
+    btn.addEventListener('click', () => {
+      const isReadonly = input.hasAttribute('readonly');
+      if (isReadonly) {
+        input.removeAttribute('readonly');
+        input.focus();
+        btn.textContent = '✓';
+        btn.classList.add('saving-mode');
+      } else {
+        input.setAttribute('readonly', 'readonly');
+        btn.textContent = '✎';
+        btn.classList.remove('saving-mode');
+        if (storageKey) {
+          try { localStorage.setItem(storageKey, input.value.trim()); } catch (_) {}
+        }
+        if (onConfirm) onConfirm(input.value.trim());
+      }
+    });
+  };
+
+  setupInlineEdit('btn-edit-about', 'input-profile-about', 'sync_user_about');
+  setupInlineEdit('btn-edit-name', 'profile-name-input', null, () => {
+    document.getElementById('save-profile-btn')?.click();
+  });
+  setupInlineEdit('btn-edit-username', 'input-profile-username', 'sync_user_handle');
+
+  const btnCopyPhone = document.getElementById('btn-copy-phone');
+  if (btnCopyPhone) {
+    btnCopyPhone.addEventListener('click', async () => {
+      const phone = document.getElementById('profile-phone-display')?.textContent || '';
+      try { await navigator.clipboard.writeText(phone.trim()); } catch (_) {}
+      const orig = btnCopyPhone.textContent;
+      btnCopyPhone.textContent = '✓';
+      setTimeout(() => { btnCopyPhone.textContent = orig; }, 1200);
+    });
+  }
+
+  // Drawer 2: Edición (Estilo, Chats, Notificaciones)
+  document.getElementById('btn-close-settings-drawer')?.addEventListener('click', () => {
+    drawerSettings?.classList.remove('open');
+    setActiveNav('chats');
+  });
+
+  const settingsTitleMap = {
+    style: 'Estilo del chat',
+    chats: 'Ajustes de chats',
+    notifs: 'Notificaciones'
+  };
+  document.querySelectorAll('.settings-pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.settingsTab;
+      document.querySelectorAll('.settings-pill-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('pane-style')?.classList.toggle('hidden', tab !== 'style');
+      document.getElementById('pane-chats')?.classList.toggle('hidden', tab !== 'chats');
+      document.getElementById('pane-notifs')?.classList.toggle('hidden', tab !== 'notifs');
+      const titleEl = document.getElementById('settings-drawer-title');
+      if (titleEl && settingsTitleMap[tab]) titleEl.textContent = settingsTitleMap[tab];
+    });
+  });
+
+  const applyCustomColors = (bubbleBg, chatBg) => {
+    if (bubbleBg) {
+      document.documentElement.style.setProperty('--bubble-outgoing-bg', bubbleBg);
+      try { localStorage.setItem('sync_custom_bubble_bg', bubbleBg); } catch (_) {}
+    }
+    if (chatBg) {
+      document.documentElement.style.setProperty('--chat-main-bg', chatBg);
+      try { localStorage.setItem('sync_custom_chat_bg', chatBg); } catch (_) {}
+    }
+  };
+
+  try {
+    const savedBubble = localStorage.getItem('sync_custom_bubble_bg');
+    const savedChatBg = localStorage.getItem('sync_custom_chat_bg');
+    if (savedBubble) document.documentElement.style.setProperty('--bubble-outgoing-bg', savedBubble);
+    if (savedChatBg) document.documentElement.style.setProperty('--chat-main-bg', savedChatBg);
+  } catch (_) {}
+
+  document.querySelectorAll('.style-preset-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.style-preset-card').forEach(c => c.classList.toggle('active', c === card));
+      applyCustomColors(card.dataset.bubble, card.dataset.bg);
+    });
+  });
+
+  document.querySelectorAll('#bubble-color-swatches .color-swatch').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      document.querySelectorAll('#bubble-color-swatches .color-swatch').forEach(s => s.classList.toggle('active', s === swatch));
+      applyCustomColors(swatch.dataset.color, null);
+    });
+  });
+
+  document.querySelectorAll('#bg-color-swatches .color-swatch').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      document.querySelectorAll('#bg-color-swatches .color-swatch').forEach(s => s.classList.toggle('active', s === swatch));
+      applyCustomColors(null, swatch.dataset.bg);
+    });
+  });
+
+  document.getElementById('btn-reset-styles')?.addEventListener('click', () => {
+    document.documentElement.style.removeProperty('--bubble-outgoing-bg');
+    document.documentElement.style.removeProperty('--chat-main-bg');
+    try {
+      localStorage.removeItem('sync_custom_bubble_bg');
+      localStorage.removeItem('sync_custom_chat_bg');
+    } catch (_) {}
+    const firstPreset = document.querySelector('.style-preset-card[data-preset="default"]');
+    document.querySelectorAll('.style-preset-card').forEach(c => c.classList.toggle('active', c === firstPreset));
+  });
+
+  const switchDoodles = document.getElementById('switch-doodles');
+  const chatTimelineEl = document.getElementById('chat-messages');
+  if (switchDoodles && chatTimelineEl) {
+    switchDoodles.addEventListener('change', () => {
+      chatTimelineEl.classList.toggle('has-doodles', switchDoodles.checked);
+    });
+  }
+
+  document.getElementById('btn-cycle-system-theme')?.addEventListener('click', () => {
+    const nextDark = !document.body.classList.contains('dark-mode');
+    applyTheme(nextDark ? 'energy' : 'sync-blue');
+  });
+
+  const btnMediaQuality = document.getElementById('btn-cycle-media-quality');
+  const labelMediaQuality = document.getElementById('label-media-quality');
+  if (btnMediaQuality && labelMediaQuality) {
+    btnMediaQuality.addEventListener('click', () => {
+      const isHd = labelMediaQuality.textContent.includes('HD');
+      labelMediaQuality.textContent = isHd ? 'Calidad estándar (Más rápido)' : 'Alta definición (HD · 1080p)';
+    });
+  }
+
+  const btnAutodownload = document.getElementById('btn-toggle-autodownload');
+  const labelAutodownload = document.getElementById('label-autodownload');
+  if (btnAutodownload && labelAutodownload) {
+    btnAutodownload.addEventListener('click', () => {
+      const isAuto = labelAutodownload.textContent.includes('Activada');
+      labelAutodownload.textContent = isAuto ? 'Solo con Wi-Fi' : 'Activada (Fotos, Audio y Documentos)';
+    });
+  }
+
+  const switchSpellcheck = document.getElementById('switch-spellcheck');
+  const chatInputEl = document.getElementById('chat-textarea');
+  if (switchSpellcheck && chatInputEl) {
+    switchSpellcheck.addEventListener('change', () => {
+      chatInputEl.setAttribute('spellcheck', switchSpellcheck.checked ? 'true' : 'false');
+    });
+  }
+
+  const toggleNotifBadge = (rowId, badgeId) => {
+    const row = document.getElementById(rowId);
+    const badge = document.getElementById(badgeId);
+    if (!row || !badge) return;
+    row.addEventListener('click', () => {
+      const active = badge.textContent.trim() === 'Activadas';
+      badge.textContent = active ? 'Silenciadas' : 'Activadas';
+      badge.classList.toggle('active', !active);
+    });
+  };
+  toggleNotifBadge('notif-row-msg', 'badge-notif-msg');
+  toggleNotifBadge('notif-row-groups', 'badge-notif-groups');
+  toggleNotifBadge('notif-row-calls', 'badge-notif-calls');
+
+  const switchBgSync = document.getElementById('switch-bg-sync');
+  if (switchBgSync) {
+    switchBgSync.addEventListener('change', () => {
+      if (switchBgSync.checked) {
+        document.getElementById('enable-push-btn')?.click();
+      }
+    });
+  }
+
+  document.getElementById('btn-test-notification')?.addEventListener('click', () => {
+    const toast = document.getElementById('popup-notifications');
+    if (!toast) return;
+    const card = document.createElement('div');
+    card.className = 'bg-[#0a1122] text-white px-4 py-3 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 pointer-events-auto';
+    card.textContent = '🔔 Notificación de prueba de Sync Engine activa.';
+    toast.appendChild(card);
+    setTimeout(() => card.remove(), 3500);
+  });
+
   const viewport = window.visualViewport;
   if (viewport) {
     const syncKeyboard = () => {
