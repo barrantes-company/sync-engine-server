@@ -482,3 +482,121 @@
     transform: none !important;
   }
 }
+
+/* Information architecture pass: compact entry, calmer workspace, clear focus. */
+#auth-screen {
+  box-sizing: border-box;
+  min-height: 100dvh !important;
+  padding: clamp(16px, 4vw, 40px) !important;
+}
+
+#auth-screen > div {
+  box-sizing: border-box;
+  width: min(100%, 420px) !important;
+  max-height: calc(100dvh - 32px);
+  padding: 26px !important;
+  gap: 18px !important;
+  border-radius: 24px !important;
+}
+
+#auth-screen .auth-logo {
+  width: 60px !important;
+  height: 60px !important;
+}
+
+#auth-screen .auth-brand {
+  gap: 6px !important;
+}
+
+#auth-screen .auth-brand h2 {
+  font-size: 1.35rem !important;
+}
+
+#auth-screen .auth-brand p {
+  max-width: 280px;
+  line-height: 1.45;
+}
+
+#auth-screen .auth-tabs button,
+#auth-screen input,
+#auth-screen #auth-submit-btn {
+  min-height: 46px !important;
+}
+
+#auth-screen input {
+  box-sizing: border-box;
+  padding-block: 11px !important;
+}
+
+#auth-screen #auth-form {
+  gap: 14px !important;
+}
+
+/* Empty state: communicate the next action without creating a second page. */
+#chat-messages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#chat-welcome {
+  box-sizing: border-box;
+  width: min(100%, 520px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: auto !important;
+  padding: 30px 28px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+#chat-welcome .empty-state-icon {
+  width: 58px !important;
+  height: 58px !important;
+  margin-bottom: 16px !important;
+  border-radius: 18px !important;
+}
+
+#chat-welcome .empty-state-text {
+  max-width: 390px !important;
+}
+
+/* The information panel is contextual and overlays the conversation only when opened. */
+#app-container #info-drawer-panel.drawer-closed {
+  display: none !important;
+}
+
+#app-container #info-drawer-panel.drawer-open {
+  display: flex !important;
+}
+
+@media (max-height: 760px) and (min-width: 768px) {
+  #auth-screen > div {
+    padding: 20px !important;
+    gap: 14px !important;
+  }
+
+  #auth-screen .auth-logo {
+    width: 48px !important;
+    height: 48px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  #auth-screen {
+    align-items: flex-start !important;
+    padding: 18px 14px calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+
+  #auth-screen > div {
+    max-height: none;
+    padding: 22px 18px !important;
+  }
+
+  #chat-welcome {
+    padding: 24px 16px !important;
+  }
+}
