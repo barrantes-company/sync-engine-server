@@ -65,20 +65,21 @@ async function fixture(t, { resolve, ...config } = {}) {
       if (resolve) return resolve(host, resolutions);
       return host === "internal.example" ? [{ address: "fd00::1", family: 6 }] : [publicV4, publicV6];
     },
-    request(url, options, callback) {
+    request(protocol, options, callback) {
       assert.equal(options.agent, false);
       assert.equal(options.autoSelectFamily, false);
-      options.lookup(url.hostname, { all: true }, (error, addresses) => {
+      options.lookup(options.hostname, { all: true }, (error, addresses) => {
         assert.equal(error, null); snapshots.push(addresses);
         assert.ok(addresses.every((x) => isPublicAddress(x.address)));
       });
-      options.lookup(url.hostname, {}, (error, address, family) => {
+      options.lookup(options.hostname, {}, (error, address, family) => {
         assert.equal(error, null); assert.ok(isPublicAddress(address)); assert.equal(family, options.family);
       });
       // Test-only transport routes validated public destinations to a disposable
       // loopback HTTP server. The production request uses the pinned lookup above.
-      return http.request({ hostname: "127.0.0.1", port: server.address().port, path: url.pathname,
-        agent: false, headers: { ...options.headers, Host: url.host }, signal: options.signal }, callback);
+      assert.equal(protocol, options.protocol);
+      return http.request({ hostname: "127.0.0.1", port: server.address().port, path: options.path,
+        agent: false, headers: options.headers, signal: options.signal }, callback);
     }
   });
   return { fetch, visited, snapshots, resolutions };
