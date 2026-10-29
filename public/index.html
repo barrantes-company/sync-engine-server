@@ -229,6 +229,8 @@
               </div>
 
               <div class="chat-header-actions flex items-center gap-1.5 sm:gap-2">
+                <button id="open-chat-appearance-btn" type="button" title="Personalizar apariencia del chat" aria-label="Personalizar apariencia del chat"
+                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#E8F1FF] text-[#0877F9] border border-[rgba(8,119,249,0.18)] flex items-center justify-center text-sm font-bold cursor-pointer">◐</button>
                 <button id="start-call-btn" type="button" title="Iniciar llamada de voz" aria-label="Iniciar llamada de voz"
                   class="icon-btn chat-action-call h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
                   📞
@@ -794,6 +796,34 @@
     </div>
   </div>
 
+  <!-- MODAL: APARIENCIA POR CONVERSACIÓN -->
+  <div id="chat-appearance-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="chat-appearance-sheet bg-white rounded-3xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl text-[#0A1A3A]">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-base font-title">Apariencia del chat</h3>
+          <p class="text-xs text-[#64748B] mt-1">Personalización guardada solo para esta conversación.</p>
+        </div>
+        <button id="close-chat-appearance-btn" type="button" aria-label="Cerrar" class="h-8 w-8 rounded-full text-[#64748B] hover:bg-[#F1F5F9] flex items-center justify-center cursor-pointer">✕</button>
+      </div>
+      <div class="chat-appearance-grid">
+        <label>Fondo del chat<input id="chat-bg-color" type="color" value="#f7f9fc"></label>
+        <label>Fondo de mis mensajes<input id="chat-sent-bg-color" type="color" value="#dcecff"></label>
+        <label>Texto de mis mensajes<input id="chat-sent-text-color" type="color" value="#102d55"></label>
+        <label>Fondo del contacto<input id="chat-received-bg-color" type="color" value="#ffffff"></label>
+        <label>Texto del contacto<input id="chat-received-text-color" type="color" value="#172b4d"></label>
+      </div>
+      <label class="chat-appearance-contrast"><input id="chat-auto-contrast" type="checkbox" checked> Ajustar automáticamente el contraste del texto</label>
+      <div class="flex items-center justify-between gap-2 pt-2 border-t border-[#E2E8F0]">
+        <button id="reset-chat-appearance-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer">Restaurar</button>
+        <div class="flex gap-2">
+          <button id="cancel-chat-appearance-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer">Cancelar</button>
+          <button id="save-chat-appearance-btn" type="button" class="px-4 py-2 rounded-xl bg-[#0877F9] text-white font-bold text-xs cursor-pointer">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="channel-admin-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md flex flex-col gap-3 shadow-2xl border border-[rgba(197,160,89,0.3)] text-[#0A1A3A]">
       <div class="flex items-center justify-between">
@@ -1041,6 +1071,100 @@
   const recordingTimer = document.getElementById('recording-timer');
   const cancelRecordingBtn = document.getElementById('cancel-recording-btn');
   const sendRecordingBtn = document.getElementById('send-recording-btn');
+
+  const openChatAppearanceBtn = document.getElementById('open-chat-appearance-btn');
+  const chatAppearanceModal = document.getElementById('chat-appearance-modal');
+  const closeChatAppearanceBtn = document.getElementById('close-chat-appearance-btn');
+  const cancelChatAppearanceBtn = document.getElementById('cancel-chat-appearance-btn');
+  const saveChatAppearanceBtn = document.getElementById('save-chat-appearance-btn');
+  const resetChatAppearanceBtn = document.getElementById('reset-chat-appearance-btn');
+  const chatBgColor = document.getElementById('chat-bg-color');
+  const chatSentBgColor = document.getElementById('chat-sent-bg-color');
+  const chatSentTextColor = document.getElementById('chat-sent-text-color');
+  const chatReceivedBgColor = document.getElementById('chat-received-bg-color');
+  const chatReceivedTextColor = document.getElementById('chat-received-text-color');
+  const chatAutoContrast = document.getElementById('chat-auto-contrast');
+
+  const chatAppearanceDefaults = Object.freeze({
+    background: '#f7f9fc',
+    sentBackground: '#dcecff',
+    sentText: '#102d55',
+    receivedBackground: '#ffffff',
+    receivedText: '#172b4d',
+    autoContrast: true
+  });
+
+  function chatAppearanceKey() {
+    if (!currentUser) return null;
+    const thread = activeChannelId ? `channel:${activeChannelId}` : activeContactSyncId ? `dm:${activeContactSyncId}` : null;
+    return thread ? `sync-engine-chat-appearance:${currentUser.syncId}:${thread}` : null;
+  }
+
+  function readChatAppearance() {
+    const key = chatAppearanceKey();
+    if (!key) return { ...chatAppearanceDefaults };
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || '{}');
+      return { ...chatAppearanceDefaults, ...saved };
+    } catch (_) {
+      return { ...chatAppearanceDefaults };
+    }
+  }
+
+  function readableTextColor(hex) {
+    const value = String(hex || '').replace('#', '');
+    if (!/^[0-9a-f]{6}$/i.test(value)) return '#172b4d';
+    const channels = [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16) / 255);
+    const luminance = channels.map(channel => channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
+    return (0.2126 * luminance[0] + 0.7152 * luminance[1] + 0.0722 * luminance[2]) > .48 ? '#172b4d' : '#f8fbff';
+  }
+
+  function applyChatAppearance(settings = readChatAppearance()) {
+    if (!chatMessages) return;
+    const sentText = settings.autoContrast ? readableTextColor(settings.sentBackground) : settings.sentText;
+    const receivedText = settings.autoContrast ? readableTextColor(settings.receivedBackground) : settings.receivedText;
+    chatMessages.style.setProperty('--se-chat-bg', settings.background);
+    chatMessages.style.setProperty('--se-chat-sent-bg', settings.sentBackground);
+    chatMessages.style.setProperty('--se-chat-sent-text', sentText);
+    chatMessages.style.setProperty('--se-chat-received-bg', settings.receivedBackground);
+    chatMessages.style.setProperty('--se-chat-received-text', receivedText);
+  }
+
+  function fillChatAppearanceForm(settings) {
+    chatBgColor.value = settings.background;
+    chatSentBgColor.value = settings.sentBackground;
+    chatSentTextColor.value = settings.sentText;
+    chatReceivedBgColor.value = settings.receivedBackground;
+    chatReceivedTextColor.value = settings.receivedText;
+    chatAutoContrast.checked = settings.autoContrast;
+  }
+
+  function closeChatAppearance() { chatAppearanceModal?.classList.add('hidden'); }
+
+  function openChatAppearance() {
+    if (!chatAppearanceKey()) return;
+    fillChatAppearanceForm(readChatAppearance());
+    chatAppearanceModal?.classList.remove('hidden');
+  }
+
+  openChatAppearanceBtn?.addEventListener('click', openChatAppearance);
+  closeChatAppearanceBtn?.addEventListener('click', closeChatAppearance);
+  cancelChatAppearanceBtn?.addEventListener('click', closeChatAppearance);
+  resetChatAppearanceBtn?.addEventListener('click', () => fillChatAppearanceForm(chatAppearanceDefaults));
+  saveChatAppearanceBtn?.addEventListener('click', () => {
+    const settings = {
+      background: chatBgColor.value,
+      sentBackground: chatSentBgColor.value,
+      sentText: chatSentTextColor.value,
+      receivedBackground: chatReceivedBgColor.value,
+      receivedText: chatReceivedTextColor.value,
+      autoContrast: chatAutoContrast.checked
+    };
+    const key = chatAppearanceKey();
+    if (key) localStorage.setItem(key, JSON.stringify(settings));
+    applyChatAppearance(settings);
+    closeChatAppearance();
+  });
 
   // Perfil y Foto Circular (1080 × 1080 px)
   const editProfileModal = document.getElementById('edit-profile-modal');
@@ -2647,6 +2771,7 @@
     document.getElementById('chat-header-bar')?.classList.remove('hidden');
     document.getElementById('input-container')?.classList.remove('hidden');
     activeChannelId = null;
+    applyChatAppearance();
     cancelReply();
     closeChatSearch();
 
@@ -5332,6 +5457,7 @@
 
   async function selectChannel(chan) {
     activeChannelId = chan.id;
+    applyChatAppearance();
     publishPresence();
     activeContactSyncId = null;
     document.getElementById('app-container').dataset.hasActiveConversation = 'true';
