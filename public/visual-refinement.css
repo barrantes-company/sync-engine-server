@@ -519,6 +519,15 @@
   #chat-messages .msg-item { max-width: 88% !important; }
 }
 
+/* visual-18-absolute-final: sender rows must span the full thread. */
+#chat-messages > .msg-item { width: 100% !important; max-width: none !important; align-self: stretch !important; margin-inline: 0 !important; }
+#chat-messages > .msg-item .chat-bubble-inner { max-width: min(78%, 760px) !important; }
+#chat-messages .chat-bubble-sent, #chat-messages .chat-bubble-sent * { color: var(--se-chat-sent-text, #102d55) !important; }
+#chat-messages .chat-bubble-received, #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #172b4d) !important; }
+html[data-se-theme="energy"] #chat-messages .chat-bubble-sent, html[data-se-theme="energy"] #chat-messages .chat-bubble-sent * { color: var(--se-chat-sent-text, #f8fbff) !important; }
+html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-theme="energy"] #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #edf4ff) !important; }
+@media (max-width: 640px) { #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
+
 @media (prefers-reduced-motion: reduce) {
   #contacts-list > *,
   #channels-list > *,
@@ -537,6 +546,56 @@
   .chat-action-call:hover {
     transform: none !important;
   }
+}
+
+/* visual-18-final: browser-independent rows, visible controls and safe text. */
+#chat-header-bar .chat-header-actions {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex-wrap: nowrap !important;
+}
+
+#open-chat-appearance-btn {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex: 0 0 auto !important;
+}
+
+#chat-messages > .msg-item {
+  width: 100% !important;
+  max-width: none !important;
+  align-self: stretch !important;
+  margin-inline: 0 !important;
+}
+
+#chat-messages > .msg-item .chat-bubble-inner {
+  max-width: min(78%, 760px) !important;
+}
+
+#chat-messages .chat-bubble-sent,
+#chat-messages .chat-bubble-sent * {
+  color: var(--se-chat-sent-text, #102d55) !important;
+}
+
+#chat-messages .chat-bubble-received,
+#chat-messages .chat-bubble-received * {
+  color: var(--se-chat-received-text, #172b4d) !important;
+}
+
+html[data-se-theme="energy"] #chat-messages .chat-bubble-sent,
+html[data-se-theme="energy"] #chat-messages .chat-bubble-sent * {
+  color: var(--se-chat-sent-text, #f8fbff) !important;
+}
+
+html[data-se-theme="energy"] #chat-messages .chat-bubble-received,
+html[data-se-theme="energy"] #chat-messages .chat-bubble-received * {
+  color: var(--se-chat-received-text, #edf4ff) !important;
+}
+
+@media (max-width: 640px) {
+  #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; }
 }
 
 /* visual-17: per-conversation appearance with contrast-safe defaults. */
@@ -2185,6 +2244,17 @@ html[data-se-theme="energy"] #chat-textarea::placeholder {
   }
 }
 
+/* visual-18-final: last-cascade contract for browser parity and contrast. */
+#chat-header-bar .chat-header-actions { display: flex !important; visibility: visible !important; opacity: 1 !important; flex-wrap: nowrap !important; }
+#open-chat-appearance-btn { display: inline-flex !important; visibility: visible !important; opacity: 1 !important; flex: 0 0 auto !important; }
+#chat-messages > .msg-item { width: 100% !important; max-width: none !important; align-self: stretch !important; margin-inline: 0 !important; }
+#chat-messages > .msg-item .chat-bubble-inner { max-width: min(78%, 760px) !important; }
+#chat-messages .chat-bubble-sent, #chat-messages .chat-bubble-sent * { color: var(--se-chat-sent-text, #102d55) !important; }
+#chat-messages .chat-bubble-received, #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #172b4d) !important; }
+html[data-se-theme="energy"] #chat-messages .chat-bubble-sent, html[data-se-theme="energy"] #chat-messages .chat-bubble-sent * { color: var(--se-chat-sent-text, #f8fbff) !important; }
+html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-theme="energy"] #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #edf4ff) !important; }
+@media (max-width: 640px) { #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
+
 /* visual-16-final: message rows span the thread; bubbles align per sender. */
 #chat-messages > * {
   width: 100% !important;
@@ -2203,3 +2273,12 @@ html[data-se-theme="energy"] #chat-textarea::placeholder {
 @media (max-width: 640px) {
   #chat-messages .msg-item { max-width: 88% !important; }
 }
+
+/* visual-18-absolute-final: sender rows must span the full thread. */
+#chat-messages > .msg-item { width: 100% !important; max-width: none !important; align-self: stretch !important; margin-inline: 0 !important; }
+#chat-messages > .msg-item .chat-bubble-inner { max-width: min(78%, 760px) !important; }
+#chat-messages .chat-bubble-sent, #chat-messages .chat-bubble-sent * { color: var(--se-chat-sent-text, #102d55) !important; }
+#chat-messages .chat-bubble-received, #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #172b4d) !important; }
+html[data-se-theme="energy"] #chat-messages .chat-bubble-sent, html[data-se-theme="energy"] #chat-messages .chat-bubble-sent * { color: var(--se-chat-sent-text, #f8fbff) !important; }
+html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-theme="energy"] #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #edf4ff) !important; }
+@media (max-width: 640px) { #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
