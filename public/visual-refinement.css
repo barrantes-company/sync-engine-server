@@ -897,3 +897,122 @@
     padding-inline: 16px !important;
   }
 }
+
+/* visual-9: transformar el estado vacío en una entrada útil al workspace. */
+.sidebar-view-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 2px 2px 4px;
+}
+
+.sidebar-view-title {
+  color: #10213d;
+  font-family: Inter, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+}
+
+.workspace-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.empty-state-secondary {
+  border: 1px solid rgba(8, 119, 249, .24);
+  background: #fff;
+  color: #0757b8;
+}
+
+.empty-state-secondary:hover {
+  border-color: rgba(8, 119, 249, .48);
+  background: #f4f8ff;
+  transform: translateY(-1px);
+}
+
+.workspace-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 420px);
+  margin-top: 20px;
+  border: 1px solid rgba(8, 119, 249, .12);
+  border-radius: 14px;
+  background: rgba(248, 250, 252, .78);
+  overflow: hidden;
+}
+
+.workspace-overview-item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 11px 8px;
+  border-right: 1px solid rgba(8, 119, 249, .10);
+}
+
+.workspace-overview-item:last-child {
+  border-right: 0;
+}
+
+.workspace-overview-item strong {
+  color: #10213d;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.workspace-overview-item span {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-connection-dot {
+  color: #10b981 !important;
+  font-size: 16px !important;
+}
+
+#chat-welcome .empty-state-hint {
+  margin-top: 14px !important;
+}
+
+html[data-se-theme="energy"] .sidebar-view-title,
+html[data-se-theme="energy"] .workspace-overview-item strong {
+  color: #f4f8ff;
+}
+
+html[data-se-theme="energy"] .empty-state-secondary {
+  border-color: rgba(126, 231, 255, .32);
+  background: #101e30;
+  color: #7ee7ff;
+}
+
+html[data-se-theme="energy"] .workspace-overview {
+  border-color: rgba(126, 231, 255, .16);
+  background: rgba(16, 30, 48, .78);
+}
+
+html[data-se-theme="energy"] .workspace-overview-item {
+  border-color: rgba(126, 231, 255, .12);
+}
+
+@media (max-width: 560px) {
+  .workspace-quick-actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: min(100%, 260px);
+  }
+
+  .workspace-quick-actions button {
+    justify-content: center;
+  }
+}

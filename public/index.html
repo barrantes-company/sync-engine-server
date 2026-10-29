@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/visual-refinement.css?v=visual-8">
+<link rel="stylesheet" href="/visual-refinement.css?v=visual-9">
 <script>
 (function () {
   const current = new URL(location.href);
@@ -140,6 +140,10 @@
         <!-- VISTA DE CHATS DIRECTOS (DMs) -->
         <div id="sidebar-dms-view" class="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex flex-col gap-1.5 flex-shrink-0">
+            <div class="sidebar-view-heading">
+              <span class="sidebar-section-kicker">Workspace</span>
+              <span class="sidebar-view-title">Conversaciones</span>
+            </div>
             <div class="search-row">
               <div class="search-field">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
@@ -301,8 +305,16 @@
               </div>
               <p class="empty-state-title text-base font-bold text-[#0A1A3A] font-title">SYNC ENGINE para Web &amp; Móvil</p>
               <p class="empty-state-text text-xs text-[#64748B] max-w-sm mt-1.5 leading-relaxed">Elige un contacto en la lista. Si todavía no tienes, escribe su Código ID en el buscador de la izquierda.</p>
-              <button id="empty-add-contact-btn" type="button" class="empty-state-action mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0877F9] text-white text-xs font-bold shadow-sm transition-all">＋ Agregar contacto</button>
-              <span class="empty-state-hint mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[10px] font-bold uppercase tracking-wider text-[#C5A059]">🔒 Solo contactos con Código ID</span>
+              <div class="workspace-quick-actions">
+                <button id="empty-add-contact-btn" type="button" class="empty-state-action inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0877F9] text-white text-xs font-bold shadow-sm transition-all">＋ Agregar contacto</button>
+                <button id="empty-create-channel-btn" type="button" class="empty-state-secondary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all">＋ Crear canal</button>
+              </div>
+              <div class="workspace-overview" aria-label="Resumen del workspace">
+                <div class="workspace-overview-item"><strong id="workspace-contact-total">0</strong><span>contactos</span></div>
+                <div class="workspace-overview-item"><strong id="workspace-channel-total">0</strong><span>canales</span></div>
+                <div class="workspace-overview-item"><strong class="workspace-connection-dot">●</strong><span>conectado</span></div>
+              </div>
+              <span class="empty-state-hint inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[10px] font-bold uppercase tracking-wider text-[#C5A059]">🔒 Solo contactos con Código ID</span>
             </div>
           </div>
 
@@ -984,6 +996,9 @@
   const addContactBtn = document.getElementById('add-contact-btn');
   const contactActionMsg = document.getElementById('contact-action-msg');
   const emptyAddContactBtn = document.getElementById('empty-add-contact-btn');
+  const emptyCreateChannelBtn = document.getElementById('empty-create-channel-btn');
+  const workspaceContactTotal = document.getElementById('workspace-contact-total');
+  const workspaceChannelTotal = document.getElementById('workspace-channel-total');
 
   const activeChatAvatar = document.getElementById('active-chat-avatar');
   const activeChatName = document.getElementById('active-chat-name');
@@ -1842,6 +1857,7 @@
 
     const validContacts = contacts.filter((c) => c.syncId !== currentUser.syncId);
     contactsCountBadge.textContent = validContacts.length;
+    if (workspaceContactTotal) workspaceContactTotal.textContent = validContacts.length;
 
     if (validContacts.length === 0) {
       contactsList.innerHTML = `
@@ -5128,6 +5144,7 @@
     if (!channelsList) return;
     channelsList.innerHTML = '';
     if (channelsCountBadge) channelsCountBadge.textContent = workspaceChannels.length;
+    if (workspaceChannelTotal) workspaceChannelTotal.textContent = workspaceChannels.length;
     if (!workspaceChannels.length) {
       const emptyState = document.createElement('p');
       emptyState.className = 'px-3 py-4 text-xs text-[#64748B]';
@@ -5439,6 +5456,10 @@
 
   // Modal Crear Canal
   if (openCreateChannelBtn) openCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.remove('hidden'));
+  if (emptyCreateChannelBtn) emptyCreateChannelBtn.addEventListener('click', () => {
+    document.querySelector('[data-se-view="channels"]')?.click();
+    createChannelModal?.classList.remove('hidden');
+  });
   if (closeCreateChannelBtn) closeCreateChannelBtn.addEventListener('click', () => createChannelModal.classList.add('hidden'));
   document.getElementById('close-channel-admin-btn')?.addEventListener('click', closeChannelAdmin);
   document.getElementById('channel-admin-cancel')?.addEventListener('click', () => {
