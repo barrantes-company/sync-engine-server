@@ -7,8 +7,10 @@ const path = require("node:path");
 const vm = require("node:vm");
 const { spawn } = require("node:child_process");
 const { once } = require("node:events");
+const { createRequire } = require("node:module");
 const root = path.resolve(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "db.js"), "utf8");
+const rootRequire = createRequire(path.join(root, "db.js"));
 
 function fixture(t, content, filesystem = fs) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sync-persistence-"));
@@ -19,7 +21,7 @@ function fixture(t, content, filesystem = fs) {
     const module = { exports: {} };
     vm.runInNewContext(source, {
       __dirname: root, module, process: { env: { NODE_ENV: "test", DATA_DIR: dir } },
-      require(name) { return name === "fs" ? filesystem : require(name); },
+      require(name) { return name === "fs" ? filesystem : rootRequire(name); },
       console: { error() {}, warn() {} }, Buffer, setTimeout
     });
     return module.exports;

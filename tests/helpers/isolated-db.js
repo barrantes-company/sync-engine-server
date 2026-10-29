@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('node:fs');
+const { createRequire } = require('node:module');
 const path = require('node:path');
 const vm = require('node:vm');
 const { createHash } = require('node:crypto');
@@ -17,8 +18,9 @@ module.exports = function isolatedDb(root, tempDir, users) {
     messages: [], files: [], pinnedMessages: {}, subscriptions: {}
   }));
   const module = { exports: {} };
+  const rootRequire = createRequire(path.join(root, 'db.js'));
   vm.runInNewContext(fs.readFileSync(path.join(root, 'db.js'), 'utf8') + '\nmodule.exports.testData = readDb();', {
-    __dirname: tempDir, require, module, process: { env: { NODE_ENV: 'test' } },
+    __dirname: tempDir, require: rootRequire, module, process: { env: { NODE_ENV: 'test' } },
     console, Buffer, Promise, Set
   });
   // Preserve readable legacy fixture labels; exercise the real session validator with valid token shape.

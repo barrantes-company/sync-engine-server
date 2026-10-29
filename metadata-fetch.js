@@ -53,8 +53,8 @@ async function validateTarget(url, lookup, signal) {
   return addresses;
 }
 
-function requestPage(url, options, callback) {
-  return (url.protocol === "https:" ? https : http).request(url, options, callback);
+function requestPage(protocol, options, callback) {
+  return (protocol === "https:" ? https : http).request(options, callback);
 }
 
 // Injection is only a module-level test seam, never controlled by HTTP input/env.
@@ -69,14 +69,24 @@ function createMetadataFetcher({ lookup = dns.lookup, request = requestPage,
       const result = await new Promise((resolve, reject) => {
         // Use only this validated DNS snapshot. No second DNS resolution, pool
         // reuse or automatic redirect may choose an unchecked destination.
-        const req = request(url, {
+        const requestOptions = {
+          protocol: url.protocol,
+          hostname: addresses[0].address,
+          port: url.port || undefined,
+          path: url.pathname + url.search,
+          servername: url.hostname,
           agent: false, signal, family: addresses[0].family, autoSelectFamily: false,
           lookup(_host, options, callback) {
             if (options.all) callback(null, addresses);
             else callback(null, addresses[0].address, addresses[0].family);
           },
-          headers: { "User-Agent": "SYNC-ENGINE-LinkPreview/1.0", Accept: "text/html,application/xhtml+xml" }
-        }, (response) => {
+          headers: {
+            "User-Agent": "SYNC-ENGINE-LinkPreview/1.0",
+            Accept: "text/html,application/xhtml+xml",
+            Host: url.host
+          }
+        };
+        const req = request(url.protocol, requestOptions, (response) => {
           const status = response.statusCode;
           const location = response.headers.location;
           if ([301, 302, 303, 307, 308].includes(status) && location) {

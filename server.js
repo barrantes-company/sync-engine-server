@@ -208,6 +208,7 @@ const https = require("https");
 const os = require("os");
 const path = require("path");
 const express = require("express");
+const { rateLimit } = require("express-rate-limit");
 const cors = require("cors");
 const multer = require("multer");
 const { Server } = require("socket.io");
@@ -254,6 +255,12 @@ let shuttingDown = false;
 let stopPubSub = null;
 const messageTasks = new Set();
 const app = express();
+const channelAdminRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false
+});
 app.use((_req, res, next) => shuttingDown
   ? res.status(503).json({ error: "Servidor cerrando" }) : next());
 app.disable("x-powered-by");
@@ -1000,7 +1007,7 @@ app.post("/api/channels", requireAuth, requireFeature("teamChannels"), (req, res
   }
 });
 
-app.put("/api/channels/:channelId", requireAuth, requireFeature("teamChannels"), (req, res) => {
+app.put("/api/channels/:channelId", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
   try {
     const channel = db.updateWorkspaceChannel(req.params.channelId, req.user.syncId, req.body || {});
     emitToChannelMembers(channel, "channel-updated", req.user.syncId);
@@ -1010,7 +1017,7 @@ app.put("/api/channels/:channelId", requireAuth, requireFeature("teamChannels"),
   }
 });
 
-app.post("/api/channels/:channelId/members", requireAuth, requireFeature("teamChannels"), (req, res) => {
+app.post("/api/channels/:channelId/members", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
   try {
     const channel = db.addWorkspaceChannelMember(req.params.channelId, req.user.syncId, req.body && req.body.syncId);
     const targetSyncId = String(req.body && req.body.syncId || "").trim().toUpperCase();
@@ -1023,7 +1030,7 @@ app.post("/api/channels/:channelId/members", requireAuth, requireFeature("teamCh
   }
 });
 
-app.post("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeature("teamChannels"), (req, res) => {
+app.post("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
   try {
     const channel = db.grantWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
     emitToChannelMembers(channel, "channel-updated", req.user.syncId);
@@ -1033,7 +1040,7 @@ app.post("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeature(
   }
 });
 
-app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeature("teamChannels"), (req, res) => {
+app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
   try {
     const channel = db.revokeWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
     emitToChannelMembers(channel, "channel-updated", req.user.syncId);
@@ -1043,7 +1050,7 @@ app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeatur
   }
 });
 
-app.delete("/api/channels/:channelId/members/:syncId", requireAuth, requireFeature("teamChannels"), (req, res) => {
+app.delete("/api/channels/:channelId/members/:syncId", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
   try {
     const channelId = req.params.channelId;
     const targetSyncId = String(req.params.syncId || "").trim().toUpperCase();
@@ -1057,7 +1064,7 @@ app.delete("/api/channels/:channelId/members/:syncId", requireAuth, requireFeatu
   }
 });
 
-app.delete("/api/channels/:channelId", requireAuth, requireFeature("teamChannels"), (req, res) => {
+app.delete("/api/channels/:channelId", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
   try {
     const channel = db.deleteWorkspaceChannel(req.params.channelId, req.user.syncId);
     revokeChannelSockets(channel.id, channel.memberSyncIds || [], "channel-deleted", channel);
