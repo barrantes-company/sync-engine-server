@@ -84,7 +84,8 @@
 
 /* The search controls must remain visible at 100% zoom and narrow desktops. */
 .search-row {
-  display: flex !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 64px;
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -92,8 +93,13 @@
 }
 
 .search-field {
-  flex: 1 1 auto !important;
+  width: 100%;
   min-width: 0 !important;
+}
+
+#contact-search-input {
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 #add-contact-btn {
@@ -483,6 +489,22 @@
   }
 }
 
+.empty-state-action {
+  border: 0;
+  cursor: pointer;
+}
+
+.empty-state-action:hover {
+  background: #0757b8 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(8, 119, 249, 0.22);
+}
+
+.empty-state-action:focus-visible {
+  outline: 2px solid #53a2ff;
+  outline-offset: 3px;
+}
+
 /* Information architecture pass: compact entry, calmer workspace, clear focus. */
 #auth-screen {
   box-sizing: border-box;
@@ -492,16 +514,17 @@
 
 #auth-screen > div {
   box-sizing: border-box;
-  width: min(100%, 420px) !important;
-  max-height: calc(100dvh - 32px);
-  padding: 26px !important;
-  gap: 18px !important;
+  width: min(100%, 360px) !important;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 20px 22px !important;
+  gap: 14px !important;
   border-radius: 24px !important;
 }
 
 #auth-screen .auth-logo {
-  width: 60px !important;
-  height: 60px !important;
+  width: 48px !important;
+  height: 48px !important;
 }
 
 #auth-screen .auth-brand {
@@ -509,7 +532,7 @@
 }
 
 #auth-screen .auth-brand h2 {
-  font-size: 1.35rem !important;
+  font-size: 1.15rem !important;
 }
 
 #auth-screen .auth-brand p {

@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/visual-refinement.css?v=visual-5">
+<link rel="stylesheet" href="/visual-refinement.css?v=visual-7">
 <script>
 (function () {
   const current = new URL(location.href);
@@ -298,7 +298,8 @@
               </div>
               <p class="empty-state-title text-base font-bold text-[#0A1A3A] font-title">SYNC ENGINE para Web &amp; Móvil</p>
               <p class="empty-state-text text-xs text-[#64748B] max-w-sm mt-1.5 leading-relaxed">Elige un contacto en la lista. Si todavía no tienes, escribe su Código ID en el buscador de la izquierda.</p>
-              <span class="empty-state-hint mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[10px] font-bold uppercase tracking-wider text-[#C5A059]">🔒 Solo contactos con Código ID</span>
+              <button id="empty-add-contact-btn" type="button" class="empty-state-action mt-5 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0877F9] text-white text-xs font-bold shadow-sm transition-all">＋ Agregar contacto</button>
+              <span class="empty-state-hint mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8FAFC] border border-[rgba(197,160,89,0.25)] text-[10px] font-bold uppercase tracking-wider text-[#C5A059]">🔒 Solo contactos con Código ID</span>
             </div>
           </div>
 
@@ -973,6 +974,7 @@
   const contactSearchInput = document.getElementById('contact-search-input');
   const addContactBtn = document.getElementById('add-contact-btn');
   const contactActionMsg = document.getElementById('contact-action-msg');
+  const emptyAddContactBtn = document.getElementById('empty-add-contact-btn');
 
   const activeChatAvatar = document.getElementById('active-chat-avatar');
   const activeChatName = document.getElementById('active-chat-name');
@@ -1932,6 +1934,10 @@
   }
 
   addContactBtn.addEventListener('click', handleAddContact);
+  emptyAddContactBtn?.addEventListener('click', () => {
+    document.querySelector('[data-se-view="contacts"]')?.click();
+    contactSearchInput.focus();
+  });
   contactSearchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
