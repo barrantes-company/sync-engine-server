@@ -623,3 +623,277 @@
     padding: 24px 16px !important;
   }
 }
+
+/* visual-8: contrato estructural del shell y del perfil.
+   Esta capa debe ser la última: neutraliza offsets heredados sin alterar la
+   lógica de navegación ni los identificadores usados por JavaScript. */
+:root {
+  --se-nav-width: 76px;
+  --se-sidebar-width: clamp(260px, 24vw, 320px);
+  --se-shell-line: rgba(8, 119, 249, .16);
+}
+
+#app-container {
+  position: relative !important;
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+#sync-engine-nav-rail {
+  position: absolute !important;
+  inset: 0 auto 0 0 !important;
+  z-index: 70 !important;
+  width: var(--se-nav-width) !important;
+  min-width: var(--se-nav-width) !important;
+  flex: 0 0 var(--se-nav-width) !important;
+  box-sizing: border-box !important;
+}
+
+#app-container > header.sticky,
+#main-layout {
+  box-sizing: border-box !important;
+  width: calc(100% - var(--se-nav-width)) !important;
+  max-width: none !important;
+  margin-left: var(--se-nav-width) !important;
+  margin-right: 0 !important;
+}
+
+#app-container > header.sticky {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+
+#main-layout {
+  display: grid !important;
+  grid-template-columns: var(--se-sidebar-width) minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  background: #f5f8fc !important;
+}
+
+#sidebar-panel {
+  grid-column: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex: none !important;
+  box-sizing: border-box !important;
+  border: 0 !important;
+  border-right: 1px solid var(--se-shell-line) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+#chat-panel-container {
+  grid-column: 2 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  overflow: hidden !important;
+}
+
+#workspace-split-container,
+#chat-panel {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+#sidebar-dms-view,
+#sidebar-channels-view,
+#contacts-list,
+#channels-list {
+  min-width: 0 !important;
+}
+
+.sidebar-section-header {
+  min-height: 68px !important;
+  padding: 14px 16px !important;
+  align-items: center !important;
+}
+
+.sidebar-section-heading {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sidebar-section-kicker,
+.profile-section-label {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.sidebar-section-title {
+  min-width: 0;
+  overflow: hidden;
+  color: #10213d !important;
+  font-family: Inter, sans-serif !important;
+  font-size: 14px !important;
+  letter-spacing: 0 !important;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#open-create-channel-btn {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding-inline: 12px !important;
+  border-radius: 10px !important;
+  white-space: nowrap;
+}
+
+/* El panel de información no debe reservar una tercera columna cuando está cerrado. */
+#app-container #info-drawer-panel.drawer-closed {
+  display: none !important;
+}
+
+#app-container #info-drawer-panel.drawer-open {
+  position: absolute !important;
+  z-index: 60 !important;
+  inset: 0 0 0 auto !important;
+  width: min(360px, calc(100% - 24px)) !important;
+  max-width: 100% !important;
+  display: flex !important;
+  box-shadow: -16px 0 42px rgba(7, 27, 53, .18) !important;
+}
+
+/* Perfil: identidad, preferencias y cuenta tienen jerarquía propia. */
+#edit-profile-modal .profile-sheet {
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(440px, calc(100vw - 32px)) !important;
+  max-height: min(720px, calc(100dvh - 32px)) !important;
+}
+
+#edit-profile-modal .profile-sheet-body {
+  gap: 16px !important;
+  padding: 16px 20px 20px !important;
+}
+
+#edit-profile-modal .profile-identity-section,
+#edit-profile-modal .profile-preferences-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 10px;
+}
+
+#edit-profile-modal .profile-section-label {
+  margin: 0;
+}
+
+#edit-profile-modal .profile-sync-id {
+  order: 3;
+  margin: 0 !important;
+  padding: 7px 10px;
+  border: 1px solid rgba(8, 119, 249, .16);
+  border-radius: 999px;
+  background: #f4f8ff;
+  font-size: 12px;
+}
+
+#edit-profile-modal .profile-avatar-drop-zone {
+  gap: 10px;
+}
+
+#edit-profile-modal .avatar-preview-box {
+  width: 88px !important;
+  height: 88px !important;
+  flex: 0 0 88px;
+}
+
+#edit-profile-modal #profile-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #dff5ff, #1677f2);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+
+#edit-profile-modal #profile-name-input,
+#edit-profile-modal #copy-sync-id-btn,
+#edit-profile-modal #enable-push-notifications-btn {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-height: 44px;
+}
+
+#edit-profile-modal .profile-sheet-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px 18px;
+}
+
+#edit-profile-modal #profile-logout-btn {
+  margin-left: auto;
+}
+
+@media (max-width: 1023px) {
+  #app-container > header.sticky,
+  #main-layout {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  #main-layout {
+    display: flex !important;
+    flex-direction: row !important;
+  }
+
+  #sidebar-panel,
+  #chat-panel-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #sidebar-panel {
+    min-width: 100% !important;
+  }
+
+  #sync-engine-nav-rail {
+    inset: auto 0 0 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 64px !important;
+    flex: 0 0 64px !important;
+  }
+
+  #main-layout {
+    padding-bottom: 64px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #edit-profile-modal .profile-sheet {
+    width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
+  }
+
+  #edit-profile-modal .profile-sheet-body,
+  #edit-profile-modal .profile-sheet-foot {
+    padding-inline: 16px !important;
+  }
+}

@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/visual-refinement.css?v=visual-7">
+<link rel="stylesheet" href="/visual-refinement.css?v=visual-8">
 <script>
 (function () {
   const current = new URL(location.href);
@@ -159,8 +159,11 @@
 
         <!-- VISTA DE CANALES DE EQUIPO (# Canales) -->
         <div id="sidebar-channels-view" class="flex-1 min-h-0 flex flex-col overflow-hidden hidden">
-          <div class="p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex items-center justify-between gap-2 flex-shrink-0">
-            <span class="text-xs font-bold text-[#0A1A3A] uppercase tracking-wider font-mono">Espacios de Equipo</span>
+          <div class="sidebar-section-header p-2.5 border-b border-[rgba(197,160,89,0.22)] bg-[#F8FAFC] flex items-center justify-between gap-2 flex-shrink-0">
+            <div class="sidebar-section-heading">
+              <span class="sidebar-section-kicker">Workspace</span>
+              <span class="sidebar-section-title text-xs font-bold text-[#0A1A3A] uppercase tracking-wider font-mono">Canales</span>
+            </div>
             <button id="open-create-channel-btn" type="button" title="Crear nuevo canal de equipo"
               class="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#C5A059] to-[#99793D] hover:from-[#d4b068] text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1">
               <span>+</span> <span>Canal</span>
@@ -498,7 +501,9 @@
         <button id="close-profile-modal-btn" type="button" aria-label="Cerrar">✕</button>
       </div>
       <div class="profile-sheet-body">
-        <p id="profile-sync-id" class="profile-sync-id">SYNC-0000</p>
+        <section class="profile-identity-section" aria-labelledby="profile-identity-title">
+          <h4 id="profile-identity-title" class="profile-section-label">Tu identidad</h4>
+          <p id="profile-sync-id" class="profile-sync-id">SYNC-0000</p>
         <div id="avatar-drop-zone" class="profile-avatar-drop-zone" aria-label="Foto de perfil">
           <div class="avatar-preview-box">
             <img id="profile-avatar-preview" src="" alt="" class="hidden">
@@ -511,17 +516,21 @@
           <button id="trigger-avatar-btn" type="button" class="sr-only">Cambiar</button>
           <input type="file" id="profile-avatar-input" accept="image/*" title="Seleccionar foto de perfil" aria-label="Seleccionar foto de perfil" class="hidden">
         </div>
+        </section>
         <div id="avatar-zoom-row" class="hidden">
           <label for="avatar-zoom">Recorte</label>
           <input type="range" id="avatar-zoom" min="1" max="2.4" step="0.05" value="1">
         </div>
-        <label for="profile-name-input">Nombre</label>
-        <input type="text" id="profile-name-input" maxlength="35" title="Nombre, sin emojis" placeholder="Tu nombre">
-        <button id="copy-sync-id-btn" type="button">Copiar mi ID</button>
-        <div id="push-notifications-block">
+        <section class="profile-preferences-section" aria-labelledby="profile-preferences-title">
+          <h4 id="profile-preferences-title" class="profile-section-label">Preferencias</h4>
+          <label for="profile-name-input">Nombre visible</label>
+          <input type="text" id="profile-name-input" maxlength="35" title="Nombre, sin emojis" placeholder="Tu nombre">
+          <button id="copy-sync-id-btn" type="button">Copiar mi ID</button>
+          <div id="push-notifications-block">
           <button id="enable-push-notifications-btn" type="button">Activar notificaciones</button>
           <p id="push-notifications-status" role="status" aria-live="polite"></p>
-        </div>
+          </div>
+        </section>
       </div>
       <div class="profile-sheet-foot">
         <button id="save-profile-btn" type="button">Guardar</button>
