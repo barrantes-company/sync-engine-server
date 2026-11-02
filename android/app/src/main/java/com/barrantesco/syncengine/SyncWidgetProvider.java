@@ -117,6 +117,44 @@ public class SyncWidgetProvider extends AppWidgetProvider {
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId, int style) {
         Log.d(TAG, "updateWidget start id=" + widgetId);
         if (style < 0 || style >= LAYOUTS.length) style = 2;
+
+        // Estilo principal (2 / Negro) usa el renderer canónico.
+        if (style == 2) {
+            Bundle options = manager.getAppWidgetOptions(widgetId);
+            int widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180);
+            int heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 110);
+            int[] size = WidgetRenderer.size(context, widthDp, heightDp);
+            int w = size[0];
+            int h = size[1];
+
+            boolean loggedIn = AppSettings.isLoggedIn(context);
+            String[] status = new String[]{
+                    loggedIn ? "1" : "",
+                    AppSettings.receivedFile(context),
+                    AppSettings.clipboardState(context)
+            };
+
+            android.graphics.Bitmap bitmap = WidgetRenderer.render(
+                    context, w, h,
+                    AppSettings.timeZone(context),
+                    AppSettings.use24h(context),
+                    status);
+
+            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sync_widget);
+            views.setImageViewBitmap(R.id.widget_content, bitmap);
+
+            PendingIntent open = PendingIntent.getActivity(
+                    context, 0,
+                    new Intent(context, OpenAppActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            views.setOnClickPendingIntent(R.id.widget_root, open);
+
+            manager.updateAppWidget(widgetId, views);
+            Log.i(TAG, "updateAppWidget (renderer) submitted id=" + widgetId);
+            return;
+        }
+
+        // Resto de estilos mantienen layouts XML por ahora.
         RemoteViews views = new RemoteViews(context.getPackageName(), LAYOUTS[style]);
 
         String zone = AppSettings.timeZone(context);
