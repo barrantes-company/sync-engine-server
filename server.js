@@ -157,10 +157,15 @@ const authRateLimit = rateLimit({
 app.use((_req, res, next) => shuttingDown
   ? res.status(503).json({ error: "Servidor cerrando" }) : next());
 app.disable("x-powered-by");
-app.use((_req, res, next) => {
+app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(self), geolocation=()");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  const proto = String(req.get("x-forwarded-proto") || "").split(",")[0].trim();
+  if (req.secure || proto === "https") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
   next();
 });
 
@@ -170,15 +175,35 @@ const allowedOrigins = new Set(
     .map((origin) => origin.trim())
     .filter(Boolean)
 );
+function rememberOrigin(value) {
+  if (!value) return;
+  try { allowedOrigins.add(new URL(value).origin); }
+  catch (_) { allowedOrigins.add(String(value).trim()); }
+}
+rememberOrigin("https://sync-engine-server.onrender.com");
+rememberOrigin(process.env.RENDER_EXTERNAL_URL);
+
+function isCorsOriginAllowed(origin) {
+  if (!origin || origin === "null") return true;
+  if (origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://")) return true;
+  if (allowedOrigins.has(origin)) return true;
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const host = new URL(origin).hostname;
+      if (host === "localhost" || host === "127.0.0.1") return true;
+    } catch (_) {}
+  }
+  return false;
+}
+
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || origin === "null" || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://")) {
-      return callback(null, true);
-    }
-    if (allowedOrigins.has(origin)) return callback(null, true);
-    return callback(new Error("Origen no permitido por CORS"));
+  origin(origin, callback) {
+    // false niega el origen sin convertir la petición en un 500 de Express.
+    callback(null, isCorsOriginAllowed(origin));
   },
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Authorization", "Content-Type"]
 };
 app.use(cors(corsOptions));
 
@@ -225,6 +250,9 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/public", express.static(path.join(__dirname, "public")));
 app.use("/src/assets/images", express.static(path.join(__dirname, "src/assets/images")));
 app.use((err, req, res, next) => {
+  if (err && err.message === "Origen no permitido por CORS") {
+    return res.status(403).json({ error: "Origen no permitido por CORS" });
+  }
   if (req.path === "/api/save-subscription" && err instanceof SyntaxError && err.status === 400) {
     return res.status(500).json({ ok: false, error: "Error al procesar el payload de suscripción" });
   }
@@ -1047,11 +1075,8 @@ if (!isServerlessRuntime && process.env.DISABLE_LOCAL_TLS !== "true") {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: function (origin, callback) {
-      if (!origin || origin === "null" || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://") || allowedOrigins.has(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Origen no permitido por CORS"));
+    origin(origin, callback) {
+      callback(null, isCorsOriginAllowed(origin));
     },
     credentials: true,
     methods: ["GET", "POST"]
