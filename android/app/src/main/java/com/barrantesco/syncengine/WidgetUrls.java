@@ -9,7 +9,6 @@ import java.net.URISyntaxException;
 final class WidgetUrls {
     static final String PREFERENCES = "widget_settings";
     private static final String DEFAULT_URL = "default_widget_url";
-    private static final String WIDGET_URL_PREFIX = "widget_url_";
 
     private WidgetUrls() {
     }
@@ -25,31 +24,6 @@ final class WidgetUrls {
 
     static void saveDefaultUrl(Context context, String url) {
         preferences(context).edit().putString(DEFAULT_URL, url).apply();
-    }
-
-    static String widgetUrl(Context context, int widgetId) {
-        return preferences(context).getString(widgetKey(widgetId), defaultUrl(context));
-    }
-
-    static void saveWidgetUrl(Context context, int widgetId, String url) {
-        preferences(context).edit().putString(widgetKey(widgetId), url).apply();
-    }
-
-    /**
-     * Devuelve la URL de la app principal. Si la URL termina en /widget.html
-     * (configuración antigua) se usa la raíz del dominio.
-     */
-    static String appUrl(String widgetUrl) {
-        try {
-            URI uri = new URI(widgetUrl.trim());
-            String path = uri.getPath();
-            if (path == null || path.isEmpty() || path.endsWith("/widget.html")) {
-                return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), "/", null, null).toString();
-            }
-            return uri.toString();
-        } catch (URISyntaxException exception) {
-            return widgetUrl;
-        }
     }
 
     /** Devuelve solo esquema, host y puerto (sin barra final), base de las llamadas a la API. */
@@ -80,9 +54,5 @@ final class WidgetUrls {
 
     private static SharedPreferences preferences(Context context) {
         return context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
-    }
-
-    private static String widgetKey(int widgetId) {
-        return WIDGET_URL_PREFIX + widgetId;
     }
 }

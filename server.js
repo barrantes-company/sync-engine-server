@@ -236,16 +236,6 @@ app.use((req, res, next) => {
   });
 });
 
-// Servir widget universal con cabeceras para iframe y paneles laterales de extensiones
-app.get(["/widget", "/widget.html", "/public/widget.html"], (req, res) => {
-  res.setHeader("X-Frame-Options", "SAMEORIGIN");
-  res.setHeader(
-    "Content-Security-Policy",
-    "frame-ancestors 'self' chrome-extension:* moz-extension:*"
-  );
-  res.sendFile("widget.html", { root: path.join(__dirname, "public") });
-});
-
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/public", express.static(path.join(__dirname, "public")));
 app.use("/src/assets/images", express.static(path.join(__dirname, "src/assets/images")));

@@ -6,7 +6,7 @@
 - Los mensajes privados de texto enviados sin conexión se guardan en IndexedDB del navegador y se reintentan al volver a autenticar. La interfaz distingue mensajes pendientes y fallidos. El servidor usa el ID de cliente para impedir duplicados cuando un reintento ya se había guardado.
 - La cola offline no incluye mensajes de canal, archivos ni audio. El texto pendiente se conserva localmente sin cifrado; se elimina del outbox cuando el servidor confirma el envío.
 - Las notificaciones Web Push requieren que cada usuario las active desde **Configuración de perfil**. El permiso del navegador, la suscripción del service worker y las claves VAPID del servidor son requisitos independientes.
-- El widget Android es un acceso nativo con reloj y fecha que abre `/widget.html` en el navegador. Mensajes, sesión y acciones interactivas siguen perteneciendo al panel web; no es un cliente Android nativo.
+- El widget Android es un acceso nativo con reloj y fecha que abre la aplicación web en el navegador. Mensajes, sesión y acciones interactivas siguen perteneciendo al panel web; no es un cliente Android nativo.
 
 ## Configuración de Web Push
 

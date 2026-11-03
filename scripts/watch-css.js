@@ -7,7 +7,6 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const inputs = [
   'public/index.html',
-  'public/widget.html',
   'public/theme.css',
   'public/sync-effects.css',
   'public/tailwind.input.css',

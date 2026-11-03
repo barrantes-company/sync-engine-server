@@ -1,5 +1,5 @@
 module.exports = {
-  content: ["./public/index.html", "./public/widget.html"],
+  content: ["./public/index.html"],
   corePlugins: { preflight: false },
   theme: {
     extend: {
