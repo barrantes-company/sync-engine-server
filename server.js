@@ -102,6 +102,7 @@ async function sendMobilePushNotification(syncId, payload) {
 // ==== End of Firebase Cloud Messaging ====
 const fs = require("fs");
 const crypto = require("crypto");
+const dns = require("dns");
 const http = require("http");
 const https = require("https");
 const os = require("os");
@@ -143,6 +144,12 @@ const messageTasks = new Set();
 const app = express();
 const channelAdminRateLimit = rateLimit({
   windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false
+});
+const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
   limit: 20,
   standardHeaders: "draft-8",
   legacyHeaders: false
@@ -439,7 +446,154 @@ async function fetchUrlMetadata(text) {
   }
 }
 
-// Rutas de Autenticación
+// Rutas de autenticación y verificación de correo.
+const pendingEmailVerifications = new Map();
+const OTP_TTL_MS = 10 * 60 * 1000;
+const MAX_OTP_ATTEMPTS = 5;
+
+function cleanupExpiredEmailVerifications() {
+  const now = Date.now();
+  for (const [email, pending] of pendingEmailVerifications.entries()) {
+    if (!pending || pending.expiresAt <= now) pendingEmailVerifications.delete(email);
+  }
+}
+
+async function verifyEmailDomainHasMailExchange(email) {
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  const match = /^[^\s@]+@([^\s@]+\.[^\s@]{2,})$/.exec(cleanEmail);
+  if (!match) throw new Error("Ingresa un correo electrónico válido (ej. usuario@dominio.com)");
+  const blockedDisposable = new Set([
+    "mailinator.com", "tempmail.com", "10minutemail.com",
+    "guerrillamail.com", "yopmail.com", "trashmail.com"
+  ]);
+  if (blockedDisposable.has(match[1])) {
+    throw new Error("No se permiten correos temporales o desechables");
+  }
+  if (process.env.NODE_ENV === "test" || process.env.SKIP_EMAIL_MX_CHECK === "true") {
+    return cleanEmail;
+  }
+  try {
+    const records = await Promise.race([
+      dns.promises.resolveMx(match[1]),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("DNS_TIMEOUT")), 3500))
+    ]);
+    if (!Array.isArray(records) || records.length === 0) throw new Error("NO_MX");
+  } catch (error) {
+    if (error && (error.code === "ENOTFOUND" || error.code === "ENODATA" || error.message === "NO_MX")) {
+      throw new Error(`El dominio @${match[1]} no tiene servidores de correo válidos (MX)`);
+    }
+    if (error && error.message === "DNS_TIMEOUT") {
+      throw new Error("No se pudo validar el dominio del correo. Intenta nuevamente.");
+    }
+  }
+  return cleanEmail;
+}
+
+async function dispatchVerificationOtpEmail(toEmail, code, username) {
+  const resendKey = String(process.env.RESEND_API_KEY || "").trim();
+  const brevoKey = String(process.env.BREVO_API_KEY || "").trim();
+  const fromAddress = String(process.env.EMAIL_FROM || "SYNC ENGINE <onboarding@resend.dev>").trim();
+  const subject = `${code} es tu código de verificación de SYNC ENGINE`;
+  const html = `<p>Tu código de verificación para @${username} es:</p><h2>${code}</h2><p>Expira en 10 minutos.</p>`;
+
+  if (resendKey) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: fromAddress, to: [toEmail], subject, html })
+    });
+    if (!response.ok) throw new Error("No se pudo enviar el correo de verificación");
+    return { sentViaProvider: true };
+  }
+  if (brevoKey) {
+    const senderEmail = (fromAddress.match(/<([^>]+)>/) || [null, fromAddress])[1];
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "api-key": brevoKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sender: { name: "SYNC ENGINE", email: senderEmail },
+        to: [{ email: toEmail }],
+        subject,
+        htmlContent: html
+      })
+    });
+    if (!response.ok) throw new Error("No se pudo enviar el correo de verificación");
+    return { sentViaProvider: true };
+  }
+  return { sentViaProvider: false, fallbackCode: code };
+}
+
+app.post("/api/auth/register/request-code", authRateLimit, async (req, res) => {
+  try {
+    cleanupExpiredEmailVerifications();
+    const { username, password, displayName, email } = req.body || {};
+    if (!username || !password || !email) {
+      return res.status(400).json({ error: "Usuario, correo electrónico y contraseña son obligatorios" });
+    }
+    if (String(password).length < 8) {
+      return res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres" });
+    }
+    const cleanEmail = await verifyEmailDomainHasMailExchange(email);
+    const cleanUsername = String(username).trim().toLowerCase();
+    db.checkRegistrationAvailability(cleanUsername, cleanEmail);
+    const code = String(crypto.randomInt(100000, 1000000));
+    const otpSalt = crypto.randomBytes(16).toString("hex");
+    pendingEmailVerifications.set(cleanEmail, {
+      username: cleanUsername,
+      password: String(password),
+      displayName: displayName || cleanUsername,
+      email: cleanEmail,
+      otpSalt,
+      codeHash: crypto.createHash("sha256").update(`${otpSalt}:${code}`).digest("hex"),
+      attempts: 0,
+      expiresAt: Date.now() + OTP_TTL_MS
+    });
+    const delivery = await dispatchVerificationOtpEmail(cleanEmail, code, cleanUsername);
+    return res.json({
+      ok: true,
+      email: cleanEmail,
+      delivery: delivery.sentViaProvider ? "email" : "direct_verification",
+      ...(delivery.sentViaProvider ? {} : { verificationCodeHint: delivery.fallbackCode })
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || "No se pudo iniciar la verificación de correo" });
+  }
+});
+
+app.post("/api/auth/register/verify-code", authRateLimit, (req, res) => {
+  try {
+    cleanupExpiredEmailVerifications();
+    const cleanEmail = String(req.body?.email || "").trim().toLowerCase();
+    const cleanCode = String(req.body?.code || "").trim();
+    if (!cleanEmail || !/^\d{6}$/.test(cleanCode)) {
+      return res.status(400).json({ error: "Ingresa el código numérico de 6 dígitos" });
+    }
+    const pending = pendingEmailVerifications.get(cleanEmail);
+    if (!pending || pending.expiresAt <= Date.now()) {
+      pendingEmailVerifications.delete(cleanEmail);
+      return res.status(400).json({ error: "El código ha expirado. Solicita uno nuevo." });
+    }
+    pending.attempts += 1;
+    if (pending.attempts > MAX_OTP_ATTEMPTS) {
+      pendingEmailVerifications.delete(cleanEmail);
+      return res.status(429).json({ error: "Demasiados intentos fallidos. Solicita un nuevo código." });
+    }
+    const candidate = crypto.createHash("sha256").update(`${pending.otpSalt}:${cleanCode}`).digest("hex");
+    const candidateBuffer = Buffer.from(candidate, "hex");
+    const storedBuffer = Buffer.from(pending.codeHash, "hex");
+    if (candidateBuffer.length !== storedBuffer.length || !crypto.timingSafeEqual(candidateBuffer, storedBuffer)) {
+      return res.status(400).json({ error: "Código de verificación incorrecto" });
+    }
+    pendingEmailVerifications.delete(cleanEmail);
+    db.registerUser(pending.username, pending.password, pending.displayName, pending.email, true);
+    const loginResult = db.loginUser(pending.username, pending.password);
+    return res.json({ ok: true, token: loginResult.token, user: loginResult.user });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || "Error al verificar el código" });
+  }
+});
+
+// Compatibilidad con el registro directo legacy.
 app.post("/api/auth/register", (req, res) => {
   try {
     const { username, password, displayName } = req.body || {};
