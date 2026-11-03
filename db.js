@@ -227,6 +227,8 @@ function toPublicUser(user) {
   return {
     syncId: user.syncId,
     username: user.username,
+    email: user.email || null,
+    emailVerified: Boolean(user.emailVerified),
     cleanDisplayName: user.cleanDisplayName,
     formattedName: user.formattedName || formatFullName(user.syncId, user.cleanDisplayName),
     avatarUrl: user.avatarUrl || null,
@@ -236,7 +238,28 @@ function toPublicUser(user) {
   };
 }
 
-function registerUser(username, password, rawDisplayName) {
+function checkRegistrationAvailability(username, email) {
+  const cleanUsername = String(username || "").trim().toLowerCase();
+  if (cleanUsername.length < 3) {
+    throw new Error("El usuario debe tener al menos 3 caracteres");
+  }
+  const db = readDb();
+  if (db.users.some((user) => user.username === cleanUsername)) {
+    throw new Error("El nombre de usuario ya está registrado");
+  }
+  if (email) {
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail)) {
+      throw new Error("El formato del correo electrónico no es válido");
+    }
+    if (db.users.some((user) => String(user.email || "").toLowerCase() === cleanEmail)) {
+      throw new Error("El correo electrónico ya está vinculado a otra cuenta");
+    }
+  }
+  return true;
+}
+
+function registerUser(username, password, rawDisplayName, email = null, emailVerified = false) {
   if (!username || !password) {
     throw new Error("Usuario y contraseña son obligatorios");
   }
@@ -254,6 +277,10 @@ function registerUser(username, password, rawDisplayName) {
   if (exists) {
     throw new Error("El nombre de usuario ya está registrado");
   }
+  const cleanEmail = email ? String(email).trim().toLowerCase() : null;
+  if (cleanEmail) {
+    checkRegistrationAvailability(cleanUsername, cleanEmail);
+  }
 
   const syncId = generateSyncId(db.users);
   const cleanDisplayName = removeEmojis(rawDisplayName || username);
@@ -265,6 +292,8 @@ function registerUser(username, password, rawDisplayName) {
     id: crypto.randomUUID ? crypto.randomUUID() : "usr_" + Date.now(),
     syncId: syncId,
     username: cleanUsername,
+    email: cleanEmail,
+    emailVerified: Boolean(emailVerified),
     cleanDisplayName: cleanDisplayName,
     formattedName: formattedName,
     salt: salt,
@@ -1349,6 +1378,7 @@ module.exports = {
   removeEmojis,
   formatFullName,
   registerUser,
+  checkRegistrationAvailability,
   loginUser,
   getUserByToken,
   revokeSession,
