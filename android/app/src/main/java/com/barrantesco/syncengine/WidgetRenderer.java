@@ -18,8 +18,8 @@ import java.util.TimeZone;
  * negro puro, sin wordmarks. Estelas desactivadas por defecto (bajo consumo).
  */
 final class WidgetRenderer {
-    private static final int MAX_WIDTH_PX = 480;
-    private static final int MAX_HEIGHT_PX = 240;
+    private static final int MAX_WIDTH_PX = 800;
+    private static final int MAX_HEIGHT_PX = 800;
     private static final float CORNER_DP = 20f;
 
     private static Typeface display;
