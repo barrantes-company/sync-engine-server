@@ -58,6 +58,8 @@
   let noticeTimer = null;
   let clockInterval = null;
   let unreadPollInterval = null;
+  let trailFrame = null;
+  let restartTrails = null;
 
   // 1. Reloj y fecha (hora de Lima, igual que el widget nativo)
   const TIME_ZONE = 'America/Lima';
@@ -108,14 +110,35 @@
     let last = 0;
     let tick = 0;
     const frame = (time) => {
+      trailFrame = window.requestAnimationFrame(frame);
       if (time - last >= 80) {
         last = time;
         tick += 1;
         if (!document.hidden) drawTrails(tick);
       }
-      window.requestAnimationFrame(frame);
     };
-    window.requestAnimationFrame(frame);
+    restartTrails = () => {
+      if (!trailFrame) trailFrame = window.requestAnimationFrame(frame);
+    };
+    restartTrails();
+  }
+
+  function updateVisibilityState() {
+    if (document.hidden) {
+      if (trailFrame) {
+        window.cancelAnimationFrame(trailFrame);
+        trailFrame = null;
+      }
+      if (clockInterval) {
+        window.clearInterval(clockInterval);
+        clockInterval = null;
+      }
+      return;
+    }
+
+    updateClock();
+    if (!clockInterval) clockInterval = window.setInterval(updateClock, 1000);
+    if (restartTrails) restartTrails();
   }
 
   function flashTrails() {
@@ -692,6 +715,7 @@
   window.addEventListener('beforeunload', () => {
     if (clockInterval) clearInterval(clockInterval);
     if (unreadPollInterval) clearInterval(unreadPollInterval);
+    if (trailFrame) window.cancelAnimationFrame(trailFrame);
     if (socket) {
       socket.disconnect();
       socket = null;
@@ -701,6 +725,7 @@
   // 12. Arranque
   updateClock();
   clockInterval = setInterval(updateClock, 1000);
+  document.addEventListener('visibilitychange', updateVisibilityState);
   initTrails();
   renderCounters();
   initNativeNotifications();

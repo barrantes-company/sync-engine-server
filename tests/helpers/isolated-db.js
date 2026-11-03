@@ -2,7 +2,6 @@
 const fs = require('node:fs');
 const { createRequire } = require('node:module');
 const path = require('node:path');
-const { createRequire } = require('node:module');
 const vm = require('node:vm');
 const { createHash } = require('node:crypto');
 
