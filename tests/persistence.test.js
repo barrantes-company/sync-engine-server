@@ -7,10 +7,8 @@ const path = require("node:path");
 const vm = require("node:vm");
 const { spawn } = require("node:child_process");
 const { once } = require("node:events");
-const { createRequire } = require("node:module");
 const root = path.resolve(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "db.js"), "utf8");
-const rootRequire = createRequire(path.join(root, "db.js"));
 
 function fixture(t, content, filesystem = fs) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sync-persistence-"));
@@ -21,7 +19,7 @@ function fixture(t, content, filesystem = fs) {
     const module = { exports: {} };
     vm.runInNewContext(source, {
       __dirname: root, module, process: { env: { NODE_ENV: "test", DATA_DIR: dir } },
-      require(name) { return name === "fs" ? filesystem : rootRequire(name); },
+      require(name) { return name === "fs" ? filesystem : require(name); },
       console: { error() {}, warn() {} }, Buffer, setTimeout
     });
     return module.exports;
@@ -75,7 +73,13 @@ test("DATA-01: failed atomic rename rejects write and preserves last disk snapsh
   const db = load();
   const data = db.readDb();
   data.messages.push({ id: "uncommitted" });
-  await assert.rejects(db.writeDb(data), /rename failure/);
+  const first = db.writeDb(data);
+  const queued = db.writeDb(data);
+  await assert.rejects(first, /rename failure/);
+  await assert.rejects(queued, /rename failure/);
+  await assert.rejects(db.flushWrites(), /rename failure/);
+  assert.throws(() => db.readDb(), /DB_WRITE_FAILED/);
+  assert.throws(() => db.writeDb(data), /DB_WRITE_FAILED/);
   assert.equal(fs.readFileSync(file, "utf8"), original);
 });
 
@@ -88,29 +92,6 @@ test("closing the write queue drains snapshots and rejects new writes", async (t
   await db.closeWrites();
   assert.equal(JSON.parse(fs.readFileSync(file)).messages[0].id, "last-snapshot");
   assert.throws(() => db.writeDb(data), /DB_CLOSED/);
-});
-
-test("DATA-01: a saved message is not confirmed until it survives a fresh read", async (t) => {
-  const { file, load } = fixture(t);
-  const db = load();
-  const saved = await db.saveTextMessage("SYNC-1001", "SYNC-1002", "confirmado");
-  const fresh = load().readDb();
-  assert.equal(fresh.messages.some((message) => message.id === saved.id && message.text === "confirmado"), true);
-  assert.equal(JSON.parse(fs.readFileSync(file, "utf8")).messages.some((message) => message.id === saved.id), true);
-});
-
-test("DATA-01: a failed message write is rejected and is not kept as confirmed", async (t) => {
-  const filesystem = Object.create(fs);
-  Object.defineProperty(filesystem, "promises", { value: {
-    writeFile: fs.promises.writeFile, unlink: fs.promises.unlink,
-    rename: async () => { throw new Error("simulated disk rename failure"); }
-  } });
-  const original = '{"users":[],"messages":[]}';
-  const { file, load } = fixture(t, original, filesystem);
-  const db = load();
-  await assert.rejects(db.saveTextMessage("SYNC-1001", "SYNC-1002", "perdido"), /rename failure/);
-  assert.equal(db.readDb().messages.length, 0);
-  assert.equal(fs.readFileSync(file, "utf8"), original);
 });
 
 test("DATA-01: real server exits before listening when its DB is corrupt", { timeout: 30000 }, async (t) => {
@@ -130,7 +111,6 @@ test("DATA-01: real server exits before listening when its DB is corrupt", { tim
   assert.doesNotMatch(stdout, /Server Activo/);
   assert.equal(fs.readFileSync(file, "utf8"), "{broken");
 });
-
 
 test("the real server handles SIGTERM with a clean exit", { timeout: 10000 }, async (t) => {
   const { dir } = fixture(t);

@@ -54,7 +54,6 @@ test("staging Pub/Sub rejects missing configuration and production defaults befo
   assert.doesNotThrow(() => load({ APP_ENV: "staging", PUBSUB_PROJECT_ID: "isolated-stage", PUBSUB_TOPIC: "stage", PUBSUB_SUBSCRIPTION: "stage" }));
 });
 
-
 test("Pub/Sub shutdown closes the SDK and subscription and cancels reconnection", async () => {
   const { EventEmitter } = require("node:events");
   const subscription = new EventEmitter();
@@ -71,7 +70,7 @@ test("Pub/Sub shutdown closes the SDK and subscription and cancels reconnection"
   });
   const stop = module.exports.startChatSubscriptionListener(() => {});
   subscription.emit("error", { code: 14, message: "unavailable" });
-  await stop.close();
+  await stop();
   retry();
   assert.equal(closed, 2);
   assert.equal(cancelled, 1);

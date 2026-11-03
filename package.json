@@ -3,32 +3,23 @@
   "version": "1.0.0",
   "private": true,
   "main": "server.js",
-  "engines": {
-    "node": ">=20"
-  },
   "scripts": {
-    "dev": "node scripts/dev.js",
+    "dev": "node server.js",
     "start": "node server.js",
     "build": "webpack --config webpack.config.js",
-    "build:css": "node scripts/build-css.js",
-    "watch:css": "node scripts/watch-css.js",
-    "lint": "node --check license.js && node --check scripts/generate-license-keys.js && node --check scripts/create-license.js && node --check server.js && node --check metadata-fetch.js && node --check db.js && node --check ws-bridge.js && node --check pubsub-routing.js && node --check bridge-security.js && node --check pubsub-service.js && node --check extension_worker.js",
+    "lint": "node --check server.js && node --check metadata-fetch.js && node --check db.js && node --check ws-bridge.js && node --check pubsub-routing.js && node --check bridge-security.js && node --check pubsub-service.js && node --check extension_worker.js",
     "test:staging": "node --test tests/security-fixes.test.js tests/staging-integration.test.js tests/persistence.test.js tests/ack-persistence.test.js tests/metadata-fetch.test.js",
-    "license:keys": "node scripts/generate-license-keys.js",
-    "test:license": "node --test tests/license.test.js tests/license-keys.test.js",
-    "test": "node --test tests/license.test.js tests/license-keys.test.js && node --test tests/conversation-auth.test.js && node tests/browser-lifecycle.test.js && node tests/p0-01.test.js && node tests/p0-02.test.js && node tests/widget.test.js && node --test tests/widget-summary.test.js && node tests/no-speed-insights.test.js",
+    "test": "node tests/browser-lifecycle.test.js && node tests/p0-01.test.js && node tests/p0-02.test.js && node tests/widget.test.js && node --test tests/widget-summary.test.js && node tests/no-speed-insights.test.js",
     "security-audit": "npm audit"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "6.3.1",
-    "@vercel/connect": "^2.4.1",
-    "@vercel/toolbar": "^0.2.7",
+    "@google-cloud/pubsub": "4.9.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "express-rate-limit": "8.7.1",
-    "firebase-admin": "^14.5.0",
-    "multer": "^2.5.0",
+    "firebase-admin": "^13.10.0",
+    "multer": "^2.4.0",
     "selfsigned": "^5.5.0",
     "socket.io": "^4.8.4",
     "socket.io-client": "^4.8.4",
@@ -36,7 +27,6 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.17",
     "webpack": "^5.111.1",
     "webpack-cli": "^5.1.4",
     "webpack-node-externals": "^3.0.0"

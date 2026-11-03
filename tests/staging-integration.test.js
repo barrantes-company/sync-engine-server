@@ -212,7 +212,6 @@ test("Socket.IO normal events reject expired/revoked senders and filter expired/
   assert.equal((await fetch(base + "/api/auth/me", { headers: { Authorization: "Bearer " + tokens.outsider } })).status, 200);
 });
 
-
 test("real process restart reloads the persisted private conversation", async () => {
   for (const bridge of bridges.splice(0)) await bridge.close();
   for (const socket of clients) socket.disconnect();

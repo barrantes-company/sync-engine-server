@@ -1,0 +1,36 @@
+
+steps:
+  - name: 'node:22'
+    id: 'validate-and-test'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+
+        echo "=== Instalando Chromium para pruebas de navegador ==="
+        apt-get update
+        apt-get install -y --no-install-recommends chromium
+        export CI=true
+        export CHROME_PATH=/usr/bin/chromium
+        chromium --version
+
+        echo "=== Instalando dependencias ==="
+        npm ci
+
+        echo "=== Validando sintaxis ==="
+        npm run lint
+
+        echo "=== Pruebas existentes ==="
+        npm test
+
+        echo "=== Pruebas de staging ==="
+        npm run test:staging
+
+        echo "=== Compilacion Webpack ==="
+        npm run build
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1200s'
