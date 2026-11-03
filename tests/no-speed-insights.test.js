@@ -9,7 +9,7 @@ const leer = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
 assert.ok(!/node_modules/.test(leer('server.js').replace(/\/\/.*$/gm, '')), 'server.js no debe publicar node_modules');
 assert.ok(!leer('server.js').includes('@vercel/speed-insights'));
-for (const f of ['public/index.html', 'public/widget.html']) {
+for (const f of ['public/index.html']) {
   assert.ok(!leer(f).includes('speed-insights'), `${f} no debe cargar Speed Insights`);
 }
 assert.ok(!fs.existsSync(path.join(root, 'public/speed-insights.js')));

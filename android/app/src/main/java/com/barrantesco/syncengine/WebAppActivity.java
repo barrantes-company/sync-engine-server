@@ -136,11 +136,7 @@ public final class WebAppActivity extends Activity {
         showingError = false;
         errorMessage.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
-        String configured = WidgetUrls.defaultUrl(this);
-        String appUrl = WidgetUrls.appUrl(configured);
-        if (!WidgetUrls.isWidgetUrl(appUrl)) {
-            appUrl = "https://sync-engine-server.onrender.com/";
-        }
+        String appUrl = WidgetUrls.defaultUrl(this);
         String view = getIntent() == null ? null : getIntent().getStringExtra(OpenAppActivity.EXTRA_WIDGET_VIEW);
         if ("chats".equals(view) || "calls".equals(view)) {
             appUrl = Uri.parse(appUrl).buildUpon()
