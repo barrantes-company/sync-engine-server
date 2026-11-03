@@ -883,8 +883,9 @@ html[data-se-theme="energy"] #contact-search-input:focus {
 /* Empty state: communicate the next action without creating a second page. */
 #chat-messages {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
 #chat-welcome {
@@ -1380,6 +1381,8 @@ html[data-se-theme="energy"] .workspace-overview-item {
 
 #normal-input-bar,
 #recording-bar {
+  box-sizing: border-box;
+  min-width: 0;
   width: min(100%, 920px);
   margin: 0 auto !important;
   padding: 8px !important;
@@ -1406,7 +1409,11 @@ html[data-se-theme="energy"] .workspace-overview-item {
 }
 
 #chat-textarea {
-  min-height: 42px !important;
+  box-sizing: border-box;
+  display: block;
+  min-width: 0;
+  width: 100%;
+  min-height: 44px !important;
   padding: 10px 14px !important;
   border-color: rgba(8, 119, 249, .18) !important;
   font-size: 13px !important;
@@ -1467,9 +1474,17 @@ html[data-se-theme="energy"] #chat-textarea::placeholder {
   #chat-panel > header { padding-inline: 14px !important; }
   #input-container { padding: 8px !important; }
   #normal-input-bar { gap: 5px !important; padding: 6px !important; }
-  .composer-btn { width: 38px !important; height: 38px !important; }
+  .composer-btn { width: 44px !important; height: 44px !important; }
   #chat-textarea { min-height: 38px !important; padding-inline: 11px !important; }
-  #send-btn { min-width: 42px !important; width: 42px !important; padding-inline: 0 !important; }
+  #send-btn { min-width: 44px !important; width: 44px !important; height: 44px !important; padding-inline: 0 !important; }
+}
+
+/* On narrow phones keep a full-width writing row above the action controls. */
+@media (max-width: 480px) {
+  #normal-input-bar { flex-wrap: wrap; }
+  #normal-input-bar > .flex-1 { order: -1; flex: 1 0 100%; }
+  #normal-input-bar #send-btn { margin-left: auto; }
+  #chat-textarea { font-size: 16px !important; }
 }
 
 /* visual-10: motion design sobrio para percepción de calidad. */
