@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { resolveUserEntitlements, verifyLicense } = require("./license.js");
 
 const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, "data"));
 const DB_FILE = path.join(DATA_DIR, "sync_db.json");
@@ -21,7 +20,9 @@ function ensureDbFile() {
       pinnedMessages: {},
       subscriptions: {},
       channels: [],
-      channelMessages: []
+      channelMessages: [],
+      vaultItems: {},
+      invoices: {}
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf8");
   }
@@ -49,7 +50,7 @@ function readDb() {
     for (const key of ["users", "sessions", "messages", "files", "channels", "channelMessages", "calls", "organizations"]) {
       if (data[key] !== undefined && !Array.isArray(data[key])) throw new Error("Invalid database collection");
     }
-    for (const key of ["contacts", "pinnedMessages", "subscriptions", "mobilePushTokens"]) {
+    for (const key of ["contacts", "pinnedMessages", "subscriptions", "mobilePushTokens", "vaultItems", "invoices"]) {
       if (data[key] !== undefined && (!data[key] || typeof data[key] !== "object" || Array.isArray(data[key]))) {
         throw new Error("Invalid database map");
       }
@@ -67,10 +68,14 @@ function readDb() {
     const legacyDefaultChannels = data.channels.filter((channel) => channel && channel.isDefault && !channel.archivedAt);
     if (legacyDefaultChannels.length > 0) {
       const archivedAt = Date.now();
-      legacyDefaultChannels.forEach((channel) => { channel.archivedAt = archivedAt; });
+      legacyDefaultChannels.forEach((channel) => {
+        channel.archivedAt = archivedAt;
+      });
       legacyChannelsArchived = true;
     }
     if (!data.channelMessages) data.channelMessages = [];
+    if (!data.vaultItems) data.vaultItems = {};
+    if (!data.invoices) data.invoices = {};
     if (!Array.isArray(data.calls)) data.calls = [];
     cachedDb = data;
     if (seedDevelopmentAdmin(cachedDb) || legacyChannelsArchived) {
@@ -109,7 +114,7 @@ async function processWriteQueue() {
       writeQueue.shift();
       item.reject(err);
       writeFailure = err;
-      // Do not persist snapshots that may include mutations from the failed write.
+      // Never persist a later snapshot containing mutations from a failed write.
       for (const queued of writeQueue.splice(0)) queued.reject(err);
     }
   }
@@ -119,13 +124,12 @@ async function processWriteQueue() {
 
 function writeDb(data) {
   if (writesClosed) throw new Error("DB_CLOSED: writes are stopped");
-  if (writeFailure) throw new Error("DB_WRITE_FAILED: restart after resolving storage failure");
   // A failed read must never be followed by replacement with empty/new data.
   readDb();
   cachedDb = data;
   const content = JSON.stringify(data, null, 2);
   const promise = new Promise((resolve, reject) => {
-    writeQueue.push({ content, source: data, resolve, reject });
+    writeQueue.push({ content, resolve, reject });
     processWriteQueue();
   });
   promise.catch(() => {});
@@ -162,11 +166,9 @@ function formatFullName(syncId, cleanName) {
   return `${syncId} - ${cleanName}`;
 }
 
-function hashPassword(password, salt, iterations = 10000) {
-  return crypto.pbkdf2Sync(password, salt, iterations, 64, "sha512").toString("hex");
+function hashPassword(password, salt) {
+  return crypto.pbkdf2Sync(password, salt, 10000, 64, "sha512").toString("hex");
 }
-
-const PASSWORD_ITERATIONS = 210000;
 
 function seedDevelopmentAdmin(data) {
   const isDevelopment = process.env.NODE_ENV === "development" &&
@@ -198,9 +200,9 @@ function seedDevelopmentAdmin(data) {
     cleanDisplayName: cleanDisplayName,
     formattedName: formatFullName("SYNC-0000", cleanDisplayName),
     salt: salt,
-    passwordHash: hashPassword(process.env.SEED_DEVELOPMENT_ADMIN_PASSWORD, salt, PASSWORD_ITERATIONS),
-    passwordIterations: PASSWORD_ITERATIONS,
+    passwordHash: hashPassword(process.env.SEED_DEVELOPMENT_ADMIN_PASSWORD, salt),
     createdAt: Date.now(),
+    plan: "pro",
     role: "admin"
   });
   if (!data.contacts["SYNC-0000"]) {
@@ -222,62 +224,19 @@ function generateSyncId(users) {
 }
 
 function toPublicUser(user) {
-  const entitlements = resolveUserEntitlements(user);
   return {
     syncId: user.syncId,
     username: user.username,
-    email: user.email || null,
-    emailVerified: Boolean(user.emailVerified),
     cleanDisplayName: user.cleanDisplayName,
     formattedName: user.formattedName || formatFullName(user.syncId, user.cleanDisplayName),
     avatarUrl: user.avatarUrl || null,
+    plan: user.plan || "free",
     role: user.role || "member",
-    plan: entitlements.plan,
-    planExpiresAt: entitlements.planExpiresAt,
-    licenseStatus: entitlements.licenseStatus,
-    features: entitlements.features,
-    modules: entitlements.modules
+    planExpiresAt: user.planExpiresAt || null
   };
 }
 
-function checkRegistrationAvailability(username, email) {
-  if (!username) {
-    throw new Error("El nombre de usuario es obligatorio");
-  }
-  const cleanUsername = String(username).trim().toLowerCase();
-  if (cleanUsername.length < 3) {
-    throw new Error("El usuario debe tener al menos 3 caracteres");
-  }
-  const db = readDb();
-  if (db.users.some((u) => u.username === cleanUsername)) {
-    throw new Error("El nombre de usuario ya está registrado");
-  }
-  if (email) {
-    const cleanEmail = String(email).trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail)) {
-      throw new Error("El formato del correo electrónico no es válido");
-    }
-    if (db.users.some((u) => u.email && String(u.email).trim().toLowerCase() === cleanEmail)) {
-      throw new Error("El correo electrónico ya está vinculado a otra cuenta");
-    }
-  }
-  return true;
-}
-
-async function assignUserLicense(syncId, licenseToken) {
-  const normalizedId = String(syncId || "").trim().toUpperCase();
-  const db = readDb();
-  const user = db.users.find((item) => String(item.syncId || "").trim().toUpperCase() === normalizedId);
-  if (!user) throw new Error("Usuario no encontrado");
-  const verified = verifyLicense(licenseToken);
-  if (!verified.valid) throw new Error("Licencia inválida: " + verified.reason);
-  if (String(verified.claims.subject).toUpperCase() !== normalizedId) throw new Error("La licencia no corresponde al usuario indicado");
-  user.licenseToken = licenseToken;
-  await writeDb(db);
-  return toPublicUser(user);
-}
-
-function registerUser(username, password, rawDisplayName, email = null, emailVerified = false) {
+function registerUser(username, password, rawDisplayName) {
   if (!username || !password) {
     throw new Error("Usuario y contraseña son obligatorios");
   }
@@ -286,13 +245,8 @@ function registerUser(username, password, rawDisplayName, email = null, emailVer
   if (cleanUsername.length < 3) {
     throw new Error("El usuario debe tener al menos 3 caracteres");
   }
-  if (String(password).length < 8) {
-    throw new Error("La contraseña debe tener al menos 8 caracteres");
-  }
-
-  const cleanEmail = email ? String(email).trim().toLowerCase() : null;
-  if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail)) {
-    throw new Error("El formato del correo electrónico no es válido");
+  if (String(password).length < 4) {
+    throw new Error("La contraseña debe tener al menos 4 caracteres");
   }
 
   const db = readDb();
@@ -300,30 +254,21 @@ function registerUser(username, password, rawDisplayName, email = null, emailVer
   if (exists) {
     throw new Error("El nombre de usuario ya está registrado");
   }
-  if (cleanEmail) {
-    const emailExists = db.users.find((u) => u.email && String(u.email).trim().toLowerCase() === cleanEmail);
-    if (emailExists) {
-      throw new Error("El correo electrónico ya está vinculado a otra cuenta");
-    }
-  }
 
   const syncId = generateSyncId(db.users);
   const cleanDisplayName = removeEmojis(rawDisplayName || username);
   const formattedName = formatFullName(syncId, cleanDisplayName);
   const salt = crypto.randomBytes(16).toString("hex");
-  const passwordHash = hashPassword(password, salt, PASSWORD_ITERATIONS);
+  const passwordHash = hashPassword(password, salt);
 
   const newUser = {
     id: crypto.randomUUID ? crypto.randomUUID() : "usr_" + Date.now(),
     syncId: syncId,
     username: cleanUsername,
-    email: cleanEmail,
-    emailVerified: Boolean(emailVerified),
     cleanDisplayName: cleanDisplayName,
     formattedName: formattedName,
     salt: salt,
     passwordHash: passwordHash,
-    passwordIterations: PASSWORD_ITERATIONS,
     createdAt: Date.now()
   };
 
@@ -345,25 +290,17 @@ function loginUser(username, password) {
 
   const cleanUsername = String(username).trim().toLowerCase();
   const db = readDb();
-  const user = db.users.find((u) =>
-    u.username === cleanUsername ||
-    (u.email && String(u.email).trim().toLowerCase() === cleanUsername)
-  );
+  const user = db.users.find((u) => u.username === cleanUsername);
   if (!user) {
     throw new Error("Credenciales inválidas");
   }
 
-  const iterations = Number(user.passwordIterations) || 10000;
-  const hash = hashPassword(password, user.salt, iterations);
+  const hash = hashPassword(password, user.salt);
   const storedHash = String(user.passwordHash || "");
   const hashBuffer = Buffer.from(hash, "hex");
   const storedHashBuffer = Buffer.from(storedHash, "hex");
   if (hashBuffer.length !== storedHashBuffer.length || !crypto.timingSafeEqual(hashBuffer, storedHashBuffer)) {
     throw new Error("Credenciales inválidas");
-  }
-  if (iterations < PASSWORD_ITERATIONS) {
-    user.passwordIterations = PASSWORD_ITERATIONS;
-    user.passwordHash = hashPassword(password, user.salt, PASSWORD_ITERATIONS);
   }
 
   const token = crypto.randomBytes(32).toString("hex");
@@ -579,33 +516,6 @@ function getWidgetSummary(syncId, callsSince) {
   }));
   return { unreadMessages: unread.length, missedCalls: missed.length, latest: latest };
 }
-
-function listCallsForUser(syncId, limit = 40) {
-  const db = readDb();
-  const id = String(syncId || "").trim().toUpperCase();
-  const cap = Math.min(Math.max(Number(limit) || 40, 1), 100);
-  const nameOf = (peerId) => {
-    const user = db.users.find((item) => item.syncId === peerId);
-    return user ? (user.formattedName || formatFullName(user.syncId, user.cleanDisplayName)) : peerId;
-  };
-  return (db.calls || [])
-    .filter((call) => call.fromId === id || call.toId === id)
-    .slice(-cap)
-    .reverse()
-    .map((call) => {
-      const outgoing = call.fromId === id;
-      return {
-        id: call.id,
-        fromId: call.fromId,
-        toId: call.toId,
-        timestamp: call.timestamp,
-        status: call.status,
-        direction: outgoing ? "out" : "in",
-        peerSyncId: outgoing ? call.toId : call.fromId,
-        peerName: nameOf(outgoing ? call.toId : call.fromId)
-      };
-    });
-}
 async function registerFile(ownerId, file) {
   if (!file.filename || file.filename === "." || file.filename === ".." ||
       /[/\\:\u0000]/.test(file.filename)) throw new Error("Nombre físico de archivo inválido");
@@ -641,16 +551,6 @@ function canReadFile(fileId, userId) {
     (message.fromId === userId || message.toId === userId));
 }
 
-function trimIndexed(items, limit, matches) {
-  const newestFirst = [];
-  for (let index = items.length - 1; index >= 0; index -= 1) {
-    if (matches(items[index])) newestFirst.push(index);
-  }
-  if (newestFirst.length <= limit) return items;
-  const drop = new Set(newestFirst.slice(limit));
-  return items.filter((_, index) => !drop.has(index));
-}
-
 function saveMessage(msgData) {
   const db = readDb();
   const fromId = String(msgData.fromId).trim().toUpperCase();
@@ -658,14 +558,14 @@ function saveMessage(msgData) {
   if (msgData.id) {
     const existingMessage = db.messages.find((message) => message.id === msgData.id);
     if (existingMessage) {
-      if (existingMessage.fromId === fromId && existingMessage.toId === toId) return Promise.resolve(existingMessage);
-      return Promise.reject(new Error("El identificador del mensaje ya está en uso"));
+      if (existingMessage.fromId === fromId && existingMessage.toId === toId) return existingMessage;
+      throw new Error("El identificador del mensaje ya está en uso");
     }
   }
   const fileIds = [...new Set(msgData.fileIds || [])];
   for (const fileId of fileIds) {
     const file = db.files.find((item) => item.id === fileId);
-    if (!file || file.ownerId !== fromId) return Promise.reject(new Error("No puedes compartir este archivo"));
+    if (!file || file.ownerId !== fromId) throw new Error("No puedes compartir este archivo");
   }
   const newMsg = {
     id: msgData.id || ("msg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
@@ -681,18 +581,19 @@ function saveMessage(msgData) {
     linkPreview: msgData.linkPreview || null,
     reactions: msgData.reactions || {},
     timestamp: msgData.timestamp || Date.now(),
-    status: msgData.status || 'sent',
+    status: msgData.status || 'sent', // 'sent' | 'delivered' | 'read'
     read: Boolean(msgData.read || msgData.status === 'read'),
     deletedForEveryone: false
   };
 
   db.messages.push(newMsg);
-  db.messages = trimIndexed(db.messages, 5000, (message) =>
-    (message.fromId === fromId && message.toId === toId) ||
-    (message.fromId === toId && message.toId === fromId)
-  );
 
-  return writeDb(db).then(() => newMsg);
+  if (db.messages.length > 5000) {
+    db.messages = db.messages.slice(-5000);
+  }
+
+  writeDb(db);
+  return newMsg;
 }
 
 function getMessageById(messageId) {
@@ -713,42 +614,22 @@ function saveTextMessage(fromId, toId, text, customId = null, replyTo = null, li
   });
 }
 
-function pairOwnsMessage(msg, userA, userB) {
-  const a = String(userA || "").trim().toUpperCase();
-  const b = String(userB || "").trim().toUpperCase();
-  const from = String(msg && msg.fromId || "").trim().toUpperCase();
-  const to = String(msg && msg.toId || "").trim().toUpperCase();
-  return Boolean(a && b && a !== b && ((from === a && to === b) || (from === b && to === a)));
-}
-
-function updateMessageReaction(messageId, userSyncId, emoji, conversationUserId) {
+function updateMessageReaction(messageId, userSyncId, emoji) {
   const db = readDb();
   const msg = db.messages.find((m) => m.id === messageId);
-  if (!msg || msg.deletedForEveryone) {
-    throw new Error("Mensaje no encontrado");
+  if (msg) {
+    if (!msg.reactions || typeof msg.reactions !== 'object') {
+      msg.reactions = {};
+    }
+    if (msg.reactions[userSyncId] === emoji) {
+      delete msg.reactions[userSyncId];
+    } else {
+      msg.reactions[userSyncId] = emoji;
+    }
+    writeDb(db);
+    return msg.reactions;
   }
-
-  const actor = String(userSyncId || "").trim().toUpperCase();
-  const peer = String(conversationUserId || "").trim().toUpperCase();
-  if (!pairOwnsMessage(msg, actor, peer)) {
-    throw new Error("No tienes permisos para reaccionar a este mensaje");
-  }
-
-  const cleanEmoji = String(emoji || "").trim();
-  if (!cleanEmoji || cleanEmoji.length > 32 || /[\u0000-\u001F<>]/.test(cleanEmoji)) {
-    throw new Error("Reacción no válida");
-  }
-
-  if (!msg.reactions || typeof msg.reactions !== "object" || Array.isArray(msg.reactions)) {
-    msg.reactions = {};
-  }
-  if (msg.reactions[actor] === cleanEmoji) {
-    delete msg.reactions[actor];
-  } else {
-    msg.reactions[actor] = cleanEmoji;
-  }
-  writeDb(db);
-  return msg.reactions;
+  return { [userSyncId]: emoji };
 }
 
 function updateMessageStatus(messageId, status) {
@@ -797,15 +678,11 @@ function markMessagesAsRead(senderSyncId, receiverSyncId) {
   return updatedIds;
 }
 
-function deleteMessageForEveryone(messageId, senderSyncId, peerSyncId) {
+function deleteMessageForEveryone(messageId, senderSyncId) {
   const db = readDb();
   const msg = db.messages.find((m) => m.id === messageId);
   if (!msg) return null;
-  const sender = String(senderSyncId || "").trim().toUpperCase();
-  const peer = String(peerSyncId || "").trim().toUpperCase();
-  const from = String(msg.fromId || "").trim().toUpperCase();
-  const to = String(msg.toId || "").trim().toUpperCase();
-  if (from !== sender || (peer && to !== peer)) {
+  if (msg.fromId !== senderSyncId) {
     throw new Error("No tienes permisos para eliminar este mensaje");
   }
 
@@ -831,23 +708,15 @@ function getPinnedMessage(user1Id, user2Id) {
   const msgId = db.pinnedMessages[key];
   if (!msgId) return null;
   const msg = db.messages.find((m) => m.id === msgId);
-  if (!msg || msg.deletedForEveryone || !pairOwnsMessage(msg, user1Id, user2Id)) {
-    delete db.pinnedMessages[key];
-    writeDb(db);
-    return null;
-  }
-  return msg;
+  return msg || null;
 }
 
 function setPinnedMessage(user1Id, user2Id, messageId) {
   const db = readDb();
   const key = getConversationKey(user1Id, user2Id);
   const msg = db.messages.find((m) => m.id === messageId);
-  if (!msg || msg.deletedForEveryone) {
+  if (!msg) {
     throw new Error("Mensaje no encontrado");
-  }
-  if (!pairOwnsMessage(msg, user1Id, user2Id)) {
-    throw new Error("No tienes permisos para fijar este mensaje en esa conversación");
   }
   db.pinnedMessages[key] = messageId;
   writeDb(db);
@@ -873,47 +742,6 @@ function getMessagesBetween(user1Id, user2Id) {
   }).sort((a, b) => a.timestamp - b.timestamp);
 }
 
-function sliceMessageWindow(messages, limit, beforeId, aroundId, afterId) {
-  const cap = Math.min(Math.max(Number(limit) || 40, 1), 100);
-  if (aroundId) {
-    const index = messages.findIndex((message) => message.id === aroundId);
-    if (index < 0) return { messages: [], hasMore: false, hasMoreAfter: false };
-    let start = Math.max(0, index - Math.floor(cap / 2));
-    let end = Math.min(messages.length, start + cap);
-    start = Math.max(0, end - cap);
-    return { messages: messages.slice(start, end), hasMore: start > 0, hasMoreAfter: end < messages.length };
-  }
-  if (afterId) {
-    const index = messages.findIndex((message) => message.id === afterId);
-    const newer = index >= 0 ? messages.slice(index + 1) : [];
-    return { messages: newer.slice(0, cap), hasMore: false, hasMoreAfter: newer.length > cap };
-  }
-  let older = messages;
-  if (beforeId) {
-    const index = messages.findIndex((message) => message.id === beforeId);
-    older = index > 0 ? messages.slice(0, index) : [];
-  }
-  return { messages: older.slice(-cap), hasMore: older.length > cap, hasMoreAfter: false };
-}
-
-function getMessagesPage(user1Id, user2Id, limit = 40, beforeId = "", aroundId = "", afterId = "") {
-  return sliceMessageWindow(getMessagesBetween(user1Id, user2Id), limit, beforeId, aroundId, afterId);
-}
-
-function searchMessagesBetween(user1Id, user2Id, query) {
-  const needle = String(query || "").trim().toLowerCase();
-  if (!needle) return { total: 0, matches: [] };
-  const found = getMessagesBetween(user1Id, user2Id).filter((message) => !message.deletedForEveryone && String(message.text || "").toLowerCase().includes(needle));
-  return {
-    total: found.length,
-    matches: found.slice(-80).map((message) => ({
-      id: message.id,
-      text: String(message.text || "").slice(0, 140),
-      timestamp: message.timestamp
-    }))
-  };
-}
-
 function clearMessagesBetween(user1Id, user2Id) {
   const db = readDb();
   const u1 = String(user1Id).trim().toUpperCase();
@@ -931,9 +759,7 @@ function clearMessagesBetween(user1Id, user2Id) {
 }
 
 function savePushSubscription(syncId, subscription, userAgent = "") {
-  if (!syncId || !subscription || typeof subscription.endpoint !== "string" || !subscription.endpoint.startsWith("https://")) return false;
-  const keys = subscription.keys || {};
-  if (typeof keys.p256dh !== "string" || typeof keys.auth !== "string" || !keys.p256dh || !keys.auth) return false;
+  if (!syncId || !subscription || !subscription.endpoint) return false;
   const db = readDb();
   if (!db.subscriptions) db.subscriptions = {};
   const sId = String(syncId).trim().toUpperCase();
@@ -942,7 +768,7 @@ function savePushSubscription(syncId, subscription, userAgent = "") {
   const existingIdx = db.subscriptions[sId].findIndex((s) => s.endpoint === subscription.endpoint);
   const subData = {
     endpoint: subscription.endpoint,
-    keys: { p256dh: keys.p256dh, auth: keys.auth },
+    keys: subscription.keys || {},
     userAgent: userAgent || "",
     updatedAt: Date.now()
   };
@@ -1032,6 +858,197 @@ function removeMobilePushToken(syncId, token) {
   return true;
 }
 
+// ==== Planes, Suscripciones y Facturación ====
+function upgradeUserPlan(syncId, plan, billingCycle = "monthly", paymentDetails = {}) {
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  const user = db.users.find((u) => u.syncId === sId);
+  if (!user) {
+    throw new Error("Usuario no encontrado");
+  }
+
+  const validPlans = ["free", "pro", "enterprise"];
+  if (!validPlans.includes(plan)) {
+    throw new Error("Plan no válido");
+  }
+
+  const days = billingCycle === "yearly" ? 365 : 30;
+  const planExpiresAt = Date.now() + days * 24 * 60 * 60 * 1000;
+
+  user.plan = plan;
+  user.planExpiresAt = planExpiresAt;
+  user.billingCycle = billingCycle;
+  user.updatedAt = Date.now();
+
+  // Registrar Factura
+  if (!db.invoices) db.invoices = {};
+  if (!db.invoices[sId]) db.invoices[sId] = [];
+
+  const invoiceAmount = plan === "pro"
+    ? (billingCycle === "yearly" ? 89 : 9)
+    : (plan === "enterprise" ? (billingCycle === "yearly" ? 228 : 24) : 0);
+
+  const invoice = {
+    id: "inv_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
+    syncId: sId,
+    plan: plan,
+    billingCycle: billingCycle,
+    amountUsd: invoiceAmount,
+    discountApplied: paymentDetails.discountApplied || 0,
+    paymentMethod: paymentDetails.method || "card",
+    cardLast4: paymentDetails.last4 || "4242",
+    status: "paid",
+    issuedAt: Date.now(),
+    expiresAt: planExpiresAt
+  };
+
+  db.invoices[sId].unshift(invoice);
+  writeDb(db);
+
+  return {
+    user: toPublicUser(user),
+    invoice: invoice
+  };
+}
+
+function getUserInvoices(syncId) {
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  return (db.invoices && db.invoices[sId]) || [];
+}
+
+// ==== Bóveda Cifrada Privada (Encrypted Vault) ====
+const VAULT_KDF_ITERATIONS = 310000;
+
+/**
+ * Validates the browser-generated encryption envelope without interpreting its contents.
+ * AES-GCM ciphertext contains its authentication tag as the final 16 bytes.
+ * @param {object} encryptedContent
+ * @returns {boolean}
+ */
+function isValidVaultEnvelope(encryptedContent) {
+  if (!encryptedContent || typeof encryptedContent !== "object" || Array.isArray(encryptedContent) ||
+      encryptedContent.version !== 1 || encryptedContent.algorithm !== "AES-GCM" ||
+      encryptedContent.kdf !== "PBKDF2" || encryptedContent.hash !== "SHA-256" ||
+      encryptedContent.iterations !== VAULT_KDF_ITERATIONS) return false;
+
+  const fields = ["salt", "iv", "ciphertext"];
+  if (fields.some((field) => typeof encryptedContent[field] !== "string" ||
+      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encryptedContent[field]))) {
+    return false;
+  }
+
+  const salt = Buffer.from(encryptedContent.salt, "base64");
+  const iv = Buffer.from(encryptedContent.iv, "base64");
+  const ciphertext = Buffer.from(encryptedContent.ciphertext, "base64");
+  return salt.length === 16 && iv.length === 12 && ciphertext.length >= 16 &&
+    ciphertext.length <= 1024 * 1024 && salt.toString("base64") === encryptedContent.salt &&
+    iv.toString("base64") === encryptedContent.iv && ciphertext.toString("base64") === encryptedContent.ciphertext;
+}
+
+/**
+ * Copies only the supported envelope fields so extra client data is never stored.
+ * @param {object} encryptedContent
+ * @returns {object|null}
+ */
+function normalizeVaultEnvelope(encryptedContent) {
+  if (!isValidVaultEnvelope(encryptedContent)) return null;
+  return {
+    version: encryptedContent.version,
+    algorithm: encryptedContent.algorithm,
+    kdf: encryptedContent.kdf,
+    hash: encryptedContent.hash,
+    iterations: encryptedContent.iterations,
+    salt: encryptedContent.salt,
+    iv: encryptedContent.iv,
+    ciphertext: encryptedContent.ciphertext
+  };
+}
+
+function getVaultItems(syncId) {
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  return ((db.vaultItems && db.vaultItems[sId]) || [])
+    .filter((item) => isValidVaultEnvelope(item.encryptedContent))
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      category: item.category,
+      encryptedContent: normalizeVaultEnvelope(item.encryptedContent),
+      hint: item.hint,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
+    }));
+}
+
+function saveVaultItem(syncId, itemData) {
+  if (!itemData || typeof itemData !== "object" || Array.isArray(itemData) ||
+      Object.prototype.hasOwnProperty.call(itemData, "secretContent") ||
+      Object.prototype.hasOwnProperty.call(itemData, "secret")) {
+    throw new Error("Solo se aceptan secretos cifrados en el cliente");
+  }
+
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  if (!db.vaultItems) db.vaultItems = {};
+  if (!db.vaultItems[sId]) db.vaultItems[sId] = [];
+
+  const { id, title, category, encryptedContent, hint } = itemData;
+  const allowedCategories = ["password", "note", "api-key", "financial"];
+  const safeEncryptedContent = normalizeVaultEnvelope(encryptedContent);
+  if (typeof title !== "string" || !title.trim() || title.length > 100 ||
+      !allowedCategories.includes(category) || !safeEncryptedContent ||
+      (hint != null && (typeof hint !== "string" || hint.length > 80))) {
+    throw new Error("Metadatos o payload cifrado de bóveda no válidos");
+  }
+
+  const existingIdx = id ? db.vaultItems[sId].findIndex((i) =>
+    i.id === id && isValidVaultEnvelope(i.encryptedContent)) : -1;
+  const now = Date.now();
+  const safeHint = hint ? hint : null;
+
+  if (existingIdx >= 0) {
+    const existing = db.vaultItems[sId][existingIdx];
+    db.vaultItems[sId][existingIdx] = {
+      id: existing.id,
+      title: String(title).slice(0, 100),
+      category: category,
+      encryptedContent: safeEncryptedContent,
+      hint: safeHint,
+      createdAt: existing.createdAt,
+      updatedAt: now
+    };
+    writeDb(db);
+    return db.vaultItems[sId][existingIdx];
+  } else {
+    const newItem = {
+      id: "vlt_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
+      title: String(title).slice(0, 100),
+      category: category,
+      encryptedContent: safeEncryptedContent,
+      hint: safeHint,
+      createdAt: now,
+      updatedAt: now
+    };
+    db.vaultItems[sId].unshift(newItem);
+    writeDb(db);
+    return newItem;
+  }
+}
+
+function deleteVaultItem(syncId, itemId) {
+  const db = readDb();
+  const sId = String(syncId).trim().toUpperCase();
+  if (!db.vaultItems || !db.vaultItems[sId]) return false;
+  const prevLen = db.vaultItems[sId].length;
+  db.vaultItems[sId] = db.vaultItems[sId].filter((i) => i.id !== itemId);
+  if (db.vaultItems[sId].length !== prevLen) {
+    writeDb(db);
+    return true;
+  }
+  return false;
+}
+
 // ==== Canales de Espacio de Trabajo (Workspace Channels) ====
 /**
  * Returns only the channels visible to the registered user.
@@ -1048,16 +1065,16 @@ function findChannel(channelId) {
   const db = readDb();
   const raw = String(channelId).trim();
   const clean = raw.replace(/^#/, "").toLowerCase();
-  return (db.channels || []).find((channel) => !channel.archivedAt && (
-    channel.id === raw ||
-    channel.id === clean ||
-    channel.id === ("chan-" + clean) ||
-    String(channel.name || "").toLowerCase() === clean
+  return (db.channels || []).find((c) => !c.archivedAt && (
+    c.id === raw ||
+    c.id === clean ||
+    c.id === ("chan-" + clean) ||
+    String(c.name || "").toLowerCase() === clean
   )) || null;
 }
 
 /**
- * Checks whether a registered user is explicitly allowed to access a workspace channel.
+ * Checks whether a registered user is an explicit member of a workspace channel.
  * @param {string} channelId
  * @param {string} userSyncId
  * @returns {boolean}
@@ -1070,6 +1087,8 @@ function isChannelMember(channelId, userSyncId) {
     return false;
   }
 
+  const raw = String(channelId).trim();
+  const clean = raw.replace(/^#/, "").toLowerCase();
   const channel = findChannel(channelId);
   if (!channel) return false;
   if (channel.orgId) {
@@ -1082,16 +1101,6 @@ function isChannelMember(channelId, userSyncId) {
   if (String(channel.creatorSyncId || "").trim().toUpperCase() === normalizedUserId) return true;
   return Array.isArray(channel.memberSyncIds) &&
     channel.memberSyncIds.some((memberId) => String(memberId).trim().toUpperCase() === normalizedUserId);
-}
-
-
-function listChannelRecipientSyncIds(channelId, exceptSyncId) {
-  const channel = findChannel(channelId);
-  if (!channel) return [];
-  const except = String(exceptSyncId || "").trim().toUpperCase();
-  return readDb().users
-    .map((user) => user.syncId)
-    .filter((syncId) => syncId && syncId !== except && isChannelMember(channel.id, syncId));
 }
 
 function createWorkspaceChannel(name, description, creatorSyncId) {
@@ -1125,7 +1134,7 @@ function createWorkspaceChannel(name, description, creatorSyncId) {
 
 function canAdministerChannel(channel, actorSyncId) {
   const actor = String(actorSyncId || "").trim().toUpperCase();
-  if (!actor || channel.isDefault) return false;
+  if (!actor || channel.isDefault || channel.archivedAt) return false;
   if (String(channel.creatorSyncId || "").trim().toUpperCase() === actor) return true;
   return Array.isArray(channel.adminSyncIds) &&
     channel.adminSyncIds.some((id) => String(id).trim().toUpperCase() === actor);
@@ -1178,7 +1187,7 @@ function updateWorkspaceChannel(channelId, actorSyncId, updates = {}) {
   if (updates.name !== undefined) {
     const cleanName = String(updates.name || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 30);
     if (cleanName.length < 2) throw new Error("El nombre debe tener al menos 2 caracteres alfanuméricos");
-    if (db.channels.some((item) => !item.archivedAt && item.id !== channel.id && item.name === cleanName)) {
+    if (db.channels.some((item) => item.id !== channel.id && item.name === cleanName)) {
       throw new Error("Ya existe un canal con ese nombre");
     }
     channel.name = cleanName;
@@ -1256,25 +1265,6 @@ function getChannelMessages(channelId, userSyncId, limit = 100) {
     .slice(-limit);
 }
 
-function getChannelMessagePage(channelId, userSyncId, limit = 40, beforeId = "", aroundId = "", afterId = "") {
-  return sliceMessageWindow(getChannelMessages(channelId, userSyncId, 1500), limit, beforeId, aroundId, afterId);
-}
-
-function searchChannelMessages(channelId, userSyncId, query) {
-  const needle = String(query || "").trim().toLowerCase();
-  if (!needle) return { total: 0, matches: [] };
-  const found = getChannelMessages(channelId, userSyncId, 1500)
-    .filter((message) => String(message.text || "").toLowerCase().includes(needle));
-  return {
-    total: found.length,
-    matches: found.slice(-80).map((message) => ({
-      id: message.id,
-      text: String(message.text || "").slice(0, 140),
-      timestamp: message.createdAt
-    }))
-  };
-}
-
 function saveChannelMessage(channelId, senderSyncId, payload) {
   const channel = findChannel(channelId);
   const resolvedChannelId = channel ? channel.id : channelId;
@@ -1305,8 +1295,12 @@ function saveChannelMessage(channelId, senderSyncId, payload) {
   };
 
   db.channelMessages.push(message);
-  db.channelMessages = trimIndexed(db.channelMessages, 1500, (item) => item.channelId === resolvedChannelId);
-  return writeDb(db).then(() => message);
+  // Mantener histórico limitado a 1500 mensajes por performance
+  if (db.channelMessages.length > 1500) {
+    db.channelMessages = db.channelMessages.slice(-1500);
+  }
+  writeDb(db);
+  return message;
 }
 
 // ==== Exportación de Conversación / Auditoría ====
@@ -1322,6 +1316,7 @@ function exportConversation(syncId, contactSyncId) {
   return {
     exportedAt: new Date().toISOString(),
     exportTimestamp: Date.now(),
+    securitySeal: "SYNC-E2E-" + crypto.randomBytes(8).toString("hex").toUpperCase(),
     participants: {
       requester: user ? toPublicUser(user) : { syncId: sId },
       contact: contact ? toPublicUser(contact) : { syncId: cId }
@@ -1331,8 +1326,8 @@ function exportConversation(syncId, contactSyncId) {
       id: m.id,
       timestamp: m.timestamp,
       dateFormatted: new Date(m.timestamp).toLocaleString(),
-      fromSyncId: m.fromId,
-      toSyncId: m.toId,
+      fromSyncId: m.fromSyncId,
+      toSyncId: m.toSyncId,
       type: m.type,
       text: m.text,
       status: m.status,
@@ -1354,12 +1349,10 @@ module.exports = {
   removeEmojis,
   formatFullName,
   registerUser,
-  checkRegistrationAvailability,
   loginUser,
   getUserByToken,
   revokeSession,
   getUserBySyncId,
-  assignUserLicense,
   updateUserProfile,
   addContact,
   getUserContacts,
@@ -1374,8 +1367,6 @@ module.exports = {
   setPinnedMessage,
   unpinMessage,
   getMessagesBetween,
-  getMessagesPage,
-  searchMessagesBetween,
   clearMessagesBetween,
   writeDb,
   updateMessageLinkPreview,
@@ -1385,10 +1376,15 @@ module.exports = {
   saveMobilePushToken,
   getMobilePushTokens,
   removeMobilePushToken,
+  // Nuevas capacidades de monetización y workspace
+  upgradeUserPlan,
+  getUserInvoices,
+  getVaultItems,
+  saveVaultItem,
+  deleteVaultItem,
   getWorkspaceChannels,
   findChannel,
   isChannelMember,
-  listChannelRecipientSyncIds,
   createWorkspaceChannel,
   updateWorkspaceChannel,
   grantWorkspaceChannelAdmin,
@@ -1397,12 +1393,9 @@ module.exports = {
   removeWorkspaceChannelMember,
   deleteWorkspaceChannel,
   getChannelMessages,
-  getChannelMessagePage,
-  searchChannelMessages,
   saveChannelMessage,
   exportConversation,
   recordCall,
   resolveCall,
-  listCallsForUser,
   getWidgetSummary
 };

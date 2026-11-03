@@ -15,6 +15,7 @@ const WebSocket = require('ws');
 const { io: connect } = require('socket.io-client');
 const { safeUrl, safeLocalBlobUrl } = require('../public/safe-content');
 const isolatedDb = require('./helpers/isolated-db');
+const { tokenFor } = isolatedDb;
 const { startChromium } = require('./helpers/browser');
 
 const root = path.resolve(__dirname, '..');
@@ -64,7 +65,7 @@ before(async () => {
       if (name === './db') return db;
       if (name === './public/safe-content') return realRequire(name);
       if (name === 'selfsigned') return { generate: async () => null };
-      if (name === 'web-push') return { setVapidDetails() {}, sendNotification() { return Promise.resolve(); } };
+      if (name === 'web-push') return { setVapidDetails() { throw new Error('disabled in fixtures'); } };
       if (name === 'http') return {
         createServer(app) {
           server = http.createServer(app);
@@ -94,7 +95,7 @@ after(async () => {
 
 async function profile(avatarUrl) {
   return fetch(base + '/api/user/profile', {
-    method: 'POST', headers: { Authorization: 'Bearer test-alice', 'Content-Type': 'application/json' },
+    method: 'POST', headers: { Authorization: 'Bearer ' + tokenFor('alice'), 'Content-Type': 'application/json' },
     body: JSON.stringify({ avatarUrl })
   });
 }
@@ -102,11 +103,11 @@ async function profile(avatarUrl) {
 async function upload(bytes, name, type) {
   const body = new FormData();
   body.append('file', new Blob([bytes], { type }), name);
-  const response = await fetch(base + '/api/upload', { method: 'POST', headers: { Authorization: 'Bearer test-alice' }, body });
+  const response = await fetch(base + '/api/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + tokenFor('alice') }, body });
   assert.equal(response.status, 200);
   const data = await response.json();
   assert.ok(data.file.url.startsWith('/api/files/'));
-  const socket = await authenticatedSocket('test-alice');
+  const socket = await authenticatedSocket(tokenFor('alice'));
   const sent = waitEvent(socket, 'message-sent');
   socket.emit('send-private-message', { toSyncId: users[1].syncId, type: 'file', fileData: data.file });
   await sent;
@@ -137,6 +138,25 @@ function waitEvent(socket, name) {
     socket.once(name, receive);
   });
 }
+
+test('isolated fixtures use real session validation, including malformed, expired and revoked tokens', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-auth-fixtures-'));
+  const fixture = isolatedDb(root, dir, users);
+  try {
+    const aliceToken = tokenFor('alice');
+    assert.match(aliceToken, /^[a-f0-9]{64}$/);
+    assert.equal(fixture.getUserByToken(aliceToken).syncId, users[0].syncId);
+    assert.equal(fixture.getUserByToken('test-alice'), null);
+    assert.equal(fixture.getUserByToken(tokenFor('unknown')), null);
+    fixture.testData.sessions.find((session) => session.token === aliceToken).expiresAt = Date.now() - 1;
+    assert.equal(fixture.getUserByToken(aliceToken), null);
+    assert.equal(fixture.revokeSession(tokenFor('bob')), true);
+    assert.equal(fixture.getUserByToken(tokenFor('bob')), null);
+  } finally {
+    await fixture.writeDb(fixture.testData);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 test('URL policy rejects executable schemes in every purpose and bounds data exceptions', () => {
   for (const purpose of ['link', 'download', 'avatar', 'image', 'audio', 'video']) {
@@ -180,7 +200,7 @@ test('uploads preserve bytes; active documents download with sandbox/nosniff; me
     ['attack.xml', 'application/xml', '<html xmlns="http://www.w3.org/1999/xhtml"><script>alert(1)</script></html>']
   ]) {
     const file = await upload(content, name, type);
-    const response = await fetch(base + file.url, { headers: { Authorization: 'Bearer test-alice' } });
+    const response = await fetch(base + file.url, { headers: { Authorization: 'Bearer ' + tokenFor('alice') } });
     assert.match(response.headers.get('content-disposition'), /^attachment;/);
     assert.match(response.headers.get('content-security-policy'), /sandbox/);
     assert.match(response.headers.get('content-security-policy'), /script-src 'none'/);
@@ -188,19 +208,19 @@ test('uploads preserve bytes; active documents download with sandbox/nosniff; me
     assert.equal(await response.text(), content);
   }
   const file = await upload(png, 'image.png', 'image/png');
-  const response = await fetch(base + file.url, { headers: { Authorization: 'Bearer test-alice' } });
+  const response = await fetch(base + file.url, { headers: { Authorization: 'Bearer ' + tokenFor('alice') } });
   assert.equal(response.headers.get('content-disposition'), null);
   assert.equal(response.headers.get('content-type'), 'image/png');
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), png);
-  const range = await fetch(base + file.url, { headers: { Range: 'bytes=0-7', Authorization: 'Bearer test-alice' } });
+  const range = await fetch(base + file.url, { headers: { Range: 'bytes=0-7', Authorization: 'Bearer ' + tokenFor('alice') } });
   assert.equal(range.status, 206);
   assert.deepEqual(Buffer.from(await range.arrayBuffer()), png.subarray(0, 8));
   assert.equal((await fetch(base + '/index.html')).headers.get('content-security-policy'), null);
 });
 
 test('real Socket.IO delivers normal text/files/audio and rejects executable resource payloads before persistence', async () => {
-  const alice = await authenticatedSocket('test-alice');
-  const bob = await authenticatedSocket('test-bob');
+  const alice = await authenticatedSocket(tokenFor('alice'));
+  const bob = await authenticatedSocket(tokenFor('bob'));
   const file = await upload(png, 'normal.png', 'image/png');
   for (const payload of [
     { type: 'text', text: 'Mensaje normal' },
@@ -232,8 +252,8 @@ test('real Socket.IO delivers normal text/files/audio and rejects executable res
 });
 
 test('private message retries with the same client ID do not create duplicates', async () => {
-  const alice = await authenticatedSocket('test-alice');
-  const bob = await authenticatedSocket('test-bob');
+  const alice = await authenticatedSocket(tokenFor('alice'));
+  const bob = await authenticatedSocket(tokenFor('bob'));
   const clientMsgId = 'retry_' + Date.now();
   const received = waitEvent(bob, 'receive-private-message');
   const firstAck = waitEvent(alice, 'message-sent');
@@ -251,22 +271,18 @@ test('private message retries with the same client ID do not create duplicates',
   assert.equal(messages.filter((message) => message.id === clientMsgId).length, 1);
 });
 
-test('Web Push configuration endpoint requires authentication and returns the public key', async () => {
+test('Web Push configuration endpoint requires authentication and reports disabled configuration', async () => {
   assert.equal((await fetch(base + '/api/notifications/vapid-public-key')).status, 401);
   const response = await fetch(base + '/api/notifications/vapid-public-key', {
-    headers: { Authorization: ['Bearer', 'test-alice'].join(' ') }
+    headers: { Authorization: ['Bearer', tokenFor('alice')].join(' ') }
   });
   assert.equal(response.status, 200);
-  const body = await response.json();
-  assert.equal(body.ok, true);
-  assert.equal(body.configured, true);
-  assert.equal(typeof body.publicKey, 'string');
-  assert.ok(body.publicKey.length > 20);
+  assert.deepEqual(await response.json(), { ok: true, configured: false, publicKey: null });
 });
 
 test('channel subscriptions and history require an authenticated member', async () => {
   const channel = db.createWorkspaceChannel('private-room', 'Private channel', users[0].syncId);
-  await db.saveChannelMessage(channel.id, users[0].syncId, { text: 'Private history' });
+  db.saveChannelMessage(channel.id, users[0].syncId, { text: 'Private history' });
 
   const anonymous = await connectedSocket();
   const anonymousError = waitEvent(anonymous, 'authorization-error');
@@ -282,25 +298,25 @@ test('channel subscriptions and history require an authenticated member', async 
   invalidTokenSocket.emit('join-channel', { channelId: channel.id });
   assert.equal((await invalidTokenError).code, 'UNAUTHENTICATED');
 
-  const alice = await authenticatedSocket('test-alice');
-  const bob = await authenticatedSocket('test-bob');
+  const alice = await authenticatedSocket(tokenFor('alice'));
+  const bob = await authenticatedSocket(tokenFor('bob'));
   const bobError = waitEvent(bob, 'authorization-error');
   bob.emit('join-channel', { channelId: channel.id });
   assert.equal((await bobError).code, 'FORBIDDEN');
   assert.equal(Boolean(socketServer.sockets.adapter.rooms.get('channel:' + channel.id)?.has(bob.id)), false);
 
   const deniedHistory = await fetch(base + '/api/channels/' + channel.id + '/messages', {
-    headers: { Authorization: 'Bearer test-bob' }
+    headers: { Authorization: 'Bearer ' + tokenFor('bob') }
   });
   assert.equal(deniedHistory.status, 403);
 
   const bobChannels = await fetch(base + '/api/channels', {
-    headers: { Authorization: 'Bearer test-bob' }
+    headers: { Authorization: 'Bearer ' + tokenFor('bob') }
   });
   assert.equal((await bobChannels.json()).channels.some((item) => item.id === channel.id), false);
 
   const allowedHistory = await fetch(base + '/api/channels/' + channel.id + '/messages', {
-    headers: { Authorization: 'Bearer test-alice' }
+    headers: { Authorization: 'Bearer ' + tokenFor('alice') }
   });
   assert.equal(allowedHistory.status, 200);
   assert.deepEqual((await allowedHistory.json()).messages.map((message) => message.text), ['Private history']);
@@ -315,15 +331,16 @@ test('channel subscriptions and history require an authenticated member', async 
   assert.equal((await bobMessageError).code, 'FORBIDDEN');
   assert.equal(db.testData.channelMessages.some((message) => message.text === 'Unauthorized'), false);
 
-  const defaultChannel = db.getWorkspaceChannels(users[1].syncId).find((item) => item.isDefault);
-  assert.equal(db.isChannelMember(defaultChannel.id, users[1].syncId), true);
+  // Las cuentas empiezan sin canales predeterminados; los canales son creados por usuarios.
+  assert.equal(db.getWorkspaceChannels(users[0].syncId).some((item) => item.isDefault), false);
+  assert.equal(db.getWorkspaceChannels(users[1].syncId).length, 0);
   assert.equal(db.isChannelMember(channel.id, users[1].syncId), false);
 });
 
 test('channel creator can delegate and revoke channel administration securely', async () => {
   const channel = db.createWorkspaceChannel('admin-delegation', 'Delegated admin test', users[0].syncId);
-  const aliceHeaders = { Authorization: 'Bearer test-alice', 'Content-Type': 'application/json' };
-  const bobHeaders = { Authorization: 'Bearer test-bob', 'Content-Type': 'application/json' };
+  const aliceHeaders = { Authorization: 'Bearer ' + tokenFor('alice'), 'Content-Type': 'application/json' };
+  const bobHeaders = { Authorization: 'Bearer ' + tokenFor('bob'), 'Content-Type': 'application/json' };
 
   // Only the creator can delegate administrative privileges.
   const grant = await fetch(base + '/api/channels/' + channel.id + '/admins/' + users[1].syncId, {
@@ -367,18 +384,74 @@ test('channel creator can delegate and revoke channel administration securely', 
   });
   assert.equal(deniedEdit.status, 400);
 
-  // System/default channels remain protected from user administration.
-  const defaultChannel = db.getWorkspaceChannels(users[0].syncId).find((item) => item.isDefault);
-  assert.ok(defaultChannel);
-  const deniedDefaultEdit = await fetch(base + '/api/channels/' + defaultChannel.id, {
-    method: 'PUT', headers: aliceHeaders, body: JSON.stringify({ description: 'Should be denied' })
+  // No existen canales de sistema predeterminados en cuentas nuevas.
+  assert.equal(db.getWorkspaceChannels(users[0].syncId).some((item) => item.isDefault), false);
+  assert.equal(db.getWorkspaceChannels(users[1].syncId).some((item) => item.isDefault), false);
+});
+
+test('vault API stores and returns only authenticated client-encrypted payloads', async () => {
+  const legacyItems = db.testData.vaultItems || (db.testData.vaultItems = {});
+  legacyItems[users[1].syncId] = [{ id: 'legacy', title: 'Legacy', secretContent: 'old plaintext' }];
+  const secret = 'sensitive-vault-value';
+  const passphrase = 'local-master-passphrase';
+  const salt = webcrypto.getRandomValues(new Uint8Array(16));
+  const iv = webcrypto.getRandomValues(new Uint8Array(12));
+  const material = await webcrypto.subtle.importKey('raw', Buffer.from(passphrase), 'PBKDF2', false, ['deriveKey']);
+  const key = await webcrypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' },
+    material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+  const ciphertext = await webcrypto.subtle.encrypt(
+    { name: 'AES-GCM', iv }, key, Buffer.from(secret)
+  );
+  const base64 = (bytes) => Buffer.from(bytes).toString('base64');
+  const encryptedContent = {
+    version: 1, algorithm: 'AES-GCM', kdf: 'PBKDF2', hash: 'SHA-256', iterations: 310000,
+    salt: base64(salt), iv: base64(iv), ciphertext: base64(ciphertext)
+  };
+
+  const plaintextAttempt = await fetch(base + '/api/vault', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + tokenFor('bob'), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'Plaintext', category: 'note', secretContent: secret })
   });
-  assert.equal(deniedDefaultEdit.status, 400);
+  assert.equal(plaintextAttempt.status, 400);
+
+  const savedResponse = await fetch(base + '/api/vault', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + tokenFor('bob'), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Encrypted', category: 'note', hint: 'non-secret hint',
+      encryptedContent: { ...encryptedContent, unexpectedPlaintext: secret }
+    })
+  });
+  assert.equal(savedResponse.status, 200);
+  assert.match(savedResponse.headers.get('cache-control'), /no-store/);
+  const saved = await savedResponse.json();
+  assert.equal(saved.item.encryptedContent.ciphertext, encryptedContent.ciphertext);
+  assert.equal(JSON.stringify(saved).includes(secret), false);
+  assert.equal(Object.hasOwn(saved.item, 'secretContent'), false);
+
+  const fetchedResponse = await fetch(base + '/api/vault', {
+    headers: { Authorization: 'Bearer ' + tokenFor('bob') }
+  });
+  assert.match(fetchedResponse.headers.get('cache-control'), /no-store/);
+  const fetched = await fetchedResponse.json();
+  assert.equal(fetched.items.some((item) => item.id === 'legacy'), false);
+  assert.equal(fetched.items.length, 1);
+  const stored = db.testData.vaultItems[users[1].syncId][0];
+  assert.equal(Object.hasOwn(stored, 'secretContent'), false);
+  assert.equal(JSON.stringify(stored).includes(secret), false);
+
+  const decrypted = await webcrypto.subtle.decrypt(
+    { name: 'AES-GCM', iv }, key, Buffer.from(fetched.items[0].encryptedContent.ciphertext, 'base64')
+  );
+  assert.equal(Buffer.from(decrypted).toString(), secret);
 });
 
 test('HTML disguised as inline media still receives sandbox and nosniff', async () => {
   const file = await upload('<img src=x onerror=alert(1)><script>alert(1)</script>', 'disguised.png', 'image/png');
-  const response = await fetch(base + file.url, { headers: { Authorization: 'Bearer test-alice' } });
+  const response = await fetch(base + file.url, { headers: { Authorization: 'Bearer ' + tokenFor('alice') } });
   assert.equal(response.headers.get('content-type'), 'image/png');
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   assert.match(response.headers.get('content-security-policy'), /sandbox; default-src 'none'; script-src 'none'/);
@@ -441,7 +514,7 @@ async function startBrowser(t) {
   await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `
     window.__xss = 0;
     window.alert = () => { window.__xss++; };
-    localStorage.setItem('sync_engine_auth_token', 'test-alice');
+    localStorage.setItem('sync_engine_auth_token', ${JSON.stringify(tokenFor('alice'))});
     if ('serviceWorker' in navigator) navigator.serviceWorker.register = () => Promise.reject(new Error('isolated test'));
   ` });
   await cdp.send('Page.navigate', { url: base + '/' });
@@ -581,6 +654,51 @@ test('real browser: text/name/file/quote payloads stay data across chat, avatars
   })()`);
   assert.equal(sent, true);
   assert.ok(messages.at(-1).fileData.url.startsWith('/api/files/'));
+
+  const vaultSaved = await cdp.evaluate(`(async () => {
+    window.prompt = () => 'test-master-passphrase';
+    openVaultBtn.click();
+    vaultTitleInput.value = 'Browser vault test';
+    vaultCategorySelect.value = 'note';
+    vaultSecretInput.value = 'browser-only secret value';
+    vaultHintInput.value = 'public hint';
+    await handleSaveVaultItem();
+    await loadVaultItems();
+    const card = vaultItemsContainer.querySelector('.vault-item-card');
+    const masked = card.querySelector('.secret-text').textContent;
+    card.querySelector('.btn-toggle-secret').click();
+    return { masked, revealed: card.querySelector('.secret-text').textContent };
+  })()`);
+  assert.equal(vaultSaved.masked, '••••••••••••');
+  assert.equal(vaultSaved.revealed, 'browser-only secret value');
+  const storedVaultItem = db.testData.vaultItems[users[0].syncId].find((item) => item.title === 'Browser vault test');
+  assert.ok(storedVaultItem.encryptedContent);
+  assert.equal(Object.hasOwn(storedVaultItem, 'secretContent'), false);
+  assert.equal(JSON.stringify(storedVaultItem).includes('browser-only secret value'), false);
+  const fetchedVault = await (await fetch(base + '/api/vault', {
+    headers: { Authorization: 'Bearer ' + tokenFor('alice') }
+  })).json();
+  assert.equal(Object.hasOwn(fetchedVault.items.find((item) => item.id === storedVaultItem.id), 'secretContent'), false);
+
+  await cdp.evaluate(`(() => {
+    closeVaultModalBtn.click();
+    window.prompt = () => 'incorrect-master-passphrase';
+    openVaultBtn.click();
+  })()`);
+  await cdp.evaluate(`new Promise((resolve, reject) => {
+    const start = Date.now();
+    const timer = setInterval(() => {
+      if (vaultItemsContainer.textContent.includes('No se pudo cargar o descifrar')) { clearInterval(timer); resolve(true); }
+      else if (Date.now() - start > 5000) { clearInterval(timer); reject(new Error('Vault did not reject an incorrect master passphrase')); }
+    }, 25);
+  })`);
+  const wrongKeyState = await cdp.evaluate(`({
+    showsSecret: vaultItemsContainer.textContent.includes('browser-only secret value'),
+    masterInputCleared: vaultSecretInput.value === ''
+  })`);
+  assert.equal(wrongKeyState.showsSecret, false);
+  assert.equal(wrongKeyState.masterInputCleared, true);
+  await cdp.evaluate('closeVaultModalBtn.click()');
 
   // HTML directly opened from the app origin must download, never become an app document.
   const html = await upload('<script>alert(1)</script>', 'direct.html', 'text/html');

@@ -65,7 +65,10 @@ test("private, quick-reply and channel ACK/delivery wait for the atomic disk ren
     ["quick-reply", "quick-reply-sent", { toSyncId: "SYNC-1002", text: "quick durable" }],
     ["send-channel-message", "channel-message-received", { channelId: "chan-general", type: "text", text: "channel durable" }]
   ]) {
-    if (request === "send-channel-message") f.socket.emit("join-channel", { channelId: "chan-general" });
+    if (request === "send-channel-message") {
+      payload.channelId = await f.command("createChannel");
+      f.socket.emit("join-channel", { channelId: payload.channelId });
+    }
     let count = 0;
     const observe = () => count++;
     f.socket.on(response, observe);
@@ -88,9 +91,13 @@ test("storage failure emits an error without successful ACK or delivery", { time
     ["send-channel-message", "channel-message-received", { channelId: "chan-general", type: "text", text: "not durable" }]
   ]) {
     const f = await fixture(t);
+    const channelId = await f.command("createChannel");
     const before = fs.readFileSync(f.file, "utf8");
     const successes = [];
-    if (request === "send-channel-message") f.socket.emit("join-channel", { channelId: "chan-general" });
+    if (request === "send-channel-message") {
+      payload.channelId = channelId;
+      f.socket.emit("join-channel", { channelId: payload.channelId });
+    }
     f.socket.on(success, (x) => successes.push(x));
     f.socket.on("receive-private-message", (x) => successes.push(x));
     await f.command("failWrites");

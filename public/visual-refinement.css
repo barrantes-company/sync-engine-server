@@ -568,6 +568,8 @@ html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-
   max-width: none !important;
   align-self: stretch !important;
   margin-inline: 0 !important;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 96px;
 }
 
 #chat-messages > .msg-item .chat-bubble-inner {
