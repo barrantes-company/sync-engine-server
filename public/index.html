@@ -19,6 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/sync_effects.css">
 <script>
 (function () {
   const current = new URL(location.href);
@@ -735,13 +736,41 @@
 
           <!-- TIMELINE DE MENSAJES (Cero <svg> dentro de #chat-messages para contrato XSS p0-01) -->
           <div id="chat-messages" class="chat-timeline">
-            <div id="chat-welcome" class="empty-state h-full flex flex-col items-center justify-center text-center p-6">
-              <div class="empty-state-icon w-16 h-16 rounded-2xl bg-[var(--search-bg)] border border-[var(--border-subtle)] flex items-center justify-center text-2xl mb-4">
-                💬
+            <div id="chat-welcome" class="empty-state welcome-container" data-telemetry-globe-dashboard>
+              <div class="ambient-glow" aria-hidden="true"></div>
+              <div class="telemetry-pill" data-telemetry-status role="status" aria-live="polite">
+                <span class="telemetry-dot" aria-hidden="true"><span class="telemetry-dot-ping"></span><span class="telemetry-dot-core"></span></span>
+                <span id="telemetry-latency-val" data-telemetry-label>ONLINE • —ms</span>
+                <svg id="telemetry-mini-sparkline" class="telemetry-sparkline-mini" viewBox="0 0 44 14" aria-hidden="true"></svg>
               </div>
-              <p class="empty-state-title text-base font-bold">SYNC ENGINE para Web &amp; Escritorio</p>
-              <p class="empty-state-text text-xs text-[var(--text-secondary)] max-w-sm mt-1.5 leading-relaxed">Elige una conversación o canal en la columna izquierda, o agrega un contacto con su Código ID.</p>
-              <span class="empty-state-hint mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--search-bg)] border border-[var(--border-subtle)] text-[10px] font-bold uppercase tracking-wider">🔒 Mensajería Privada &amp; Sincronizada</span>
+              <div class="telemetry-grid">
+                <section class="telemetry-col telemetry-card" aria-label="Telemetría de red">
+                  <svg id="sparkline-1" class="sparkline-svg" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true"><polyline data-telemetry-sparkline fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,34"></polyline></svg>
+                  <div class="metric-row"><span>LATENCIA RTT</span><strong id="welcome-latency" class="metric-highlight" data-telemetry-latency>—</strong></div>
+                  <div class="progress-track"><div class="progress-fill" style="width:65%"></div></div>
+                  <svg id="sparkline-2" class="sparkline-svg" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true"></svg>
+                  <div class="metric-row"><span>VENTANA</span><span class="metric-mono">24 muestras</span></div>
+                </section>
+                <div class="globe-center" aria-label="DataGlobe interactivo de sincronización">
+                  <svg class="data-globe" viewBox="0 0 230 230" role="img" aria-labelledby="globe-title globe-desc">
+                    <title id="globe-title">DataGlobe de SYNC ENGINE</title><desc id="globe-desc">Esfera de 26 nodos con enlaces de proximidad y anillos orbitales.</desc>
+                    <defs><radialGradient id="globe-core" cx="50%" cy="44%"><stop offset="0" stop-color="#38bdf8" stop-opacity=".3"></stop><stop offset="1" stop-color="#0f172a" stop-opacity="0"></stop></radialGradient></defs>
+                    <circle cx="115" cy="115" r="78" fill="url(#globe-core)" stroke="rgba(56,189,248,.22)"></circle>
+                    <g class="globe-orbit"><ellipse cx="115" cy="115" rx="96" ry="28" fill="none" stroke="rgba(129,140,248,.35)" stroke-width="1"></ellipse></g>
+                    <g class="globe-orbit-slow"><ellipse cx="115" cy="115" rx="90" ry="36" fill="none" stroke="rgba(56,189,248,.3)" stroke-width="1" transform="rotate(58 115 115)"></ellipse></g>
+                    <g data-globe-links></g><g data-globe-nodes></g>
+                  </svg>
+                </div>
+                <section class="telemetry-col telemetry-card" aria-label="Cuotas de workspace">
+                  <svg id="sparkline-3" class="sparkline-svg" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true"></svg>
+                  <div class="metric-row"><span>STORAGE USAGE</span><strong class="metric-highlight">72%</strong></div><div class="progress-track"><div class="progress-fill" style="width:72%"></div></div>
+                  <div class="metric-row"><span>PROGRESO USO</span><span class="metric-mono">40.18 GB</span></div><div class="progress-track"><div class="progress-fill" style="width:40%"></div></div>
+                  <div class="metric-row"><span>SINCRONIZACIÓN</span><span class="metric-mono">ACTIVA</span></div>
+                </section>
+              </div>
+              <p class="welcome-title">SYNC ENGINE para Web &amp; Escritorio</p>
+              <p class="welcome-desc">Elige una conversación o canal en la columna izquierda, o agrega un contacto con su Código ID.</p>
+              <span class="secure-badge">🔒 Mensajería privada &amp; sincronizada</span>
             </div>
           </div>
 
@@ -6447,6 +6476,8 @@
   });
 })();
 </script>
+
+<script src="/telemetry-globe.js" defer></script>
 
 </body>
 </html>
