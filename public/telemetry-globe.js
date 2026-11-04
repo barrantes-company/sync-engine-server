@@ -1,16 +1,9 @@
 (function () {
   'use strict';
 
-  const SAMPLE_LIMIT = 24;
-  const samples = [];
   const root = document.querySelector('[data-telemetry-globe-dashboard]');
   if (!root) return;
 
-  const status = root.querySelector('[data-telemetry-status]');
-  const sparkline = document.getElementById('sparkline-1');
-  const miniSparkline = document.getElementById('telemetry-mini-sparkline');
-  const secondarySparkline = document.getElementById('sparkline-2');
-  const quotaSparkline = document.getElementById('sparkline-3');
   const nodesLayer = root.querySelector('[data-globe-nodes]');
   const linksLayer = root.querySelector('[data-globe-links]');
 
@@ -18,43 +11,6 @@
     const element = document.createElementNS('http://www.w3.org/2000/svg', name);
     Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
     return element;
-  }
-
-  function renderSparkline() {
-    const values = samples.length ? samples : [0];
-    drawPolyline(sparkline, values, 120, 38);
-  }
-
-  function drawPolyline(svg, values, width, height) {
-    if (!svg || values.length < 2) return;
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const range = Math.max(max - min, 1);
-    const points = values.map((value, index) => {
-      const x = (index / (values.length - 1)) * width;
-      const y = height - ((value - min) / range) * (height - 4) - 2;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
-    svg.replaceChildren(svgElement('polyline', { points, fill: 'none', stroke: 'var(--brand)', 'stroke-width': 1.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-  }
-
-  function measureLatency() {
-    const started = performance.now();
-    return fetch('/api/status', { cache: 'no-store', mode: 'no-cors' })
-      .then(() => Math.max(0, Math.round(performance.now() - started)))
-      .then((latency) => {
-        samples.push(latency);
-        if (samples.length > SAMPLE_LIMIT) samples.shift();
-        status.dataset.latency = `${latency}ms`;
-        status.classList.remove('is-offline');
-        status.querySelector('[data-telemetry-label]').textContent = 'CONECTADO';
-        renderSparkline();
-        drawPolyline(miniSparkline, samples, 44, 14);
-      })
-      .catch(() => {
-        status.classList.add('is-offline');
-        status.querySelector('[data-telemetry-label]').textContent = 'SIN CONEXIÓN';
-      });
   }
 
   function buildGlobe() {
@@ -81,9 +37,4 @@
   }
 
   buildGlobe();
-  renderSparkline();
-  drawPolyline(secondarySparkline, [45, 52, 48, 65, 59, 70, 62, 80], 120, 38);
-  drawPolyline(quotaSparkline, [30, 42, 38, 55, 60, 58, 72, 85], 120, 38);
-  measureLatency();
-  window.setInterval(measureLatency, 5000);
 })();

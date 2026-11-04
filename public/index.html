@@ -737,36 +737,22 @@
           <!-- TIMELINE DE MENSAJES (Cero <svg> dentro de #chat-messages para contrato XSS p0-01) -->
           <div id="chat-messages" class="chat-timeline">
             <div id="chat-welcome" class="empty-state welcome-container" data-telemetry-globe-dashboard>
-              <div class="ambient-glow" aria-hidden="true"></div>
-              <div class="telemetry-pill" data-telemetry-status role="status" aria-live="polite">
-                <span class="telemetry-dot" aria-hidden="true"><span class="telemetry-dot-ping"></span><span class="telemetry-dot-core"></span></span>
-                <span id="telemetry-latency-val" data-telemetry-label>CONECTADO</span>
-                <svg id="telemetry-mini-sparkline" class="telemetry-sparkline-mini" viewBox="0 0 44 14" aria-hidden="true"></svg>
+              <div class="welcome-visual" aria-hidden="true">
+                <div class="visual-grid"></div><div class="visual-scan"></div>
+                <svg class="data-globe-background" viewBox="0 0 230 230">
+                  <defs><radialGradient id="globe-core" cx="50%" cy="44%"><stop offset="0" stop-color="#38bdf8" stop-opacity=".28"></stop><stop offset=".55" stop-color="#818cf8" stop-opacity=".08"></stop><stop offset="1" stop-color="#0f172a" stop-opacity="0"></stop></radialGradient></defs>
+                  <circle cx="115" cy="115" r="78" fill="url(#globe-core)"></circle>
+                  <g class="globe-orbit"><ellipse cx="115" cy="115" rx="98" ry="30" fill="none" stroke="rgba(56,189,248,.25)" stroke-width=".8"></ellipse></g>
+                  <g class="globe-orbit-slow"><ellipse cx="115" cy="115" rx="88" ry="38" fill="none" stroke="rgba(129,140,248,.24)" stroke-width=".8" transform="rotate(58 115 115)"></ellipse></g>
+                  <g class="visual-constellation"><g data-globe-links></g><g data-globe-nodes></g></g>
+                  <path class="visual-sweep" d="M18 115h194" pathLength="1"></path>
+                </svg>
               </div>
-              <div class="telemetry-grid">
-                <section class="visual-side-card visual-side-card-left" aria-label="Red privada activa">
-                  <svg id="sparkline-1" class="sparkline-svg" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true"><polyline data-telemetry-sparkline fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,34"></polyline></svg>
-                  <svg id="sparkline-2" class="sparkline-svg" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true"></svg>
-                  <div class="visual-side-meta"><span class="visual-kicker">PRIVATE MESH</span><span class="visual-status"><i></i> LIVE LINK</span></div>
-                </section>
-                <div class="globe-center" aria-label="DataGlobe interactivo de sincronización">
-                  <svg class="data-globe" viewBox="0 0 230 230" role="img" aria-labelledby="globe-title globe-desc">
-                    <title id="globe-title">DataGlobe de SYNC ENGINE</title><desc id="globe-desc">Esfera de 26 nodos con enlaces de proximidad y anillos orbitales.</desc>
-                    <defs><radialGradient id="globe-core" cx="50%" cy="44%"><stop offset="0" stop-color="#38bdf8" stop-opacity=".3"></stop><stop offset="1" stop-color="#0f172a" stop-opacity="0"></stop></radialGradient></defs>
-                    <circle cx="115" cy="115" r="78" fill="url(#globe-core)" stroke="rgba(56,189,248,.22)"></circle>
-                    <g class="globe-orbit"><ellipse cx="115" cy="115" rx="96" ry="28" fill="none" stroke="rgba(129,140,248,.35)" stroke-width="1"></ellipse></g>
-                    <g class="globe-orbit-slow"><ellipse cx="115" cy="115" rx="90" ry="36" fill="none" stroke="rgba(56,189,248,.3)" stroke-width="1" transform="rotate(58 115 115)"></ellipse></g>
-                    <g data-globe-links></g><g data-globe-nodes></g>
-                  </svg>
-                </div>
-                <section class="visual-side-card visual-side-card-right" aria-label="Sincronización segura">
-                  <svg id="sparkline-3" class="sparkline-svg" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true"></svg>
-                  <div class="visual-side-meta"><span class="visual-kicker">SYNC CORE</span><span class="visual-status"><i></i> ENCRYPTED</span></div>
-                </section>
-              </div>
+              <div class="welcome-content">
               <p class="welcome-title">SYNC ENGINE para Web &amp; Escritorio</p>
               <p class="welcome-desc">Elige una conversación o canal en la columna izquierda, o agrega un contacto con su Código ID.</p>
               <span class="secure-badge">🔒 Mensajería privada &amp; sincronizada</span>
+              </div>
             </div>
           </div>
 
