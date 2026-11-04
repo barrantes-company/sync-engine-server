@@ -17,12 +17,20 @@
 .sync-intro-aura { position: absolute; width: min(70vw, 620px); height: min(70vw, 620px); border-radius: 50%; background: radial-gradient(circle, rgba(56, 189, 248, .13), rgba(129, 140, 248, .05) 34%, transparent 68%); filter: blur(8px); animation: intro-aura 3.6s ease-in-out infinite; }
 .sync-intro-orbit { position: absolute; width: min(68vw, 580px); height: min(18vw, 150px); border: 1px solid rgba(56, 189, 248, .22); border-radius: 50%; transform: rotate(-22deg); animation: intro-orbit 6s linear infinite; }
 .sync-intro-orbit-two { width: min(58vw, 500px); height: min(25vw, 190px); border-color: rgba(129, 140, 248, .18); transform: rotate(58deg); animation-duration: 8s; animation-direction: reverse; }
+.sync-energy-transition { position: fixed; inset: 0; z-index: 950; overflow: hidden; pointer-events: none; opacity: 0; }
+.sync-energy-transition span { position: absolute; top: 42%; left: -24%; width: 148%; height: 2px; border-radius: 50%; background: linear-gradient(90deg, transparent 0%, rgba(56, 189, 248, .9) 35%, rgba(255, 255, 255, .95) 50%, rgba(236, 72, 153, .85) 65%, transparent 100%); box-shadow: 0 0 8px #38bdf8, 0 0 24px rgba(129, 140, 248, .75), 0 0 48px rgba(236, 72, 153, .35); transform: rotate(-9deg) translateX(-14%); }
+.sync-energy-transition.is-active { animation: energy-transition-in .42s ease-out both; }
+.sync-energy-transition.is-active span { animation: energy-streak .42s cubic-bezier(.2, .8, .2, 1) both; }
+.sync-energy-transition[data-kind="send"] span { top: 74%; height: 1px; transform: rotate(-3deg) translateX(-14%); }
+.sync-energy-transition[data-kind="send"].is-active span { animation-duration: .3s; }
 @keyframes intro-content-in { from { opacity: 0; transform: translateY(9px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes intro-mark-charge { 0% { opacity: 0; transform: scale(.76); filter: brightness(.7) drop-shadow(0 0 0 transparent); } 55% { opacity: 1; transform: scale(1.04); } 100% { transform: scale(1); } }
 @keyframes intro-loader { 0% { transform: translateX(-130%); } 55%, 100% { transform: translateX(320%); } }
 @keyframes intro-aura { 50% { transform: scale(1.12); opacity: .7; } }
 @keyframes intro-orbit { to { transform: rotate(338deg); } }
-@media (prefers-reduced-motion: reduce) { .sync-intro-content, .sync-intro-mark, .sync-intro-aura, .sync-intro-orbit, .sync-intro-loader span { animation: none; } .sync-intro-screen { transition-duration: .2s; } }
+@keyframes energy-transition-in { 0% { opacity: 0; } 22%, 70% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes energy-streak { from { transform: rotate(-9deg) translateX(-18%); } to { transform: rotate(-9deg) translateX(18%); } }
+@media (prefers-reduced-motion: reduce) { .sync-intro-content, .sync-intro-mark, .sync-intro-aura, .sync-intro-orbit, .sync-intro-loader span, .sync-energy-transition, .sync-energy-transition span { animation: none; } .sync-intro-screen { transition-duration: .2s; } }
 
 .welcome-container { position: relative; display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 40px 24px; overflow: hidden; }
 .welcome-visual { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
