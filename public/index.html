@@ -56,6 +56,19 @@
 </head>
 <body class="font-sans antialiased">
 
+  <div id="sync-intro-screen" class="sync-intro-screen" role="status" aria-live="polite" aria-label="Preparando SYNC ENGINE">
+    <div class="sync-intro-aura" aria-hidden="true"></div>
+    <div class="sync-intro-orbit sync-intro-orbit-one" aria-hidden="true"></div>
+    <div class="sync-intro-orbit sync-intro-orbit-two" aria-hidden="true"></div>
+    <div class="sync-intro-content">
+      <img src="/assets/SYNC_ENGINE_Mark_S_Infinito_Transparente.png" alt="" class="sync-intro-mark">
+      <div class="sync-intro-wordmark">SYNC ENGINE</div>
+      <div class="sync-intro-byline">BY BARRANTES CO.</div>
+      <div class="sync-intro-loader" aria-hidden="true"><span></span></div>
+      <p class="sync-intro-message">Preparando tu espacio conectado</p>
+    </div>
+  </div>
+
   <!-- ========================================================================
        FASE 2: PANTALLA INICIAL DE INICIO DE SESIÓN Y CREACIÓN DE USUARIO
        ======================================================================== -->
@@ -6510,6 +6523,7 @@
 </script>
 
 <script src="/telemetry-globe.js" defer></script>
+<script src="/welcome-intro.js" defer></script>
 
 </body>
 </html>
