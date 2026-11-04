@@ -740,16 +740,14 @@
               <div class="ambient-glow" aria-hidden="true"></div>
               <div class="telemetry-pill" data-telemetry-status role="status" aria-live="polite">
                 <span class="telemetry-dot" aria-hidden="true"><span class="telemetry-dot-ping"></span><span class="telemetry-dot-core"></span></span>
-                <span id="telemetry-latency-val" data-telemetry-label>ONLINE • —ms</span>
+                <span id="telemetry-latency-val" data-telemetry-label>CONECTADO</span>
                 <svg id="telemetry-mini-sparkline" class="telemetry-sparkline-mini" viewBox="0 0 44 14" aria-hidden="true"></svg>
               </div>
               <div class="telemetry-grid">
-                <section class="telemetry-col telemetry-card" aria-label="Telemetría de red">
+                <section class="visual-side-card visual-side-card-left" aria-label="Red privada activa">
                   <svg id="sparkline-1" class="sparkline-svg" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true"><polyline data-telemetry-sparkline fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,34"></polyline></svg>
-                  <div class="metric-row"><span>LATENCIA RTT</span><strong id="welcome-latency" class="metric-highlight" data-telemetry-latency>—</strong></div>
-                  <div class="progress-track"><div class="progress-fill" style="width:65%"></div></div>
                   <svg id="sparkline-2" class="sparkline-svg" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true"></svg>
-                  <div class="metric-row"><span>VENTANA</span><span class="metric-mono">24 muestras</span></div>
+                  <div class="visual-side-meta"><span class="visual-kicker">PRIVATE MESH</span><span class="visual-status"><i></i> LIVE LINK</span></div>
                 </section>
                 <div class="globe-center" aria-label="DataGlobe interactivo de sincronización">
                   <svg class="data-globe" viewBox="0 0 230 230" role="img" aria-labelledby="globe-title globe-desc">
@@ -761,11 +759,9 @@
                     <g data-globe-links></g><g data-globe-nodes></g>
                   </svg>
                 </div>
-                <section class="telemetry-col telemetry-card" aria-label="Cuotas de workspace">
+                <section class="visual-side-card visual-side-card-right" aria-label="Sincronización segura">
                   <svg id="sparkline-3" class="sparkline-svg" viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true"></svg>
-                  <div class="metric-row"><span>STORAGE USAGE</span><strong class="metric-highlight">72%</strong></div><div class="progress-track"><div class="progress-fill" style="width:72%"></div></div>
-                  <div class="metric-row"><span>PROGRESO USO</span><span class="metric-mono">40.18 GB</span></div><div class="progress-track"><div class="progress-fill" style="width:40%"></div></div>
-                  <div class="metric-row"><span>SINCRONIZACIÓN</span><span class="metric-mono">ACTIVA</span></div>
+                  <div class="visual-side-meta"><span class="visual-kicker">SYNC CORE</span><span class="visual-status"><i></i> ENCRYPTED</span></div>
                 </section>
               </div>
               <p class="welcome-title">SYNC ENGINE para Web &amp; Escritorio</p>
@@ -2292,6 +2288,11 @@
 
   backToContactsBtn.addEventListener('click', () => {
     activeContactSyncId = null;
+    activeChannelId = null;
+    const appEl = document.getElementById('app-container');
+    if (appEl) appEl.dataset.hasActiveConversation = 'false';
+    document.getElementById('chat-header-bar')?.classList.add('hidden');
+    document.getElementById('input-container')?.classList.add('hidden');
     if (window.innerWidth < 768) {
       document.body.classList.add('mobile-view-contacts');
       document.body.classList.remove('mobile-view-chat');
@@ -2299,6 +2300,8 @@
     closeInfoDrawer();
     chatMessages.replaceChildren(chatWelcome);
     chatWelcome.classList.remove('hidden');
+    renderContacts(Array.from(contactsMap.values()));
+    renderChannelsList();
   });
 
   async function loadContacts() {
@@ -6474,6 +6477,49 @@
   document.getElementById('se-start-call-from-home')?.addEventListener('click', () => {
     document.querySelector('[data-se-view="contacts"]')?.click();
   });
+
+  // Navegación nativa del botón/gesto Atrás en Android APK (WebAppActivity)
+  window.__syncHandleAndroidBack = () => {
+    const lightbox = document.getElementById('lightbox-modal');
+    if (lightbox && !lightbox.classList.contains('hidden')) {
+      document.getElementById('lightbox-close-btn')?.click();
+      return true;
+    }
+    const channelAdminModal = document.getElementById('channel-admin-modal');
+    if (channelAdminModal && !channelAdminModal.classList.contains('hidden')) {
+      document.getElementById('close-channel-admin-btn')?.click();
+      return true;
+    }
+    const channelModal = document.getElementById('channel-modal');
+    if (channelModal && !channelModal.classList.contains('hidden')) {
+      document.getElementById('close-channel-modal-btn')?.click();
+      return true;
+    }
+    const mediaHubModal = document.getElementById('media-hub-modal');
+    if (mediaHubModal && !mediaHubModal.classList.contains('hidden')) {
+      document.getElementById('close-media-hub-btn')?.click();
+      return true;
+    }
+    if (drawerProfile && drawerProfile.classList.contains('open')) {
+      document.getElementById('close-profile-modal-btn')?.click();
+      setActiveNav('chats');
+      return true;
+    }
+    if (drawerSettings && drawerSettings.classList.contains('open')) {
+      drawerSettings.classList.remove('open');
+      setActiveNav('chats');
+      return true;
+    }
+    if (document.body.classList.contains('mobile-view-chat')) {
+      document.getElementById('back-to-contacts-btn')?.click();
+      return true;
+    }
+    if (document.body.classList.contains('mobile-view-calls')) {
+      nav?.querySelector('[data-se-view="chats"]')?.click();
+      return true;
+    }
+    return false;
+  };
 })();
 </script>
 

@@ -13,7 +13,6 @@
   const quotaSparkline = document.getElementById('sparkline-3');
   const nodesLayer = root.querySelector('[data-globe-nodes]');
   const linksLayer = root.querySelector('[data-globe-links]');
-  const latencyValue = root.querySelector('[data-telemetry-latency]');
 
   function svgElement(name, attributes) {
     const element = document.createElementNS('http://www.w3.org/2000/svg', name);
@@ -46,16 +45,15 @@
       .then((latency) => {
         samples.push(latency);
         if (samples.length > SAMPLE_LIMIT) samples.shift();
-        latencyValue.textContent = `${latency}ms`;
+        status.dataset.latency = `${latency}ms`;
         status.classList.remove('is-offline');
-        status.querySelector('[data-telemetry-label]').textContent = `ONLINE • ${latency}ms`;
+        status.querySelector('[data-telemetry-label]').textContent = 'CONECTADO';
         renderSparkline();
         drawPolyline(miniSparkline, samples, 44, 14);
       })
       .catch(() => {
         status.classList.add('is-offline');
-        status.querySelector('[data-telemetry-label]').textContent = 'OFFLINE';
-        latencyValue.textContent = '—';
+        status.querySelector('[data-telemetry-label]').textContent = 'SIN CONEXIÓN';
       });
   }
 
