@@ -16,6 +16,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.net.http.SslError;
 import android.webkit.SslErrorHandler;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -36,11 +37,13 @@ import java.util.List;
  */
 public final class WebAppActivity extends Activity {
     private static final int MEDIA_PERMISSION = 42;
+    private static final int FILE_CHOOSER_RESULT = 43;
     private WebView webView;
     private LinearLayout root;
     private ProgressBar progress;
     private TextView errorMessage;
     private PermissionRequest pendingMedia;
+    private ValueCallback<Uri[]> filePathCallback;
     private boolean showingError;
 
     @Override
@@ -60,7 +63,7 @@ public final class WebAppActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         this.root = root;
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.WHITE);
+        root.setBackgroundColor(Color.parseColor("#ECEAF8"));
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setMax(100);
@@ -96,6 +99,26 @@ public final class WebAppActivity extends Activity {
 
             @Override public void onPermissionRequestCanceled(PermissionRequest request) {
                 if (request == pendingMedia) pendingMedia = null;
+            }
+
+            @Override public boolean onShowFileChooser(
+                    WebView view,
+                    ValueCallback<Uri[]> callback,
+                    FileChooserParams fileChooserParams) {
+                if (filePathCallback != null) {
+                    filePathCallback.onReceiveValue(null);
+                }
+                filePathCallback = callback;
+                try {
+                    Intent intent = fileChooserParams != null
+                            ? fileChooserParams.createIntent()
+                            : new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*");
+                    startActivityForResult(intent, FILE_CHOOSER_RESULT);
+                    return true;
+                } catch (Exception e) {
+                    filePathCallback = null;
+                    return false;
+                }
             }
         });
         webView.setWebViewClient(new WebViewClient() {
@@ -136,7 +159,11 @@ public final class WebAppActivity extends Activity {
         showingError = false;
         errorMessage.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
-        String appUrl = WidgetUrls.defaultUrl(this);
+        String configured = WidgetUrls.defaultUrl(this);
+        String appUrl = WidgetUrls.appUrl(configured);
+        if (!WidgetUrls.isWidgetUrl(appUrl)) {
+            appUrl = NetworkConfig.HTTP_BASE_URL;
+        }
         String view = getIntent() == null ? null : getIntent().getStringExtra(OpenAppActivity.EXTRA_WIDGET_VIEW);
         if ("chats".equals(view) || "calls".equals(view)) {
             appUrl = Uri.parse(appUrl).buildUpon()
@@ -172,6 +199,18 @@ public final class WebAppActivity extends Activity {
         else request.deny();
     }
 
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == FILE_CHOOSER_RESULT && filePathCallback != null) {
+            Uri[] results = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
+            if (results == null && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
+                results = new Uri[] { data.getData() };
+            }
+            filePathCallback.onReceiveValue(results);
+            filePathCallback = null;
+        }
+    }
+
     private boolean hasMediaPermission(PermissionRequest request) {
         return missingMediaPermissions(request).length == 0;
     }
@@ -192,11 +231,27 @@ public final class WebAppActivity extends Activity {
     }
 
     @Override public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
+        if (webView != null && !showingError) {
+            webView.evaluateJavascript(
+                    "(typeof window.__syncHandleAndroidBack === 'function' && window.__syncHandleAndroidBack()) ? 'handled' : 'exit'",
+                    result -> {
+                        if ("\"handled\"".equals(result)) return;
+                        if (webView != null && webView.canGoBack()) {
+                            webView.goBack();
+                        } else {
+                            WebAppActivity.super.onBackPressed();
+                        }
+                    });
+            return;
+        }
+        super.onBackPressed();
     }
 
     @Override protected void onDestroy() {
+        if (filePathCallback != null) {
+            filePathCallback.onReceiveValue(null);
+            filePathCallback = null;
+        }
         if (webView != null) {
             webView.stopLoading();
             webView.destroy();
@@ -209,7 +264,7 @@ public final class WebAppActivity extends Activity {
         @JavascriptInterface
         public void setTheme(String theme) {
             boolean dark = "energy".equals(theme);
-            int color = Color.parseColor(dark ? "#070D16" : "#F4F8FD");
+            int color = Color.parseColor(dark ? "#060911" : "#ECEAF8");
             runOnUiThread(() -> applySystemTheme(color, dark));
         }
 

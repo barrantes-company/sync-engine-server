@@ -680,16 +680,24 @@ app.post("/api/save-subscription", requireAuth, async (req, res) => {
 });
 
 /** Registra un token FCM Android en la cuenta autenticada. */
-app.post("/api/mobile/push-token", requireAuth, (req, res) => {
+function registerAndroidDevice(req, res, requireDeviceMetadata = true) {
   const token = req.body?.token;
   if (typeof token !== "string" || token.length < 20 || token.length > 4096) {
     return res.status(400).json({ ok: false, error: "Token FCM inválido" });
   }
-  if (!db.saveMobilePushToken(req.user.syncId, token)) {
+  const platform = req.body?.platform || "android";
+  const deviceId = typeof req.body?.deviceId === "string" ? req.body.deviceId.trim() : "";
+  if (platform !== "android" || (requireDeviceMetadata && !deviceId) || deviceId.length > 256) {
+    return res.status(400).json({ ok: false, error: "Datos de dispositivo inválidos" });
+  }
+  if (!db.saveMobilePushToken(req.user.syncId, token, { platform, deviceId })) {
     return res.status(400).json({ ok: false, error: "No se pudo registrar el dispositivo" });
   }
   return res.status(201).json({ ok: true });
-});
+}
+app.post("/api/devices/register", requireAuth, registerAndroidDevice);
+app.post("/api/mobile/push-token", requireAuth, (req, res) =>
+  registerAndroidDevice(req, res, false));
 
 /** Retira el token FCM de la cuenta autenticada (p. ej. al cerrar sesión). */
 app.delete("/api/mobile/push-token", requireAuth, (req, res) => {
@@ -1405,7 +1413,7 @@ io.on("connection", function (socket) {
       return;
     }
 
-    if (!isTargetOnline && !isRetry) {
+    if (!isRetry) {
       const pushPayload = {
         title: `Nuevo mensaje de ${sender.formattedName}`,
         body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
@@ -1413,14 +1421,6 @@ io.on("connection", function (socket) {
         data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
       };
       sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
-    }
-
-    if (!isRetry) {
-      sendMobilePushNotification(targetSyncId, {
-        title: `Nuevo mensaje de ${sender.formattedName}`,
-        body: (text && text.length > 100) ? text.slice(0, 97) + "..." : (text || "Tienes un mensaje nuevo"),
-        type: "message"
-      }).catch(e => console.warn("[FCM] Falló el aviso de mensaje:", e.message));
     }
 
     if (sender) {

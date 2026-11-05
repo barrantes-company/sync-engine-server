@@ -841,7 +841,7 @@ function removePushSubscription(syncId, endpoint) {
  * @param {string} token Token de registro de Firebase.
  * @returns {boolean} true cuando el token queda almacenado.
  */
-function saveMobilePushToken(syncId, token) {
+function saveMobilePushToken(syncId, token, metadata = {}) {
   if (!syncId || typeof token !== "string" || token.length < 20 || token.length > 4096) return false;
   const db = readDb();
   if (!db.mobilePushTokens) db.mobilePushTokens = {};
@@ -850,8 +850,15 @@ function saveMobilePushToken(syncId, token) {
   const existing = tokens.find((item) => item.token === token);
   if (existing) {
     existing.updatedAt = Date.now();
+    if (metadata.platform) existing.platform = metadata.platform;
+    if (metadata.deviceId) existing.deviceId = metadata.deviceId;
   } else {
-    tokens.push({ token: token, updatedAt: Date.now() });
+    tokens.push({
+      token: token,
+      platform: metadata.platform || "android",
+      deviceId: metadata.deviceId || "unknown",
+      updatedAt: Date.now()
+    });
   }
   writeDb(db);
   return true;

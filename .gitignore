@@ -26,3 +26,5 @@ dependency-audit.json
 .validation-tools/
 render-schema.json
 .test-artifacts/
+
+.worktree-*

@@ -1,10 +1,13 @@
-const CACHE_NAME = 'sync-engine-v5';
+const CACHE_NAME = 'sync-engine-v14';
 const CACHE_PREFIX = 'sync-engine-';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/safe-content.js',
   '/private-files.js',
+  '/widget.html',
+  '/widget.css',
+  '/widget.js',
   '/manifest.json',
   '/assets/logo.png'
 ];

@@ -1,6 +1,7 @@
 package com.barrantesco.syncengine;
 
 import android.content.Context;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.google.firebase.FirebaseApp;
@@ -47,11 +48,18 @@ final class FcmRegistration {
         }
         new Thread(() -> {
             try {
-                ApiClient.registerFcmToken(WidgetUrls.origin(url), authToken, fcmToken);
+                ApiClient.registerFcmToken(
+                        WidgetUrls.origin(url), authToken, fcmToken, secureAndroidId(app));
             } catch (IOException | JSONException exception) {
                 Log.w(TAG, "No se pudo registrar el token FCM en el servidor.", exception);
             }
         }).start();
+    }
+
+    private static String secureAndroidId(Context context) {
+        String id = Settings.Secure.getString(
+                context.getContentResolver(), Settings.Secure.ANDROID_ID);
+        return id == null || id.trim().isEmpty() ? "unknown" : id.trim();
     }
 
     /** Retira el token del servidor antes de cerrar sesión para no enviar avisos a otra persona. */

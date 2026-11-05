@@ -37,5 +37,24 @@
     return url;
   }
 
-  return { safeUrl, setSafeUrl };
+  function safeLocalBlobUrl(value, baseUrl) {
+    if (typeof value !== 'string' || !value.startsWith('blob:')) return '';
+    try {
+      const base = baseUrl || (typeof location !== 'undefined' ? location.href : 'https://sync-engine.invalid/');
+      const url = new URL(value, base);
+      const origin = new URL(base).origin;
+      return url.protocol === 'blob:' && url.origin === origin ? url.href : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function setSafeLocalBlobUrl(element, attribute, value, baseUrl) {
+    const url = safeLocalBlobUrl(value, baseUrl);
+    if (url) element.setAttribute(attribute, url);
+    else element.removeAttribute(attribute);
+    return url;
+  }
+
+  return { safeUrl, setSafeUrl, safeLocalBlobUrl, setSafeLocalBlobUrl };
 });

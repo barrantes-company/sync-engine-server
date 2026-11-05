@@ -15,15 +15,29 @@ final class WidgetUrls {
 
     /**
      * Devuelve la URL predeterminada: la guardada por el usuario o, si no hay,
-     * la configurada en el build mediante SYNC_DEFAULT_URL.
+     * la URL centralizada de la variante compilada.
      */
     static String defaultUrl(Context context) {
         String saved = preferences(context).getString(DEFAULT_URL, "");
-        return saved.isEmpty() ? BuildConfig.DEFAULT_WIDGET_URL : saved;
+        return saved.isEmpty() ? NetworkConfig.HTTP_BASE_URL : saved;
     }
 
     static void saveDefaultUrl(Context context, String url) {
         preferences(context).edit().putString(DEFAULT_URL, url).apply();
+    }
+
+    /** Convierte una URL antigua de widget.html en la raíz de la aplicación. */
+    static String appUrl(String widgetUrl) {
+        try {
+            URI uri = new URI(widgetUrl.trim());
+            String path = uri.getPath();
+            if (path == null || path.isEmpty() || path.endsWith("/widget.html")) {
+                return new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), "/", null, null).toString();
+            }
+            return uri.toString();
+        } catch (URISyntaxException exception) {
+            return widgetUrl;
+        }
     }
 
     /** Devuelve solo esquema, host y puerto (sin barra final), base de las llamadas a la API. */
