@@ -4,7 +4,7 @@
     android:initialLayout="@layout/sync_widget"
     android:minHeight="250dp"
     android:minWidth="250dp"
-    android:previewLayout="@layout/sync_widget"
+    android:previewImage="@drawable/preview_anillo"
     android:resizeMode="horizontal|vertical"
     android:targetCellHeight="4"
     android:targetCellWidth="4"

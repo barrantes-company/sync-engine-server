@@ -112,6 +112,8 @@ public class SyncWidgetProvider extends AppWidgetProvider {
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sync_widget);
         views.setImageViewBitmap(R.id.widget_content, bitmap);
+        int inset = Math.round((style == 2 ? 16 : 8) * context.getResources().getDisplayMetrics().density);
+        views.setViewPadding(R.id.widget_root, inset, inset, inset, inset);
         PendingIntent open = PendingIntent.getActivity(
                 context, 0,
                 new Intent(context, OpenAppActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),

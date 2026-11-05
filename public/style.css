@@ -1066,6 +1066,28 @@ body {
 }
 
 /* Drawer 2: Edición (Estilo, Chats, Notificaciones) */
+#drawer-settings {
+  color-scheme: dark;
+  --col-list-bg: #0f172a;
+  --search-bg: #1e293b;
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-secondary: #94a3b8;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  background: var(--col-list-bg);
+}
+
+#drawer-settings :is(.wa-setting-card-btn, .wa-switch-row, .wa-action-btn-outline) {
+  background: var(--search-bg);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+#drawer-settings .wa-switch-row {
+  padding-inline: 12px;
+}
+
 .settings-pills-nav {
   display: flex;
   gap: 6px;
@@ -1955,7 +1977,7 @@ body.dark-mode .wa-slider {
     height: var(--se-vvh, 100dvh);
     box-sizing: border-box;
     --nav-bottom-space: max(16px, env(safe-area-inset-bottom, 0px));
-    padding: max(16px, env(safe-area-inset-top, 0px)) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+    padding: max(20px, env(safe-area-inset-top, 0px)) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
     max-height: none;
     border-radius: 0;
     border: none;
@@ -2005,6 +2027,16 @@ body.dark-mode .wa-slider {
 
   .nav-rail #logout-btn {
     display: none;
+  }
+
+  #popup-notifications, #mirrored-notification-container {
+    top: max(20px, env(safe-area-inset-top, 0px));
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
+    width: auto;
+    margin-left: auto;
+    transform: none;
+    overflow-wrap: anywhere;
   }
 
   .settings-pills-nav {
