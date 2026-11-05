@@ -152,6 +152,16 @@ public final class WebAppActivity extends Activity {
         errorMessage.setOnClickListener(v -> loadOfficialApp());
         root.addView(errorMessage, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        if (Build.VERSION.SDK_INT >= 35) {
+            root.setOnApplyWindowInsetsListener((view, insets) -> {
+                int bars = android.view.WindowInsets.Type.systemBars()
+                        | android.view.WindowInsets.Type.displayCutout();
+                android.graphics.Insets safe = insets.getInsets(bars);
+                view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
+                return new android.view.WindowInsets.Builder(insets)
+                        .setInsets(bars, android.graphics.Insets.NONE).build();
+            });
+        }
         setContentView(root);
     }
 

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>SYNC ENGINE | Mensajería Privada &amp; Workspace</title>
 <meta name="description" content="Private messaging, real-time synchronization, and workspace platform.">
 <meta property="og:title" content="SYNC ENGINE | Mensajería Privada &amp; Workspace">
@@ -2062,7 +2062,7 @@
     loadContacts();
     loadChannels();
 
-    if (window.innerWidth < 768) {
+    if (window.innerWidth <= 768) {
       document.body.classList.add('mobile-view-contacts');
       document.body.classList.remove('mobile-view-chat');
     } else {
@@ -2293,7 +2293,7 @@
     if (appEl) appEl.dataset.hasActiveConversation = 'false';
     document.getElementById('chat-header-bar')?.classList.add('hidden');
     document.getElementById('input-container')?.classList.add('hidden');
-    if (window.innerWidth < 768) {
+    if (window.innerWidth <= 768) {
       document.body.classList.add('mobile-view-contacts');
       document.body.classList.remove('mobile-view-chat');
     }
@@ -2413,7 +2413,7 @@
       contactsList.appendChild(item);
     });
 
-    if (window.innerWidth >= 768 && !activeContactSyncId && validContacts.length > 0) {
+    if (window.innerWidth > 768 && !activeContactSyncId && validContacts.length > 0) {
       selectContact(validContacts[0].syncId);
     }
   }
@@ -3135,7 +3135,7 @@
     const contact = contactsMap.get(syncId);
     if (!contact) return;
 
-    if (window.innerWidth < 768) {
+    if (window.innerWidth <= 768) {
       document.body.classList.add('mobile-view-chat');
       document.body.classList.remove('mobile-view-contacts');
     } else {
@@ -3767,7 +3767,7 @@
           : (msg.type === 'file' ? '📎 ' + (msg.fileData ? msg.fileData.name : 'Archivo') : msg.text);
         triggerPopupNotification(msg.fromName || fromId, preview, msg.type === 'audio' ? '🎤' : '💬');
 
-        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
         if (isMobileDevice) {
           socket.emit('mirror-notification', {
             id: 'mirr_' + msg.id,
@@ -5833,7 +5833,7 @@
 
     renderChannelsList();
 
-    if (window.innerWidth < 768) {
+    if (window.innerWidth <= 768) {
       document.body.classList.add('mobile-view-chat');
       document.body.classList.remove('mobile-view-contacts');
     }
@@ -6148,7 +6148,7 @@
   const showCalls = () => {
     closeDrawers();
     document.body.classList.remove('mobile-view-chat');
-    if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
+    if (window.innerWidth <= 768) document.body.classList.add('mobile-view-contacts');
     document.body.classList.add('mobile-view-calls');
     if (split) split.classList.remove('hidden');
     if (sidebar) sidebar.classList.remove('hidden');
@@ -6189,7 +6189,7 @@
     if (view === 'profile') {
       showWorkspace();
       document.body.classList.remove('mobile-view-chat');
-      if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
+      if (window.innerWidth <= 768) document.body.classList.add('mobile-view-contacts');
       drawerSettings?.classList.remove('open');
       document.getElementById('open-edit-profile-btn')?.click();
       setActiveNav('profile');
@@ -6198,7 +6198,7 @@
     if (view === 'settings') {
       showWorkspace();
       document.body.classList.remove('mobile-view-chat');
-      if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
+      if (window.innerWidth <= 768) document.body.classList.add('mobile-view-contacts');
       if (drawerProfile) {
         drawerProfile.classList.remove('open');
         drawerProfile.classList.add('hidden');
@@ -6217,7 +6217,7 @@
     const hasConversation = app.dataset.hasActiveConversation === 'true';
     if (view === 'channels') {
       document.body.classList.remove('mobile-view-chat');
-      if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
+      if (window.innerWidth <= 768) document.body.classList.add('mobile-view-contacts');
       dmsView?.classList.add('hidden');
       channelsView?.classList.remove('hidden');
       if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Canales';
@@ -6227,12 +6227,12 @@
       channelsView?.classList.add('hidden');
       if (view === 'contacts') {
         document.body.classList.remove('mobile-view-chat');
-        if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
+        if (window.innerWidth <= 768) document.body.classList.add('mobile-view-contacts');
         if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Contactos';
         document.getElementById('contact-search-input')?.focus();
       } else {
         document.body.classList.remove('mobile-view-chat');
-        if (window.innerWidth < 768) document.body.classList.add('mobile-view-contacts');
+        if (window.innerWidth <= 768) document.body.classList.add('mobile-view-contacts');
         if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Conversaciones';
       }
       setActiveNav(view);

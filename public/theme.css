@@ -1911,7 +1911,7 @@ body.dark-mode .wa-slider {
 }
 
 /* Responsivo para pantallas intermedias (768px - 1080px): preserva siempre 3 columnas */
-@media (max-width: 1080px) and (min-width: 768px) {
+@media (max-width: 1080px) and (min-width: 769px) {
   body {
     padding: 8px;
   }
@@ -1928,7 +1928,7 @@ body.dark-mode .wa-slider {
 }
 
 /* Responsivo para teléfonos móviles y APK Android (< 768px) */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   body {
     padding: 0;
     margin: 0;
@@ -1952,12 +1952,15 @@ body.dark-mode .wa-slider {
     width: 100vw;
     max-width: 100vw;
     height: var(--se-vvh, 100dvh);
+    box-sizing: border-box;
+    --nav-bottom-space: max(16px, env(safe-area-inset-bottom, 0px));
+    padding: max(16px, env(safe-area-inset-top, 0px)) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
     max-height: none;
     border-radius: 0;
     border: none;
     box-shadow: none;
     grid-template-columns: 100%;
-    grid-template-rows: minmax(0, 1fr) calc(62px + env(safe-area-inset-bottom, 0px));
+    grid-template-rows: minmax(0, 1fr) calc(61px + var(--nav-bottom-space));
   }
 
   .middle-col {
@@ -1971,16 +1974,20 @@ body.dark-mode .wa-slider {
   }
 
   .nav-rail {
-    grid-column: 1;
-    grid-row: 2;
+    position: fixed;
+    inset: auto 0 0;
+    display: flex;
+    gap: 0;
+    box-sizing: border-box;
     width: 100%;
-    height: calc(62px + env(safe-area-inset-bottom, 0px));
+    height: auto;
+    background: #0f172a;
     flex-direction: row;
     align-items: center;
     justify-content: space-around;
-    padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px));
+    padding: 8px max(4px, env(safe-area-inset-right)) var(--nav-bottom-space) max(4px, env(safe-area-inset-left));
     border-top: 1px solid rgba(255, 255, 255, 0.08);
-    z-index: 60;
+    z-index: 1000;
   }
 
   .nav-rail .brand-logo-btn,
@@ -1990,12 +1997,27 @@ body.dark-mode .wa-slider {
 
   .nav-rail .nav-top-group,
   .nav-rail .nav-bottom-group,
-  .nav-rail .nav-menu {
+  .nav-rail .nav-rail-list,
+  .nav-rail .nav-rail-list > li {
     display: contents;
   }
 
-  .nav-rail .nav-item {
-    width: auto;
+  .nav-rail #logout-btn {
+    display: none;
+  }
+
+  .settings-pills-nav {
+    flex: none;
+    overflow-x: auto;
+  }
+
+  .wa-drawer-body {
+    overscroll-behavior: contain;
+  }
+
+  .nav-rail .nav-rail-btn {
+    width: 100%;
+    min-height: 44px;
     flex: 1;
     min-width: 0;
     height: 52px;
@@ -2004,15 +2026,15 @@ body.dark-mode .wa-slider {
     gap: 3px;
   }
 
-  .nav-rail .nav-item svg,
+  .nav-rail .nav-rail-btn svg,
   .nav-rail .rail-avatar {
     width: 20px;
     height: 20px;
     font-size: 0.65rem;
   }
 
-  .nav-rail .nav-label {
-    font-size: 9.5px;
+  .nav-rail-btn > span:not(.nav-badge) {
+    font-size: 11px;
     letter-spacing: 0;
     white-space: nowrap;
     overflow: hidden;
