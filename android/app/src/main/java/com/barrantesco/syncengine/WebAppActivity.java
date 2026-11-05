@@ -155,7 +155,8 @@ public final class WebAppActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 35) {
             root.setOnApplyWindowInsetsListener((view, insets) -> {
                 int bars = android.view.WindowInsets.Type.systemBars()
-                        | android.view.WindowInsets.Type.displayCutout();
+                        | android.view.WindowInsets.Type.displayCutout()
+                        | android.view.WindowInsets.Type.ime();
                 android.graphics.Insets safe = insets.getInsets(bars);
                 view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
                 return new android.view.WindowInsets.Builder(insets)
