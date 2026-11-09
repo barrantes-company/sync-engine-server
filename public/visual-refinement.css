@@ -529,6 +529,119 @@ html[data-se-theme="energy"] #chat-messages .chat-bubble-sent, html[data-se-them
 html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-theme="energy"] #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #edf4ff) !important; }
 @media (max-width: 640px) { #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
 
+/* PHASE 3: identity, media and responsive polish. */
+img.avatar-circle,
+#active-chat-avatar img,
+#header-user-avatar:not(.hidden),
+#profile-avatar-preview:not(.hidden),
+#drawer-contact-avatar-img:not(.hidden) {
+  display: block;
+  object-fit: cover !important;
+  object-position: center !important;
+  background: var(--se-surface-muted, #f5f7fa);
+}
+
+img.se-image-failed {
+  visibility: hidden !important;
+  background: transparent !important;
+}
+
+.se-avatar-image-fallback {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #0877f9, #0756bd);
+  color: #fff;
+  font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .04em;
+}
+
+#active-chat-avatar,
+#drawer-contact-avatar-box,
+.avatar-wrapper,
+.profile-photo-wrapper {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.chat-img-card,
+.video-card-container,
+.doc-card-container {
+  box-sizing: border-box;
+  max-width: min(100%, 620px);
+  overflow: hidden;
+  border: 1px solid var(--se-border, #dce4ee);
+  border-radius: 14px;
+}
+
+.chat-img-card img,
+.video-player-element {
+  display: block;
+  width: 100%;
+  max-height: min(420px, 52vh);
+  object-fit: contain;
+  background: #0b1220;
+}
+
+.chat-img-card img.se-image-failed {
+  min-height: 120px;
+  visibility: visible !important;
+  object-fit: none;
+  background: #eef2f7;
+}
+
+.chat-img-card img.se-image-failed::after {
+  content: 'Imagen no disponible';
+}
+
+.media-hub-tab,
+.composer-icon-btn,
+#send-btn,
+#open-chat-appearance-btn {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(8, 119, 249, .42) !important;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1080px) and (min-width: 769px) {
+  #app-container.app-shell {
+    grid-template-columns: 76px 320px minmax(0, 1fr) !important;
+  }
+
+  #chat-messages {
+    padding-inline: clamp(16px, 2.5vw, 30px) !important;
+  }
+
+  #chat-messages > .msg-item.message-row > .chat-bubble-inner {
+    max-width: min(82%, 620px) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  #chat-messages > .msg-item.message-row > .chat-bubble-inner {
+    max-width: 90% !important;
+    min-width: 72px;
+  }
+
+  .chat-img-card,
+  .video-card-container,
+  .doc-card-container {
+    max-width: 100%;
+  }
+
+  .chat-img-card img,
+  .video-player-element {
+    max-height: 46vh;
+  }
+}
+
 /* PHASE 2: readable conversation contract.
    Keep spacing on rows, alignment on bubbles, and controls inside the composer. */
 #chat-messages {

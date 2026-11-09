@@ -1389,6 +1389,29 @@
   const chatPreviewSent = document.getElementById('chat-preview-sent');
   const chatAppearanceContrastStatus = document.getElementById('chat-appearance-contrast-status');
 
+  // Fallback visual para imágenes que caducan o no pueden descargarse.
+  // Evita dejar círculos o tarjetas completamente vacíos en la interfaz.
+  document.addEventListener('error', (event) => {
+    const image = event.target;
+    if (!(image instanceof HTMLImageElement) || image.dataset.seHandledError === 'true') return;
+    image.dataset.seHandledError = 'true';
+    const isAvatar = image.classList.contains('avatar-circle') || image.id === 'active-chat-avatar' || image.id === 'drawer-contact-avatar-img';
+    if (isAvatar) {
+      const fallback = document.createElement('span');
+      fallback.className = 'se-avatar-image-fallback';
+      fallback.textContent = (image.alt || 'SE').replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase() || 'SE';
+      image.replaceWith(fallback);
+      return;
+    }
+    image.removeAttribute('src');
+    image.classList.add('se-image-failed');
+    image.alt = image.alt || 'Imagen no disponible';
+    if (image.id === 'profile-avatar-preview') {
+      image.classList.add('hidden');
+      document.getElementById('profile-avatar-fallback')?.classList.remove('hidden');
+    }
+  }, true);
+
   const chatAppearanceDefaults = Object.freeze({
     background: '#f7f9fc', sentBackground: '#dcecff', sentText: '#102d55',
     receivedBackground: '#ffffff', receivedText: '#172b4d', autoContrast: true
