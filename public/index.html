@@ -6449,6 +6449,20 @@
     });
   });
 
+  const applyChatSurfacePreview = (chatBg) => {
+    if (!chatBg) return;
+    const timeline = document.getElementById('chat-messages');
+    if (!timeline) return;
+    timeline.style.setProperty('--se-chat-bg', chatBg);
+    timeline.style.backgroundColor = chatBg;
+
+    const value = String(chatBg).replace('#', '');
+    const channels = [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16) / 255);
+    const linear = channels.map(channel => channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
+    const luminance = .2126 * linear[0] + .7152 * linear[1] + .0722 * linear[2];
+    timeline.dataset.seBgTone = luminance < .45 ? 'dark' : 'light';
+  };
+
   const applyCustomColors = (bubbleBg, chatBg) => {
     if (bubbleBg) {
       document.documentElement.style.setProperty('--bubble-outgoing-bg', bubbleBg);
@@ -6463,6 +6477,7 @@
     }
     if (chatBg) {
       document.documentElement.style.setProperty('--chat-main-bg', chatBg);
+      applyChatSurfacePreview(chatBg);
       try { localStorage.setItem('sync_custom_chat_bg', chatBg); } catch (_) {}
     }
   };
@@ -6472,7 +6487,10 @@
     const savedChatBg = localStorage.getItem('sync_custom_chat_bg');
     const savedBubbleText = localStorage.getItem('sync_custom_bubble_text');
     if (savedBubble) document.documentElement.style.setProperty('--bubble-outgoing-bg', savedBubble);
-    if (savedChatBg) document.documentElement.style.setProperty('--chat-main-bg', savedChatBg);
+    if (savedChatBg) {
+      document.documentElement.style.setProperty('--chat-main-bg', savedChatBg);
+      applyChatSurfacePreview(savedChatBg);
+    }
     if (savedBubbleText) document.documentElement.style.setProperty('--bubble-outgoing-text', savedBubbleText);
   } catch (_) {}
 
@@ -6494,6 +6512,12 @@
     document.documentElement.style.removeProperty('--bubble-outgoing-bg');
     document.documentElement.style.removeProperty('--bubble-outgoing-text');
     document.documentElement.style.removeProperty('--chat-main-bg');
+    const timeline = document.getElementById('chat-messages');
+    if (timeline) {
+      timeline.style.removeProperty('--se-chat-bg');
+      timeline.style.removeProperty('background-color');
+      delete timeline.dataset.seBgTone;
+    }
     try {
       localStorage.removeItem('sync_custom_bubble_bg');
       localStorage.removeItem('sync_custom_bubble_text');
