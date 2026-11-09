@@ -519,6 +519,7 @@
   #chat-messages .msg-item { max-width: 88% !important; }
 }
 
+
 /* visual-18-absolute-final: sender rows must span the full thread. */
 #chat-messages > .msg-item { width: 100% !important; max-width: none !important; align-self: stretch !important; margin-inline: 0 !important; }
 #chat-messages > .msg-item .chat-bubble-inner { max-width: min(78%, 760px) !important; }
@@ -527,6 +528,259 @@
 html[data-se-theme="energy"] #chat-messages .chat-bubble-sent, html[data-se-theme="energy"] #chat-messages .chat-bubble-sent * { color: var(--se-chat-sent-text, #f8fbff) !important; }
 html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-theme="energy"] #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #edf4ff) !important; }
 @media (max-width: 640px) { #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
+
+/* PHASE 1 FINAL: the row owns width; the bubble owns alignment. */
+#chat-messages {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  overscroll-behavior-y: contain;
+}
+
+#chat-messages > .msg-item {
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  align-self: stretch !important;
+  margin: 0 0 var(--se-space-message-group, 16px) !important;
+  padding: 0 !important;
+}
+
+#chat-messages > .msg-item.msg-grouped { margin-bottom: 4px !important; }
+
+#chat-messages > .msg-item .chat-bubble-inner {
+  width: fit-content !important;
+  max-width: var(--se-bubble-max, min(78%, 760px)) !important;
+  min-width: 0 !important;
+  overflow-wrap: anywhere;
+}
+
+#chat-messages .chat-bubble-sent { align-self: flex-end !important; }
+#chat-messages .chat-bubble-received { align-self: flex-start !important; }
+
+/* Higher-specificity row contract wins over legacy utility classes. */
+#chat-messages > .msg-item.message-row {
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+  padding-inline: 0 !important;
+}
+
+#chat-messages > .msg-item.message-row .chat-bubble-inner {
+  max-width: var(--se-bubble-max, min(78%, 760px)) !important;
+}
+
+@media (max-width: 720px) {
+  #chat-messages { padding-inline: 14px !important; }
+  #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; }
+}
+
+/* PHASE 1 FINAL: the row owns width; the bubble owns alignment. */
+#chat-messages {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  overscroll-behavior-y: contain;
+}
+
+#chat-messages > .msg-item {
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  align-self: stretch !important;
+  margin: 0 0 var(--se-space-message-group, 16px) !important;
+  padding: 0 !important;
+}
+
+#chat-messages > .msg-item.msg-grouped { margin-bottom: 4px !important; }
+
+#chat-messages > .msg-item .chat-bubble-inner {
+  width: fit-content !important;
+  max-width: var(--se-bubble-max, min(78%, 760px)) !important;
+  min-width: 0 !important;
+  overflow-wrap: anywhere;
+}
+
+#chat-messages .chat-bubble-sent { align-self: flex-end !important; }
+#chat-messages .chat-bubble-received { align-self: flex-start !important; }
+
+@media (max-width: 720px) {
+  #chat-messages { padding-inline: 14px !important; }
+  #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; }
+}
+
+
+
+/*
+ * PHASE 1 — visual foundation contract.
+ * This block is the authoritative final layer for the current static shell.
+ * It keeps the message row full-width and lets the bubble, not the row, control
+ * alignment. This is what prevents Chrome from collapsing both participants
+ * into the same narrow column.
+ */
+:root {
+  --se-layout-sidebar: clamp(300px, 27vw, 420px);
+  --se-layout-nav: 76px;
+  --se-space-message-group: 16px;
+  --se-bubble-max: min(78%, 760px);
+  --se-focus: #0877f9;
+  --se-focus-ring: 0 0 0 3px rgba(8, 119, 249, .18);
+}
+
+#main-layout {
+  grid-template-columns: var(--se-layout-sidebar) minmax(0, 1fr) !important;
+  min-width: 0 !important;
+}
+
+#sidebar-panel,
+#chat-panel-container,
+#chat-panel,
+#chat-messages,
+#input-container,
+#normal-input-bar {
+  min-width: 0 !important;
+}
+
+#chat-messages {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  padding: clamp(24px, 3vw, 42px) clamp(20px, 4vw, 64px) !important;
+  background: var(--se-chat-bg, var(--se-surface-muted)) !important;
+  overscroll-behavior-y: contain;
+}
+
+/* The wrapper spans the thread; its inner bubble carries left/right alignment. */
+#chat-messages > .msg-item {
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  align-self: stretch !important;
+  margin: 0 0 var(--se-space-message-group) !important;
+  padding: 0 !important;
+}
+
+#chat-messages > .msg-item.msg-grouped {
+  margin-bottom: 4px !important;
+}
+
+#chat-messages > .msg-item .chat-bubble-inner {
+  width: fit-content !important;
+  max-width: var(--se-bubble-max) !important;
+  min-width: 0 !important;
+  overflow-wrap: anywhere;
+}
+
+#chat-messages .chat-bubble-sent {
+  align-self: flex-end !important;
+  background: var(--se-chat-sent-bg, #dcecff) !important;
+  color: var(--se-chat-sent-text, #102d55) !important;
+}
+
+#chat-messages .chat-bubble-received {
+  align-self: flex-start !important;
+  background: var(--se-chat-received-bg, #ffffff) !important;
+  color: var(--se-chat-received-text, #172b4d) !important;
+}
+
+#chat-messages .chat-bubble-sent *,
+#chat-messages .chat-bubble-received * {
+  color: inherit !important;
+}
+
+#chat-messages .msg-meta {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 5px !important;
+  color: var(--se-text-muted) !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+}
+
+#chat-messages .msg-meta-sent { justify-content: flex-end; }
+#chat-messages .msg-meta-received { justify-content: flex-start; }
+
+#chat-header-bar .chat-header-actions {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex: 0 0 auto !important;
+  flex-wrap: nowrap !important;
+}
+
+#open-chat-appearance-btn {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex: 0 0 auto !important;
+}
+
+.chat-appearance-label { white-space: nowrap; }
+
+.chat-appearance-preview {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #dce4ee;
+  border-radius: 14px;
+}
+
+.chat-appearance-preview-title {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.chat-appearance-preview-canvas {
+  display: grid;
+  gap: 7px;
+  min-height: 92px;
+  padding: 10px;
+  border-radius: 10px;
+  transition: background-color .15s ease;
+}
+
+.chat-appearance-preview-bubble {
+  width: fit-content;
+  max-width: 82%;
+  padding: 7px 10px;
+  border: 1px solid rgba(10, 26, 58, .08);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.chat-appearance-preview-bubble.is-sent { justify-self: end; }
+.chat-appearance-preview-bubble.is-received { justify-self: start; }
+
+.chat-appearance-contrast-status {
+  margin: 0;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.chat-appearance-contrast-status[data-state="pass"] { color: #18794e; }
+.chat-appearance-contrast-status[data-state="warn"] { color: #a15c00; }
+
+@media (max-width: 720px) {
+  :root { --se-layout-sidebar: minmax(0, 1fr); }
+  #chat-messages { padding-inline: 14px !important; }
+  #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; }
+  .chat-appearance-label { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-appearance-preview-canvas { transition: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   #contacts-list > *,

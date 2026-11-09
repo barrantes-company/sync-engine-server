@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/visual-refinement.css?v=visual-18">
+<link rel="stylesheet" href="/visual-refinement.css?v=visual-19">
 <script>
 (function () {
   const current = new URL(location.href);
@@ -230,7 +230,7 @@
 
               <div class="chat-header-actions flex items-center gap-1.5 sm:gap-2">
                 <button id="open-chat-appearance-btn" type="button" title="Personalizar apariencia del chat" aria-label="Personalizar apariencia del chat"
-                  class="icon-btn h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#E8F1FF] text-[#0877F9] border border-[rgba(8,119,249,0.18)] flex items-center justify-center text-sm font-bold cursor-pointer">◐</button>
+                  class="icon-btn h-9 min-w-9 px-2 rounded-xl bg-[#F8FAFC] hover:bg-[#E8F1FF] text-[#0877F9] border border-[rgba(8,119,249,0.18)] flex items-center justify-center gap-1.5 text-sm font-bold cursor-pointer"><span aria-hidden="true">◐</span><span class="chat-appearance-label">Apariencia</span></button>
                 <button id="start-call-btn" type="button" title="Iniciar llamada de voz" aria-label="Iniciar llamada de voz"
                   class="icon-btn chat-action-call h-9 w-9 rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#C5A059] border border-[rgba(197,160,89,0.25)] hover:border-[#C5A059] flex items-center justify-center text-sm font-bold shadow-xs transition-all cursor-pointer">
                   📞
@@ -807,13 +807,21 @@
         <button id="close-chat-appearance-btn" type="button" aria-label="Cerrar" class="h-8 w-8 rounded-full text-[#64748B] hover:bg-[#F1F5F9] flex items-center justify-center cursor-pointer">✕</button>
       </div>
       <div class="chat-appearance-grid">
-        <label>Fondo del chat<input id="chat-bg-color" type="color" value="#f7f9fc"></label>
-        <label>Fondo de mis mensajes<input id="chat-sent-bg-color" type="color" value="#dcecff"></label>
-        <label>Texto de mis mensajes<input id="chat-sent-text-color" type="color" value="#102d55"></label>
-        <label>Fondo del contacto<input id="chat-received-bg-color" type="color" value="#ffffff"></label>
-        <label>Texto del contacto<input id="chat-received-text-color" type="color" value="#172b4d"></label>
+        <label for="chat-bg-color">Fondo del chat<input id="chat-bg-color" type="color" value="#f7f9fc"></label>
+        <label for="chat-sent-bg-color">Fondo de mis mensajes<input id="chat-sent-bg-color" type="color" value="#dcecff"></label>
+        <label for="chat-sent-text-color">Texto de mis mensajes<input id="chat-sent-text-color" type="color" value="#102d55"></label>
+        <label for="chat-received-bg-color">Fondo del contacto<input id="chat-received-bg-color" type="color" value="#ffffff"></label>
+        <label for="chat-received-text-color">Texto del contacto<input id="chat-received-text-color" type="color" value="#172b4d"></label>
       </div>
       <label class="chat-appearance-contrast"><input id="chat-auto-contrast" type="checkbox" checked> Ajustar automáticamente el contraste del texto</label>
+      <div id="chat-appearance-preview" class="chat-appearance-preview" aria-live="polite">
+        <span class="chat-appearance-preview-title">Vista previa</span>
+        <div class="chat-appearance-preview-canvas">
+          <div id="chat-preview-received" class="chat-appearance-preview-bubble is-received">Mensaje del contacto</div>
+          <div id="chat-preview-sent" class="chat-appearance-preview-bubble is-sent">Tu mensaje</div>
+        </div>
+        <p id="chat-appearance-contrast-status" class="chat-appearance-contrast-status"></p>
+      </div>
       <div class="flex items-center justify-between gap-2 pt-2 border-t border-[#E2E8F0]">
         <button id="reset-chat-appearance-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer">Restaurar</button>
         <div class="flex gap-2">
@@ -1084,6 +1092,10 @@
   const chatReceivedBgColor = document.getElementById('chat-received-bg-color');
   const chatReceivedTextColor = document.getElementById('chat-received-text-color');
   const chatAutoContrast = document.getElementById('chat-auto-contrast');
+  const chatPreviewCanvas = document.querySelector('.chat-appearance-preview-canvas');
+  const chatPreviewReceived = document.getElementById('chat-preview-received');
+  const chatPreviewSent = document.getElementById('chat-preview-sent');
+  const chatAppearanceContrastStatus = document.getElementById('chat-appearance-contrast-status');
 
   const chatAppearanceDefaults = Object.freeze({
     background: '#f7f9fc',
@@ -1119,6 +1131,52 @@
     return (0.2126 * luminance[0] + 0.7152 * luminance[1] + 0.0722 * luminance[2]) > .48 ? '#172b4d' : '#f8fbff';
   }
 
+  function colorLuminance(hex) {
+    const value = String(hex || '').replace('#', '');
+    if (!/^[0-9a-f]{6}$/i.test(value)) return 1;
+    return [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16) / 255)
+      .map(channel => channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4)
+      .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+  }
+
+  function contrastRatio(foreground, background) {
+    const lighter = Math.max(colorLuminance(foreground), colorLuminance(background));
+    const darker = Math.min(colorLuminance(foreground), colorLuminance(background));
+    return (lighter + .05) / (darker + .05);
+  }
+
+  function currentChatAppearanceForm() {
+    const sentBackground = chatSentBgColor?.value || chatAppearanceDefaults.sentBackground;
+    const receivedBackground = chatReceivedBgColor?.value || chatAppearanceDefaults.receivedBackground;
+    const autoContrast = Boolean(chatAutoContrast?.checked);
+    return {
+      background: chatBgColor?.value || chatAppearanceDefaults.background,
+      sentBackground,
+      sentText: chatSentTextColor?.value || chatAppearanceDefaults.sentText,
+      receivedBackground,
+      receivedText: chatReceivedTextColor?.value || chatAppearanceDefaults.receivedText,
+      autoContrast
+    };
+  }
+
+  function updateChatAppearancePreview(settings = currentChatAppearanceForm()) {
+    if (!chatPreviewCanvas || !chatPreviewSent || !chatPreviewReceived) return;
+    const sentText = settings.autoContrast ? readableTextColor(settings.sentBackground) : settings.sentText;
+    const receivedText = settings.autoContrast ? readableTextColor(settings.receivedBackground) : settings.receivedText;
+    chatPreviewCanvas.style.background = settings.background;
+    chatPreviewSent.style.background = settings.sentBackground;
+    chatPreviewSent.style.color = sentText;
+    chatPreviewReceived.style.background = settings.receivedBackground;
+    chatPreviewReceived.style.color = receivedText;
+    const sentRatio = contrastRatio(sentText, settings.sentBackground);
+    const receivedRatio = contrastRatio(receivedText, settings.receivedBackground);
+    const passes = sentRatio >= 4.5 && receivedRatio >= 4.5;
+    if (chatAppearanceContrastStatus) {
+      chatAppearanceContrastStatus.textContent = `${passes ? '✓ Contraste recomendado' : '⚠ Contraste bajo'} · Mis mensajes ${sentRatio.toFixed(1)}:1 · Contacto ${receivedRatio.toFixed(1)}:1`;
+      chatAppearanceContrastStatus.dataset.state = passes ? 'pass' : 'warn';
+    }
+  }
+
   function applyChatAppearance(settings = readChatAppearance()) {
     if (!chatMessages) return;
     const sentText = settings.autoContrast ? readableTextColor(settings.sentBackground) : settings.sentText;
@@ -1137,6 +1195,7 @@
     chatReceivedBgColor.value = settings.receivedBackground;
     chatReceivedTextColor.value = settings.receivedText;
     chatAutoContrast.checked = settings.autoContrast;
+    updateChatAppearancePreview(settings);
   }
 
   function closeChatAppearance() { chatAppearanceModal?.classList.add('hidden'); }
@@ -1151,15 +1210,11 @@
   closeChatAppearanceBtn?.addEventListener('click', closeChatAppearance);
   cancelChatAppearanceBtn?.addEventListener('click', closeChatAppearance);
   resetChatAppearanceBtn?.addEventListener('click', () => fillChatAppearanceForm(chatAppearanceDefaults));
+  [chatBgColor, chatSentBgColor, chatSentTextColor, chatReceivedBgColor, chatReceivedTextColor, chatAutoContrast]
+    .filter(Boolean)
+    .forEach((control) => control.addEventListener('input', () => updateChatAppearancePreview()));
   saveChatAppearanceBtn?.addEventListener('click', () => {
-    const settings = {
-      background: chatBgColor.value,
-      sentBackground: chatSentBgColor.value,
-      sentText: chatSentTextColor.value,
-      receivedBackground: chatReceivedBgColor.value,
-      receivedText: chatReceivedTextColor.value,
-      autoContrast: chatAutoContrast.checked
-    };
+    const settings = currentChatAppearanceForm();
     const key = chatAppearanceKey();
     if (key) localStorage.setItem(key, JSON.stringify(settings));
     applyChatAppearance(settings);
@@ -3745,7 +3800,7 @@
 
     wrapper.setAttribute('data-from-id', senderSyncId || '');
     wrapper.setAttribute('data-ts', String(msgTs || ''));
-    wrapper.className = `msg-item ${isGrouped ? 'msg-grouped' : 'msg-group-start'} relative group flex flex-col ${isLocal ? 'items-end ml-auto' : 'items-start mr-auto'} max-w-[88%] sm:max-w-[72%] msg-enter`;
+    wrapper.className = `msg-item message-row ${isGrouped ? 'msg-grouped' : 'msg-group-start'} relative group flex flex-col ${isLocal ? 'items-end ml-auto' : 'items-start mr-auto'} max-w-[88%] sm:max-w-[72%] msg-enter`;
 
     const timeStr = (msg.timestamp || msg.createdAt) ? new Date(msg.timestamp || msg.createdAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '';
     const senderHeader = isLocal ? 'Tú' : (msg.senderName || msg.fromName || senderSyncId || 'Usuario');
