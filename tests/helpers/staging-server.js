@@ -2,12 +2,11 @@
 // Runs the actual app and disk DB. Only GCP delivery is injected over private IPC.
 const db = require("../../db");
 db.readDb();
-const { server, io, deliverPubSubEvent, shutdown } = require("../../server");
+const { server, deliverPubSubEvent, shutdown } = require("../../server");
+// Fault injection exists only in this disposable child-process fixture.
 const fs = require("node:fs");
 const rename = fs.promises.rename;
-let releaseWrite = null;
-let failWrites = false;
-let blocked = 0;
+let releaseWrite, failWrites = false, blocked = 0;
 fs.promises.rename = async (...args) => {
   if (releaseWrite) {
     blocked++;
@@ -22,20 +21,21 @@ process.on("message", async ({ id, op, payload }) => {
   try {
     let result;
     if (op === "deliver") result = deliverPubSubEvent(payload);
+    else if (op === "createChannel") {
+      const channel = db.createWorkspaceChannel("ack-persistence", "Disposable persistence test", "SYNC-1001");
+      await db.flushWrites();
+      result = channel.id;
+    }
     else if (op === "holdWrites") {
       let release;
       const promise = new Promise((resolve) => { release = resolve; });
       releaseWrite = { promise, release };
     } else if (op === "releaseWrites") {
-      const held = releaseWrite;
-      releaseWrite = null;
-      held?.release();
+      const held = releaseWrite; releaseWrite = null; held?.release();
     } else if (op === "blockedWrites") result = blocked;
     else if (op === "failWrites") failWrites = true;
-    else if (op === "flush") {
-      await db.writeDb(db.readDb());
-      await db.flushWrites();
-    } else if (op === "expire") {
+    else if (op === "flush") result = await db.writeDb(db.readDb());
+    else if (op === "expire") {
       db.readDb().sessions.find((session) => session.token === payload).expiresAt = 1;
       await db.writeDb(db.readDb());
     } else if (op === "revoke") db.revokeSession(payload);
@@ -46,7 +46,5 @@ process.on("message", async ({ id, op, payload }) => {
       return;
     }
     process.send({ id, result });
-  } catch (error) {
-    process.send({ id, error: error.message });
-  }
+  } catch (error) { process.send({ id, error: error.message }); }
 });

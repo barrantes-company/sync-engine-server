@@ -2,7 +2,7 @@
 
 const fs = require('node:fs');
 const crypto = require('node:crypto');
-const { TOKEN_VERSION, PRODUCT, ALLOWED_PLANS, ALLOWED_MODULES, stableStringify } = require('../license');
+const { TOKEN_VERSION, PRODUCT, ALLOWED_PLANS, ALLOWED_MODULES, stableStringify } = require('../license.js');
 
 function readArgs(argv) {
   const args = {};

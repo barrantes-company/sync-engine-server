@@ -1,4 +1,5 @@
 node_modules/
+.idea/
 data/sync_db.json
 data/vapid.json
 data/ssl/
@@ -25,3 +26,5 @@ dependency-audit.json
 .validation-tools/
 render-schema.json
 .test-artifacts/
+
+.worktree-*

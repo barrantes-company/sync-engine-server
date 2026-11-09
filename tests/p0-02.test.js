@@ -10,6 +10,7 @@ const { createRequire } = require('node:module');
 const { once } = require('node:events');
 const { io: connect } = require('socket.io-client');
 const isolatedDb = require('./helpers/isolated-db');
+const { tokenFor } = isolatedDb;
 const launchBrowser = require('./helpers/browser');
 const root = path.resolve(__dirname, '..');
 const realRequire = createRequire(path.join(root, 'server.js'));
@@ -21,7 +22,7 @@ const users = ['alice', 'bob', 'charlie', 'dave'].map((username, index) => ({
 const sockets = [];
 let tempDir, db, server, socketServer, base, fileAB, messageAB, browser, alicePage, outsiderPage;
 
-function bearer(user = 'alice') { return { Authorization: 'Bearer test-' + user }; }
+function bearer(user = 'alice') { return { Authorization: 'Bearer ' + tokenFor(user) }; }
 async function get(file, user, extra = {}) {
   const headers = user ? { ...bearer(user), ...extra } : extra;
   return fetch(base + (typeof file === 'string' ? file : file.url), { headers });
@@ -40,7 +41,7 @@ async function socketFor(user) {
   socket.connect();
   await connected;
   const authenticated = waitEvent(socket, 'authenticated');
-  socket.emit('authenticate', { token: 'test-' + user });
+  socket.emit('authenticate', { token: tokenFor(user) });
   await authenticated;
   return socket;
 }
@@ -78,7 +79,7 @@ before(async () => {
   fs.mkdirSync(path.join(tempDir, 'public', 'uploads'), { recursive: true });
   fs.mkdirSync(path.join(tempDir, 'data', 'ssl'), { recursive: true });
   fs.mkdirSync(path.join(tempDir, 'public', 'assets'), { recursive: true });
-  for (const file of ['index.html', 'widget.html', 'widget.css', 'widget.js', 'safe-content.js', 'private-files.js', 'style.css', 'sw.js', 'manifest.json']) {
+  for (const file of ['index.html', 'safe-content.js', 'private-files.js', 'style.css', 'sw.js', 'manifest.json']) {
     let content = fs.readFileSync(path.join(root, 'public', file), 'utf8');
     if (file.endsWith('.html')) content = content
       .replace('<script src="https://cdn.tailwindcss.com"></script>', '<script>window.tailwind = {};</script>')
@@ -148,7 +149,7 @@ test('TEST 3: authenticated outsider C receives 403', async () => {
 
 test('TEST 4: anonymous/invalid identity receives 401; token in URL is not authentication', async () => {
   assert.equal((await get(fileAB)).status, 401);
-  assert.equal((await get(fileAB.url + '?token=test-alice')).status, 401);
+  assert.equal((await get(fileAB.url + '?token=' + tokenFor('alice'))).status, 401);
   assert.equal((await get(fileAB, null, { Authorization: 'Bearer invalid' })).status, 401);
 });
 
@@ -263,11 +264,11 @@ async function browserReady(t) {
   if (!browser) browser = await launchBrowser(tempDir);
   if (!browser) { t.skip('Set CHROME_PATH for real media/widget verification'); return false; }
   if (!alicePage) {
-    alicePage = await browser.page(base + '/', 'test-alice');
+    alicePage = await browser.page(base + '/', tokenFor('alice'));
     await alicePage.wait("typeof socket !== 'undefined' && socket && socket.connected && activeContactSyncId");
     await alicePage.evaluate(`navigator.serviceWorker.ready`);
     await alicePage.wait('navigator.serviceWorker.controller !== null');
-    outsiderPage = await browser.page(base + '/', 'test-charlie');
+    outsiderPage = await browser.page(base + '/', tokenFor('charlie'));
     await outsiderPage.wait("typeof socket !== 'undefined' && socket && socket.connected && activeContactSyncId");
   }
   return true;
@@ -334,7 +335,7 @@ test('TEST 10: real WAV and generated WebM video load/play through authorized st
     const blob = new Blob(chunks, { type: 'video/webm' });
     if (!blob.size) throw new Error('MediaRecorder produced an empty WebM');
     const body = new FormData(); body.append('file', blob, 'sample.webm');
-    const response = await fetch('/api/upload', { method: 'POST', headers: { Authorization: 'Bearer test-alice' }, body });
+    const response = await fetch('/api/upload', { method: 'POST', headers: { Authorization: 'Bearer ' + ${JSON.stringify(tokenFor('alice'))} }, body });
     const file = (await response.json()).file;
     await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Send failed')), 5000);
@@ -401,28 +402,4 @@ test('TEST 12: Media Center uses private routes; active service worker never cac
   assert.equal(await alicePage.evaluate(`fetch(${JSON.stringify(fileAB.url)}).then(() => false).catch(() => true)`), true);
   await alicePage.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   assert.equal(await outsiderPage.evaluate(`fetch(${JSON.stringify(fileAB.url)}).then(r => r.status)`), 403);
-});
-
-test('TEST 13: real widget uploads/shares a capture and its resulting file stays private', async (t) => {
-  if (!await browserReady(t)) return;
-  const widget = await browser.page(base + '/widget.html', 'test-alice');
-  await widget.wait("document.getElementById('sync-label').textContent === 'Sincronizado'");
-  const previousCount = db.testData.messages.length;
-  await widget.evaluate(`(async () => {
-    const response = await fetch(${JSON.stringify(fileAB.url)}); const bytes = await response.blob();
-    const select = document.getElementById('contact-select'); select.value = 'SYNC-1002'; select.dispatchEvent(new Event('change'));
-    const transfer = new DataTransfer(); transfer.items.add(new File([bytes], 'widget-capture.png', { type: 'image/png' }));
-    const input = document.getElementById('camera-input'); input.files = transfer.files; input.dispatchEvent(new Event('change'));
-  })()`);
-  await widget.wait("document.getElementById('widget-notice').textContent === 'Foto enviada correctamente.'");
-  assert.ok(db.testData.messages.length > previousCount);
-  const message = db.testData.messages.at(-1);
-  assert.equal(message.fileData.name, 'widget-capture.png');
-  assert.ok(message.fileData.url.startsWith('/api/files/'));
-  assert.equal(message.fileIds.length, 1);
-  assert.equal((await get(message.fileData.url, 'bob')).status, 200);
-  assert.equal((await get(message.fileData.url, 'charlie')).status, 403);
-  assert.equal((await get(message.fileData.url)).status, 401);
-  const file = db.getFileById(message.fileIds[0]);
-  assert.equal((await get('/uploads/' + file.filename)).status, 401);
 });

@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 if (chrome.notifications && chrome.notifications.onClicked) {
   chrome.notifications.onClicked.addListener(() => {
     chrome.tabs.query({ url: '*://*/*' }, (tabs) => {
-      const match = (tabs || []).find(tab => tab.url && (tab.url.includes('widget.html') || tab.url.includes('index.html')));
+      const match = (tabs || []).find(tab => tab.url && tab.url.includes('index.html'));
       if (match && match.id) {
         chrome.tabs.update(match.id, { active: true });
         if (match.windowId) {

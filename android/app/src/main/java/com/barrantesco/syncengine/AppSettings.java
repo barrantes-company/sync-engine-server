@@ -25,6 +25,8 @@ final class AppSettings {
     private static final String CALLS_SEEN_AT = "calls_seen_at";
     private static final String NOTIFIED_MSG_TS = "notified_msg_ts";
     private static final String NOTIFIED_MISSED = "notified_missed";
+    private static final String RECEIVED_FILE = "received_file";
+    private static final String CLIPBOARD_STATE = "clipboard_state";
 
     static final String[] STYLE_NAMES = {
             "Reloj", "Señal", "Negro", "Línea", "Barra", "Fino", "Ciudad", "Accesos"
@@ -137,6 +139,24 @@ final class AppSettings {
 
     static void saveCounts(Context context, int unread, int missed) {
         prefs(context).edit().putInt(UNREAD, unread).putInt(MISSED, missed).apply();
+    }
+
+    /** Archivo recibido más reciente (texto corto o vacío). */
+    static String receivedFile(Context context) {
+        return prefs(context).getString(RECEIVED_FILE, "");
+    }
+
+    static void setReceivedFile(Context context, String value) {
+        prefs(context).edit().putString(RECEIVED_FILE, value == null ? "" : value).apply();
+    }
+
+    /** Estado del portapapeles (texto corto o vacío). */
+    static String clipboardState(Context context) {
+        return prefs(context).getString(CLIPBOARD_STATE, "");
+    }
+
+    static void setClipboardState(Context context, String value) {
+        prefs(context).edit().putString(CLIPBOARD_STATE, value == null ? "" : value).apply();
     }
 
     /** Momento desde el que se cuentan llamadas perdidas (última vez que se abrió la app). */

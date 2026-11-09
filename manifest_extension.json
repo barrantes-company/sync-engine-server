@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "SYNC ENGINE - Universal Widget",
+  "name": "SYNC ENGINE",
   "version": "1.0.0",
-  "description": "Widget Web Universal y panel lateral en tiempo real para SYNC ENGINE con sincronización e interfaz Material You.",
+  "description": "Panel lateral en tiempo real para SYNC ENGINE.",
   "permissions": [
     "notifications",
     "sidePanel",
@@ -17,7 +17,7 @@
     }
   },
   "side_panel": {
-    "default_path": "public/widget.html"
+    "default_path": "public/index.html"
   },
   "background": {
     "service_worker": "extension_worker.js"

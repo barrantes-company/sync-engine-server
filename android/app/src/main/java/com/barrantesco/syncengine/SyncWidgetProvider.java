@@ -9,38 +9,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.RemoteViews;
 
-import java.util.Locale;
-
-/** Widget de pantalla de inicio. Cada estilo es un widget distinto en la parrilla. */
+/** Solo Ciudad, Barra y Anillo. El resto no se publica. */
 public class SyncWidgetProvider extends AppWidgetProvider {
     private static final String TAG = "SyncWidgetProvider";
     private static final String ACTION_TICK = "com.barrantesco.syncengine.WIDGET_TICK";
-    private static final int[] LAYOUTS = {
-            R.layout.widget_style_0,
-            R.layout.widget_style_1,
-            R.layout.widget_style_2,
-            R.layout.widget_style_3,
-            R.layout.widget_style_4,
-            R.layout.widget_style_5,
-            R.layout.widget_style_6,
-            R.layout.widget_style_7
-    };
 
     private static final Class<?>[] PROVIDERS = {
-            WidgetReloj.class,
-            WidgetSenal.class,
-            SyncWidgetProvider.class,
-            WidgetLinea.class,
-            WidgetBarra.class,
-            WidgetFino.class,
             WidgetCiudad.class,
-            WidgetAccesos.class
+            WidgetBarra.class,
+            WidgetAnillo.class
     };
 
-    /** Estilo fijo de este widget. Negro es el que ya estaba instalado. */
+    /** Ciudad = 0, Barra = 1, Anillo = 2. */
     int styleIndex() {
         return 2;
     }
@@ -49,18 +31,17 @@ public class SyncWidgetProvider extends AppWidgetProvider {
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
         String action = intent.getAction();
-        Log.d(TAG, "onReceive action=" + action);
         if (ACTION_TICK.equals(action)
                 || Intent.ACTION_TIME_CHANGED.equals(action)
                 || Intent.ACTION_TIMEZONE_CHANGED.equals(action)
                 || Intent.ACTION_BOOT_COMPLETED.equals(action)) {
             refreshAll(context);
+            scheduleTick(context);
         }
     }
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        Log.i(TAG, "onUpdate ids=" + java.util.Arrays.toString(appWidgetIds));
         for (int appWidgetId : appWidgetIds) {
             try {
                 updateWidget(context, appWidgetManager, appWidgetId, styleIndex());
@@ -68,6 +49,7 @@ public class SyncWidgetProvider extends AppWidgetProvider {
                 Log.e(TAG, "Failed to render widget id=" + appWidgetId, error);
             }
         }
+        scheduleTick(context);
         if (AppSettings.isLoggedIn(context)) {
             SyncJobService.schedule(context);
             final PendingResult result = goAsync();
@@ -88,7 +70,6 @@ public class SyncWidgetProvider extends AppWidgetProvider {
         updateWidget(context, manager, widgetId, styleIndex());
     }
 
-    /** Repinta todos los widgets con la configuración y contadores en caché. */
     static void refreshAll(Context context) {
         AppWidgetManager manager = AppWidgetManager.getInstance(context);
         for (int style = 0; style < PROVIDERS.length; style++) {
@@ -115,85 +96,46 @@ public class SyncWidgetProvider extends AppWidgetProvider {
     }
 
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId, int style) {
-        Log.d(TAG, "updateWidget start id=" + widgetId);
-        if (style < 0 || style >= LAYOUTS.length) style = 2;
-        RemoteViews views = new RemoteViews(context.getPackageName(), LAYOUTS[style]);
+        if (style < 0 || style >= PROVIDERS.length) style = 2;
+        Bundle options = manager.getAppWidgetOptions(widgetId);
+        int widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, style == 2 ? 250 : 280);
+        int heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, style == 2 ? 250 : 110);
+        int[] size = WidgetRenderer.size(context, widthDp, heightDp);
+        boolean loggedIn = AppSettings.isLoggedIn(context);
+        android.graphics.Bitmap bitmap = WidgetFaces.render(
+                context, style, size[0], size[1],
+                AppSettings.timeZone(context),
+                AppSettings.use24h(context),
+                loggedIn ? AppSettings.unread(context) : 0,
+                loggedIn ? AppSettings.missed(context) : 0,
+                loggedIn);
 
-        String zone = AppSettings.timeZone(context);
-        views.setString(R.id.widget_clock, "setTimeZone", zone);
-        views.setString(R.id.widget_date, "setTimeZone", zone);
-        CharSequence clockFormat = AppSettings.use24h(context) ? "HH:mm" : "h:mm";
-        views.setCharSequence(R.id.widget_clock, "setFormat12Hour", clockFormat);
-        views.setCharSequence(R.id.widget_clock, "setFormat24Hour", clockFormat);
-
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sync_widget);
+        views.setImageViewBitmap(R.id.widget_content, bitmap);
+        int inset = Math.round((style == 2 ? 16 : 8) * context.getResources().getDisplayMetrics().density);
+        views.setViewPadding(R.id.widget_root, inset, inset, inset, inset);
         PendingIntent open = PendingIntent.getActivity(
-                context,
-                0,
+                context, 0,
                 new Intent(context, OpenAppActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, open);
-        Intent messagesIntent = new Intent(context, OpenAppActivity.class)
-                .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "chats")
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        Intent callsIntent = new Intent(context, OpenAppActivity.class)
-                .putExtra(OpenAppActivity.EXTRA_WIDGET_VIEW, "calls")
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        views.setOnClickPendingIntent(R.id.widget_messages_action, PendingIntent.getActivity(
-                context, 21, messagesIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-        views.setOnClickPendingIntent(R.id.widget_calls_action, PendingIntent.getActivity(
-                context, 22, callsIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-
-        boolean loggedIn = AppSettings.isLoggedIn(context);
-        int unread = loggedIn ? AppSettings.unread(context) : 0;
-        int missed = loggedIn ? AppSettings.missed(context) : 0;
-        String unreadText = Integer.toString(unread);
-        String missedText = Integer.toString(missed);
-        if (style == 1) {
-            views.setTextViewText(R.id.widget_messages_count, unreadText);
-            views.setTextViewText(R.id.widget_calls_count, missedText);
-        } else {
-            views.setTextViewText(R.id.widget_messages_action, unreadText);
-            views.setTextViewText(R.id.widget_calls_action, missedText);
-        }
-        if (style == 6) {
-            views.setViewVisibility(R.id.widget_status, View.VISIBLE);
-            views.setTextViewText(R.id.widget_status, city(zone));
-        } else if (style == 7) {
-            views.setTextViewText(R.id.widget_status, "Mensajes");
-        } else if (style != 1 && style != 3) {
-            if (loggedIn) {
-                views.setViewVisibility(R.id.widget_status, View.VISIBLE);
-                views.setTextViewText(R.id.widget_status, "ONLINE");
-            } else {
-                views.setViewVisibility(R.id.widget_status, View.GONE);
-            }
-        }
-
         manager.updateAppWidget(widgetId, views);
-        Log.i(TAG, "updateAppWidget submitted id=" + widgetId);
-    }
-
-    private static String city(String zone) {
-        if (zone == null || zone.isEmpty()) return "";
-        int slash = zone.lastIndexOf('/');
-        String name = slash >= 0 ? zone.substring(slash + 1) : zone;
-        return name.replace('_', ' ');
-    }
-
-    private static String spaced(String name) {
-        String upper = name.toUpperCase(Locale.US);
-        StringBuilder spaced = new StringBuilder();
-        for (int index = 0; index < upper.length(); index++) {
-            if (index > 0) spaced.append(' ');
-            spaced.append(upper.charAt(index));
-        }
-        return spaced.toString();
     }
 
     private static PendingIntent tickIntent(Context context) {
-        Intent intent = new Intent(context, SyncWidgetProvider.class).setAction(ACTION_TICK);
+        Intent intent = new Intent(context, WidgetAnillo.class).setAction(ACTION_TICK);
         return PendingIntent.getBroadcast(context, 2, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private static void scheduleTick(Context context) {
+        AlarmManager alarms = context.getSystemService(AlarmManager.class);
+        if (alarms == null) return;
+        try {
+            alarms.set(AlarmManager.RTC, System.currentTimeMillis() + 60_000L, tickIntent(context));
+        } catch (SecurityException ignored) {
+            Log.w(TAG, "No se pudo programar el reloj del widget");
+        }
     }
 
     @Override
@@ -210,17 +152,19 @@ public class SyncWidgetProvider extends AppWidgetProvider {
     @Override
     public void onEnabled(Context context) {
         super.onEnabled(context);
-        Log.i(TAG, "onEnabled");
         refreshAll(context);
+        scheduleTick(context);
     }
 
     @Override
     public void onDisabled(Context context) {
         super.onDisabled(context);
+        AppWidgetManager manager = AppWidgetManager.getInstance(context);
+        for (Class<?> provider : PROVIDERS) {
+            if (manager.getAppWidgetIds(new ComponentName(context, provider)).length > 0) return;
+        }
         SyncJobService.cancel(context);
         AlarmManager alarms = context.getSystemService(AlarmManager.class);
-        if (alarms != null) {
-            alarms.cancel(tickIntent(context));
-        }
+        if (alarms != null) alarms.cancel(tickIntent(context));
     }
 }

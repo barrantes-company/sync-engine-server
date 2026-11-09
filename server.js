@@ -25,127 +25,26 @@ try {
   console.warn(message, err.message);
 }
 
-// Helper to store subscription per syncId (multiple devices allowed)
-function storeSubscription(syncId, subscription) {
-  const dbData = db.readDb ? db.readDb() : db.readDb(); // Ensure db is loaded
-  if (!dbData.subscriptions) dbData.subscriptions = {};
-  if (!Array.isArray(dbData.subscriptions[syncId])) {
-    dbData.subscriptions[syncId] = [];
-  }
-  // Avoid duplicates based on endpoint
-  const exists = dbData.subscriptions[syncId].some(sub => sub.endpoint === subscription.endpoint);
-  if (!exists) {
-    dbData.subscriptions[syncId].push(subscription);
-    db.writeDb(dbData);
-  }
-}
-
-// ==== FCM Mobile Push Setup ====
-let firebaseAdmin = null;
-try {
-  firebaseAdmin = require("firebase-admin");
-  if (!firebaseAdmin.apps.length) {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-      firebaseAdmin.initializeApp({
-        credential: firebaseAdmin.credential.cert(sa)
-      });
-    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      firebaseAdmin.initializeApp({
-        credential: firebaseAdmin.credential.applicationDefault()
-      });
-    }
-  }
-} catch (e) {
-  // firebase-admin no instalado o no configurado aún; punto de envío desacoplado
-}
-
-async function sendFcmNotification(syncId, payload) {
-  const tokens = db.getMobilePushTokens ? db.getMobilePushTokens(syncId) : [];
-  if (!tokens || tokens.length === 0) return;
-
-  const dataPayload = {};
-  if (payload.data) {
-    for (const [k, v] of Object.entries(payload.data)) {
-      if (v !== undefined && v !== null) {
-        dataPayload[k] = String(v);
-      }
-    }
-  }
-  const fromSyncId = dataPayload.fromSyncId || "";
-  if (!dataPayload.conversationId && fromSyncId) {
-    dataPayload.conversationId = fromSyncId;
-  }
-  if (!dataPayload.title && payload.title) dataPayload.title = String(payload.title);
-  if (!dataPayload.body && payload.body) dataPayload.body = String(payload.body);
-
-  if (firebaseAdmin && firebaseAdmin.apps && firebaseAdmin.apps.length > 0) {
-    const registrationTokens = tokens.map((t) => t.token);
-    try {
-      const response = await firebaseAdmin.messaging().sendEachForMulticast({
-        tokens: registrationTokens,
-        notification: {
-          title: payload.title || "SYNC ENGINE",
-          body: payload.body || "Nuevo mensaje recibido"
-        },
-        data: dataPayload
-      });
-      if (response && response.responses) {
-        response.responses.forEach((resp, idx) => {
-          if (!resp.success && resp.error) {
-            const code = resp.error.code;
-            if (code === "messaging/registration-token-not-registered" ||
-                code === "messaging/invalid-registration-token") {
-              db.removeMobilePushToken(syncId, registrationTokens[idx]);
-            }
-          }
-        });
-      }
-    } catch (err) {
-      console.warn("[FCM] Error al enviar notificación:", err.message);
-    }
-  } else {
-    if (process.env.NODE_ENV !== "test") {
-      console.log(`[FCM] Notificación preparada para ${syncId} (${tokens.length} token(s)):`, payload.title);
-    }
-  }
-}
-
-// Helper to send push notification to all stored subscriptions (Web Push & FCM) for a syncId
+// Helper to send push notification to all stored subscriptions for a syncId
 async function sendPushNotification(syncId, payload) {
-  const fcmPromise = sendFcmNotification(syncId, payload).catch((err) => {
-    console.warn("[FCM] Falló envío:", err.message);
-  });
-
   if (!webPushConfigured) {
-    await fcmPromise;
     return;
   }
-
   const dbData = db.readDb();
   const subs = (dbData.subscriptions && dbData.subscriptions[syncId]) || [];
-  const expiredEndpoints = new Set();
-  const payloadStr = JSON.stringify(payload);
-
-  const promises = subs.map((sub) =>
-    webPush.sendNotification(sub, payloadStr).catch((err) => {
+  const promises = subs.map(sub =>
+    webPush.sendNotification(sub, JSON.stringify(payload)).catch(err => {
+      // Remove invalid subscription
       if (err.statusCode === 410 || err.statusCode === 404) {
-        expiredEndpoints.add(sub.endpoint);
-      } else {
-        console.warn(`[Push Error] Fallo al entregar push a ${syncId}:`, err.message);
+        const idx = subs.findIndex(s => s.endpoint === sub.endpoint);
+        if (idx !== -1) subs.splice(idx, 1);
+        db.writeDb(dbData);
       }
     })
   );
-
-  await Promise.all([...promises, fcmPromise]);
-
-  // Limpieza atómica en disco solo si hubo suscripciones expiradas
-  if (expiredEndpoints.size > 0) {
-    dbData.subscriptions[syncId] = subs.filter((s) => !expiredEndpoints.has(s.endpoint));
-    await db.writeDb(dbData);
-    console.log(`[Push Cleanup] Se removieron ${expiredEndpoints.size} suscripciones caducadas para ${syncId}`);
-  }
+  await Promise.all(promises);
 }
+
 // ==== End of Web Push Additions ====
 
 // ==== Firebase Cloud Messaging for native Android ====
@@ -203,6 +102,7 @@ async function sendMobilePushNotification(syncId, payload) {
 // ==== End of Firebase Cloud Messaging ====
 const fs = require("fs");
 const crypto = require("crypto");
+const dns = require("dns");
 const http = require("http");
 const https = require("https");
 const os = require("os");
@@ -215,23 +115,10 @@ const { Server } = require("socket.io");
 const selfsigned = require("selfsigned");
 const db = require("./db");
 const { safeUrl } = require("./public/safe-content");
-const { createMetadataFetcher } = require("./metadata-fetch");
-const fetchMetadata = createMetadataFetcher();
 const { deliver } = require("./pubsub-routing");
-
-const asyncHandler = (fn) => (req, res, next) => {
-  fn(req, res, next).catch(next);
-};
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = "0.0.0.0";
-const configuredCorsOrigins = new Set(String(process.env.CORS_ORIGINS || "").split(",").map((origin) => origin.trim()).filter(Boolean));
-
-function isAllowedCorsOrigin(origin) {
-  if (!origin) return true;
-  if (origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://")) return true;
-  return configuredCorsOrigins.has(origin);
-}
 
 function getLocalIPv4Addresses() {
   const nets = os.networkInterfaces();
@@ -261,43 +148,26 @@ const channelAdminRateLimit = rateLimit({
   standardHeaders: "draft-8",
   legacyHeaders: false
 });
+const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false
+});
 app.use((_req, res, next) => shuttingDown
   ? res.status(503).json({ error: "Servidor cerrando" }) : next());
 app.disable("x-powered-by");
-app.use((_req, res, next) => {
+app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(self), geolocation=()");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  const proto = String(req.get("x-forwarded-proto") || "").split(",")[0].trim();
+  if (req.secure || proto === "https") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
   next();
 });
-
-const authAttempts = new Map();
-const AUTH_WINDOW_MS = 15 * 60 * 1000;
-const AUTH_MAX_ATTEMPTS = 5;
-const AUTH_MAX_TRACKED_IPS = 10000;
-
-function authRateLimit(req, res, next) {
-  const now = Date.now();
-  for (const [ip, attempt] of authAttempts) {
-    if (attempt.resetAt <= now) authAttempts.delete(ip);
-  }
-  const key = req.ip || req.socket?.remoteAddress || "unknown";
-  const current = authAttempts.get(key);
-  if (!current || current.resetAt <= now) {
-    if (authAttempts.size >= AUTH_MAX_TRACKED_IPS) {
-      const oldestKey = authAttempts.keys().next().value;
-      if (oldestKey !== undefined) authAttempts.delete(oldestKey);
-    }
-    authAttempts.set(key, { count: 1, resetAt: now + AUTH_WINDOW_MS });
-    return next();
-  }
-  if (current.count >= AUTH_MAX_ATTEMPTS) {
-    res.setHeader("Retry-After", Math.ceil((current.resetAt - now) / 1000));
-    return res.status(429).json({ error: "Demasiados intentos de autenticación; inténtalo en 15 minutos." });
-  }
-  current.count += 1;
-  next();
-}
 
 const allowedOrigins = new Set(
   String(process.env.CORS_ORIGINS || "")
@@ -305,18 +175,39 @@ const allowedOrigins = new Set(
     .map((origin) => origin.trim())
     .filter(Boolean)
 );
+function rememberOrigin(value) {
+  if (!value) return;
+  try { allowedOrigins.add(new URL(value).origin); }
+  catch (_) { allowedOrigins.add(String(value).trim()); }
+}
+rememberOrigin("https://sync-engine-server.onrender.com");
+rememberOrigin(process.env.RENDER_EXTERNAL_URL);
+
+function isCorsOriginAllowed(origin) {
+  if (!origin || origin === "null") return true;
+  if (origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://")) return true;
+  if (allowedOrigins.has(origin)) return true;
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const host = new URL(origin).hostname;
+      if (host === "localhost" || host === "127.0.0.1") return true;
+    } catch (_) {}
+  }
+  return false;
+}
+
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || origin === "null" || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://")) {
-      return callback(null, true);
-    }
-    if (allowedOrigins.has(origin) || configuredCorsOrigins.has(origin)) return callback(null, true);
-    return callback(new Error("Origen no permitido por CORS"));
+  origin(origin, callback) {
+    // false niega el origen sin convertir la petición en un 500 de Express.
+    callback(null, isCorsOriginAllowed(origin));
   },
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Authorization", "Content-Type"]
 };
 app.use(cors(corsOptions));
 
+// JSON nunca necesita aceptar el tamaño reservado para multipart uploads.
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "1mb", extended: true }));
 app.use(
@@ -345,32 +236,17 @@ app.use((req, res, next) => {
   });
 });
 
-// Servir widget universal con cabeceras para iframe y paneles laterales de extensiones
-app.get(["/widget", "/widget.html", "/public/widget.html"], (req, res) => {
-  res.setHeader("X-Frame-Options", "SAMEORIGIN");
-  res.setHeader(
-    "Content-Security-Policy",
-    "frame-ancestors 'self' chrome-extension:* moz-extension:*"
-  );
-  res.sendFile("widget.html", { root: path.join(__dirname, "public") });
-});
-
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/public", express.static(path.join(__dirname, "public")));
 app.use("/src/assets/images", express.static(path.join(__dirname, "src/assets/images")));
-// Manejador global de errores: Responder 400 Bad Request para JSON malformado y 403 para bloqueos CORS
 app.use((err, req, res, next) => {
+  if (err && err.message === "Origen no permitido por CORS") {
+    return res.status(403).json({ error: "Origen no permitido por CORS" });
+  }
   if (req.path === "/api/save-subscription" && err instanceof SyntaxError && err.status === 400) {
     return res.status(500).json({ ok: false, error: "Error al procesar el payload de suscripción" });
   }
-  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
-    return res.status(400).json({ error: "Payload JSON malformado o inválido" });
-  }
-  if (err.message && err.message.includes("CORS")) {
-    return res.status(403).json({ error: "Petición bloqueada por política de origen (CORS)" });
-  }
-  console.error("[Server Unhandled Error]:", err);
-  return res.status(500).json({ error: "Error interno del servidor" });
+  next(err);
 });
 // Directorio y almacenamiento Multer para documentos y archivos pesados (hasta 2 GB sin compresión)
 const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads"));
@@ -387,9 +263,6 @@ const storage = multer.diskStorage({
     cb(null, `${crypto.randomUUID()}${ext}`);
   }
 });
-
-const MAX_STANDARD_UPLOAD_BYTES = 50 * 1024 * 1024;
-const MAX_PREMIUM_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024;
 
 const upload = multer({
   storage,
@@ -408,23 +281,6 @@ const upload = multer({
   }
 });
 
-function uploadSingleFileForPlan(req, res, next) {
-  const plan = String(req.user?.plan || "free").trim().toLowerCase();
-  const maxBytes = plan === "enterprise" || plan === "pro"
-    ? MAX_PREMIUM_UPLOAD_BYTES
-    : MAX_STANDARD_UPLOAD_BYTES;
-
-  multer({
-    storage: storage,
-    limits: { fileSize: maxBytes }
-  }).single("file")(req, res, (err) => {
-    if (err && err.code === "LIMIT_FILE_SIZE") {
-      return res.status(413).json({ error: "El archivo supera el límite del plan" });
-    }
-    return next(err);
-  });
-}
-
 // Middleware de Autenticación
 function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -440,15 +296,6 @@ function requireAuth(req, res, next) {
 
   req.user = user;
   next();
-}
-
-function requireFeature(feature) {
-  return (req, res, next) => {
-    if (!req.user || !req.user.features || req.user.features[feature] !== true) {
-      return res.status(403).json({ error: "La función requiere un plan superior", feature });
-    }
-    next();
-  };
 }
 
 const FILE_COOKIE = "sync_engine_file_auth";
@@ -534,28 +381,12 @@ function messageFileIds(senderId, references, serverHost) {
 }
 
 // Endpoint to receive subscription from client
-app.post('/api/notifications/subscribe', requireAuth, (req, res) => {
-  const { syncId, subscription } = req.body || {};
-  if (!syncId || !subscription) {
-    return res.status(400).json({ error: 'syncId y subscription son requeridos' });
-  }
-  if (String(syncId).trim().toUpperCase() !== req.user.syncId) {
-    return res.status(403).json({ error: 'No puedes registrar notificaciones para otro usuario' });
-  }
-  try {
-    storeSubscription(syncId, subscription);
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error('[Push] Error storing subscription:', err);
-    return res.status(500).json({ error: 'Error interno al guardar suscripción' });
-  }
-});
-
 app.get('/api/notifications/vapid-public-key', requireAuth, (_req, res) => {
   res.json({ ok: true, configured: webPushConfigured, publicKey: webPushConfigured ? VAPID_PUBLIC_KEY : null });
 });
 
-
+const { createMetadataFetcher } = require("./metadata-fetch");
+const fetchMetadata = createMetadataFetcher();
 
 // Extractor de Metadatos OpenGraph y Favicon para Rich Link Cards
 async function fetchUrlMetadata(text) {
@@ -633,9 +464,155 @@ async function fetchUrlMetadata(text) {
   }
 }
 
+// Rutas de autenticación y verificación de correo.
+const pendingEmailVerifications = new Map();
+const OTP_TTL_MS = 10 * 60 * 1000;
+const MAX_OTP_ATTEMPTS = 5;
 
-// Rutas de Autenticación
-app.post("/api/auth/register", authRateLimit, (req, res) => {
+function cleanupExpiredEmailVerifications() {
+  const now = Date.now();
+  for (const [email, pending] of pendingEmailVerifications.entries()) {
+    if (!pending || pending.expiresAt <= now) pendingEmailVerifications.delete(email);
+  }
+}
+
+async function verifyEmailDomainHasMailExchange(email) {
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  const match = /^[^\s@]+@([^\s@]+\.[^\s@]{2,})$/.exec(cleanEmail);
+  if (!match) throw new Error("Ingresa un correo electrónico válido (ej. usuario@dominio.com)");
+  const blockedDisposable = new Set([
+    "mailinator.com", "tempmail.com", "10minutemail.com",
+    "guerrillamail.com", "yopmail.com", "trashmail.com"
+  ]);
+  if (blockedDisposable.has(match[1])) {
+    throw new Error("No se permiten correos temporales o desechables");
+  }
+  if (process.env.NODE_ENV === "test" || process.env.SKIP_EMAIL_MX_CHECK === "true") {
+    return cleanEmail;
+  }
+  try {
+    const records = await Promise.race([
+      dns.promises.resolveMx(match[1]),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("DNS_TIMEOUT")), 3500))
+    ]);
+    if (!Array.isArray(records) || records.length === 0) throw new Error("NO_MX");
+  } catch (error) {
+    if (error && (error.code === "ENOTFOUND" || error.code === "ENODATA" || error.message === "NO_MX")) {
+      throw new Error(`El dominio @${match[1]} no tiene servidores de correo válidos (MX)`);
+    }
+    if (error && error.message === "DNS_TIMEOUT") {
+      throw new Error("No se pudo validar el dominio del correo. Intenta nuevamente.");
+    }
+  }
+  return cleanEmail;
+}
+
+async function dispatchVerificationOtpEmail(toEmail, code, username) {
+  const resendKey = String(process.env.RESEND_API_KEY || "").trim();
+  const brevoKey = String(process.env.BREVO_API_KEY || "").trim();
+  const fromAddress = String(process.env.EMAIL_FROM || "SYNC ENGINE <onboarding@resend.dev>").trim();
+  const subject = `${code} es tu código de verificación de SYNC ENGINE`;
+  const html = `<p>Tu código de verificación para @${username} es:</p><h2>${code}</h2><p>Expira en 10 minutos.</p>`;
+
+  if (resendKey) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: fromAddress, to: [toEmail], subject, html })
+    });
+    if (!response.ok) throw new Error("No se pudo enviar el correo de verificación");
+    return { sentViaProvider: true };
+  }
+  if (brevoKey) {
+    const senderEmail = (fromAddress.match(/<([^>]+)>/) || [null, fromAddress])[1];
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "api-key": brevoKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sender: { name: "SYNC ENGINE", email: senderEmail },
+        to: [{ email: toEmail }],
+        subject,
+        htmlContent: html
+      })
+    });
+    if (!response.ok) throw new Error("No se pudo enviar el correo de verificación");
+    return { sentViaProvider: true };
+  }
+  return { sentViaProvider: false, fallbackCode: code };
+}
+
+app.post("/api/auth/register/request-code", authRateLimit, async (req, res) => {
+  try {
+    cleanupExpiredEmailVerifications();
+    const { username, password, displayName, email } = req.body || {};
+    if (!username || !password || !email) {
+      return res.status(400).json({ error: "Usuario, correo electrónico y contraseña son obligatorios" });
+    }
+    if (String(password).length < 8) {
+      return res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres" });
+    }
+    const cleanEmail = await verifyEmailDomainHasMailExchange(email);
+    const cleanUsername = String(username).trim().toLowerCase();
+    db.checkRegistrationAvailability(cleanUsername, cleanEmail);
+    const code = String(crypto.randomInt(100000, 1000000));
+    const otpSalt = crypto.randomBytes(16).toString("hex");
+    pendingEmailVerifications.set(cleanEmail, {
+      username: cleanUsername,
+      password: String(password),
+      displayName: displayName || cleanUsername,
+      email: cleanEmail,
+      otpSalt,
+      codeHash: crypto.createHash("sha256").update(`${otpSalt}:${code}`).digest("hex"),
+      attempts: 0,
+      expiresAt: Date.now() + OTP_TTL_MS
+    });
+    const delivery = await dispatchVerificationOtpEmail(cleanEmail, code, cleanUsername);
+    return res.json({
+      ok: true,
+      email: cleanEmail,
+      delivery: delivery.sentViaProvider ? "email" : "direct_verification",
+      ...(delivery.sentViaProvider ? {} : { verificationCodeHint: delivery.fallbackCode })
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || "No se pudo iniciar la verificación de correo" });
+  }
+});
+
+app.post("/api/auth/register/verify-code", authRateLimit, (req, res) => {
+  try {
+    cleanupExpiredEmailVerifications();
+    const cleanEmail = String(req.body?.email || "").trim().toLowerCase();
+    const cleanCode = String(req.body?.code || "").trim();
+    if (!cleanEmail || !/^\d{6}$/.test(cleanCode)) {
+      return res.status(400).json({ error: "Ingresa el código numérico de 6 dígitos" });
+    }
+    const pending = pendingEmailVerifications.get(cleanEmail);
+    if (!pending || pending.expiresAt <= Date.now()) {
+      pendingEmailVerifications.delete(cleanEmail);
+      return res.status(400).json({ error: "El código ha expirado. Solicita uno nuevo." });
+    }
+    pending.attempts += 1;
+    if (pending.attempts > MAX_OTP_ATTEMPTS) {
+      pendingEmailVerifications.delete(cleanEmail);
+      return res.status(429).json({ error: "Demasiados intentos fallidos. Solicita un nuevo código." });
+    }
+    const candidate = crypto.createHash("sha256").update(`${pending.otpSalt}:${cleanCode}`).digest("hex");
+    const candidateBuffer = Buffer.from(candidate, "hex");
+    const storedBuffer = Buffer.from(pending.codeHash, "hex");
+    if (candidateBuffer.length !== storedBuffer.length || !crypto.timingSafeEqual(candidateBuffer, storedBuffer)) {
+      return res.status(400).json({ error: "Código de verificación incorrecto" });
+    }
+    pendingEmailVerifications.delete(cleanEmail);
+    db.registerUser(pending.username, pending.password, pending.displayName, pending.email, true);
+    const loginResult = db.loginUser(pending.username, pending.password);
+    return res.json({ ok: true, token: loginResult.token, user: loginResult.user });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || "Error al verificar el código" });
+  }
+});
+
+// Compatibilidad con el registro directo legacy.
+app.post("/api/auth/register", (req, res) => {
   try {
     const { username, password, displayName } = req.body || {};
     const user = db.registerUser(username, password, displayName);
@@ -646,7 +623,7 @@ app.post("/api/auth/register", authRateLimit, (req, res) => {
   }
 });
 
-app.post("/api/auth/login", authRateLimit, (req, res) => {
+app.post("/api/auth/login", (req, res) => {
   try {
     const { username, password } = req.body || {};
     const result = db.loginUser(username, password);
@@ -675,10 +652,8 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
   res.json({ ok: true, user: req.user });
 });
 
-
-
 // Endpoint de Registro Web Push inyectado de forma segura
-app.post("/api/save-subscription", requireAuth, asyncHandler(async (req, res) => {
+app.post("/api/save-subscription", requireAuth, async (req, res) => {
   try {
     const subscription = req.body?.subscription || req.body;
 
@@ -702,20 +677,27 @@ app.post("/api/save-subscription", requireAuth, asyncHandler(async (req, res) =>
     console.error("[Push] Error al guardar suscripción:", err);
     return res.status(500).json({ ok: false, error: "Error interno al guardar la suscripción" });
   }
-}));
-
+});
 
 /** Registra un token FCM Android en la cuenta autenticada. */
-app.post("/api/mobile/push-token", requireAuth, (req, res) => {
+function registerAndroidDevice(req, res, requireDeviceMetadata = true) {
   const token = req.body?.token;
   if (typeof token !== "string" || token.length < 20 || token.length > 4096) {
     return res.status(400).json({ ok: false, error: "Token FCM inválido" });
   }
-  if (!db.saveMobilePushToken(req.user.syncId, token)) {
+  const platform = req.body?.platform || "android";
+  const deviceId = typeof req.body?.deviceId === "string" ? req.body.deviceId.trim() : "";
+  if (platform !== "android" || (requireDeviceMetadata && !deviceId) || deviceId.length > 256) {
+    return res.status(400).json({ ok: false, error: "Datos de dispositivo inválidos" });
+  }
+  if (!db.saveMobilePushToken(req.user.syncId, token, { platform, deviceId })) {
     return res.status(400).json({ ok: false, error: "No se pudo registrar el dispositivo" });
   }
   return res.status(201).json({ ok: true });
-});
+}
+app.post("/api/devices/register", requireAuth, registerAndroidDevice);
+app.post("/api/mobile/push-token", requireAuth, (req, res) =>
+  registerAndroidDevice(req, res, false));
 
 /** Retira el token FCM de la cuenta autenticada (p. ej. al cerrar sesión). */
 app.delete("/api/mobile/push-token", requireAuth, (req, res) => {
@@ -728,7 +710,7 @@ app.delete("/api/mobile/push-token", requireAuth, (req, res) => {
 });
 
 // Rutas de Usuario y Perfil
-app.post("/api/user/profile", requireAuth, asyncHandler(async (req, res) => {
+app.post("/api/user/profile", requireAuth, async (req, res) => {
   try {
     const { displayName, avatarUrl } = req.body || {};
     if (avatarUrl !== undefined && avatarUrl !== null && !safeUrl(avatarUrl, "avatar")) {
@@ -740,22 +722,13 @@ app.post("/api/user/profile", requireAuth, asyncHandler(async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message || "Error al actualizar perfil" });
   }
-}));
+});
 
 // Endpoint de Subida de Documentos y Archivos Pesados (hasta 2 GB sin compresión)
-app.post("/api/upload", requireAuth, uploadSingleFileForPlan, asyncHandler(async (req, res) => {
+app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No se proporcionó ningún archivo" });
-    }
-
-    const plan = String(req.user.plan || "free").trim().toLowerCase();
-    const maxUploadBytes = plan === "enterprise" || plan === "pro"
-      ? MAX_PREMIUM_UPLOAD_BYTES
-      : MAX_STANDARD_UPLOAD_BYTES;
-    if (req.file.size > maxUploadBytes) {
-      try { await fs.promises.unlink(req.file.path); } catch (_) {}
-      return res.status(413).json({ error: "El archivo supera el límite del plan" });
     }
 
     const registeredFile = await db.registerFile(req.user.syncId, req.file);
@@ -784,7 +757,7 @@ app.post("/api/upload", requireAuth, uploadSingleFileForPlan, asyncHandler(async
   } catch (err) {
     res.status(500).json({ error: "Error al procesar subida de archivo: " + err.message });
   }
-}));
+});
 
 // Rutas de Contactos
 app.get("/api/contacts", requireAuth, (req, res) => {
@@ -839,12 +812,12 @@ app.delete("/api/messages/:contactSyncId", requireAuth, (req, res) => {
 });
 
 // Endpoint auxiliar para vista previa de enlaces
-app.get("/api/link-preview", requireAuth, asyncHandler(async (req, res) => {
+app.get("/api/link-preview", requireAuth, async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: "URL requerida" });
   const preview = await fetchUrlMetadata(url);
   res.json({ ok: true, preview: preview });
-}));
+});
 
 app.get('/api/status', function (_req, res) {
   res.json({
@@ -873,20 +846,6 @@ app.get('/api/status', function (_req, res) {
 });
 
 // ==== Endpoints de Monetización, Facturación y Planes ====
-app.post("/api/admin/licenses/assign", requireAuth, async (req, res) => {
-  if (req.user.role !== "admin") return res.status(403).json({ error: "Permisos de administrador requeridos" });
-  const { syncId, licenseToken } = req.body || {};
-  if (typeof syncId !== "string" || typeof licenseToken !== "string") {
-    return res.status(400).json({ error: "syncId y licenseToken son obligatorios" });
-  }
-  try {
-    const user = await db.assignUserLicense(syncId, licenseToken);
-    return res.json({ ok: true, user });
-  } catch (error) {
-    return res.status(400).json({ error: error.message });
-  }
-});
-
 app.get("/api/billing/plan", requireAuth, (req, res) => {
   const user = db.getUserBySyncId(req.user.syncId);
   if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
@@ -895,16 +854,18 @@ app.get("/api/billing/plan", requireAuth, (req, res) => {
     plan: user.plan || "free",
     role: user.role || "member",
     planExpiresAt: user.planExpiresAt || null,
-    licenseStatus: user.licenseStatus || "unlicensed",
-    modules: user.modules || [],
-    features: user.features
+    features: {
+      maxUploadBytes: user.plan === "enterprise" ? 2147483648 : (user.plan === "pro" ? 2147483648 : 52428800),
+      maxVoiceSeconds: user.plan === "free" ? 60 : 600,
+      encryptedVault: user.plan !== "free",
+      teamChannels: user.plan === "enterprise" || user.plan === "pro",
+      exportAudit: true,
+      hdCalling: user.plan !== "free"
+    }
   });
 });
 
 app.post("/api/billing/upgrade", requireAuth, (req, res) => {
-  if (process.env.ALLOW_TEST_BILLING !== "true") {
-    return res.status(403).json({ error: "La actualización de plan de prueba está deshabilitada. Contacte a ventas BARRANTES CO. para facturación B2B." });
-  }
   const { plan, billingCycle, paymentDetails } = req.body || {};
   try {
     const result = db.upgradeUserPlan(req.user.syncId, plan, billingCycle, paymentDetails);
@@ -935,43 +896,14 @@ app.post("/api/billing/apply-coupon", requireAuth, (req, res) => {
   }
 });
 
-// Webhook de pagos deshabilitado hasta implementar verificación criptográfica
-// específica del proveedor sobre el cuerpo original de la solicitud.
-app.post("/api/billing/webhook", (_req, res) => {
-  return res.status(503).json({
-    error: "Webhook de pagos no habilitado: falta verificación de firma del proveedor."
-  });
-});
-
-// Endpoint de Eliminación de Cuenta (Cumplimiento Políticas Google Play & Apple App Store)
-app.post("/api/user/delete-account", requireAuth, (req, res) => {
-  try {
-    const result = db.deleteUserAccount(req.user.syncId);
-    res.json({ ok: true, message: "Cuenta y datos eliminados permanentemente", details: result });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// Endpoint B2B para crear Organización
-app.post("/api/org/create", requireAuth, (req, res) => {
-  try {
-    const { name } = req.body || {};
-    const org = db.createOrganization(name, req.user.syncId);
-    res.json({ ok: true, organization: org });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
 // ==== Endpoints de Bóveda Cifrada Privada ====
-app.get("/api/vault", requireAuth, requireFeature("encryptedVault"), (req, res) => {
+app.get("/api/vault", requireAuth, (req, res) => {
   res.setHeader("Cache-Control", "private, no-store");
   const items = db.getVaultItems(req.user.syncId);
   res.json({ ok: true, items: items });
 });
 
-app.post("/api/vault", requireAuth, requireFeature("encryptedVault"), (req, res) => {
+app.post("/api/vault", requireAuth, (req, res) => {
   res.setHeader("Cache-Control", "private, no-store");
   try {
     const item = db.saveVaultItem(req.user.syncId, req.body);
@@ -981,19 +913,19 @@ app.post("/api/vault", requireAuth, requireFeature("encryptedVault"), (req, res)
   }
 });
 
-app.delete("/api/vault/:itemId", requireAuth, requireFeature("encryptedVault"), (req, res) => {
+app.delete("/api/vault/:itemId", requireAuth, (req, res) => {
   res.setHeader("Cache-Control", "private, no-store");
   const success = db.deleteVaultItem(req.user.syncId, req.params.itemId);
   res.json({ ok: true, deleted: success });
 });
 
 // ==== Endpoints de Canales de Espacio de Trabajo ====
-app.get("/api/channels", requireAuth, requireFeature("teamChannels"), (req, res) => {
+app.get("/api/channels", requireAuth, (req, res) => {
   const channels = db.getWorkspaceChannels(req.user.syncId);
   res.json({ ok: true, channels: channels });
 });
 
-app.post("/api/channels", requireAuth, requireFeature("teamChannels"), (req, res) => {
+app.post("/api/channels", requireAuth, (req, res) => {
   const { name, description } = req.body || {};
   try {
     const channel = db.createWorkspaceChannel(name, description, req.user.syncId);
@@ -1007,7 +939,7 @@ app.post("/api/channels", requireAuth, requireFeature("teamChannels"), (req, res
   }
 });
 
-app.put("/api/channels/:channelId", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
+app.put("/api/channels/:channelId", requireAuth, channelAdminRateLimit, (req, res) => {
   try {
     const channel = db.updateWorkspaceChannel(req.params.channelId, req.user.syncId, req.body || {});
     emitToChannelMembers(channel, "channel-updated", req.user.syncId);
@@ -1017,11 +949,11 @@ app.put("/api/channels/:channelId", requireAuth, requireFeature("teamChannels"),
   }
 });
 
-app.post("/api/channels/:channelId/members", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
+app.post("/api/channels/:channelId/members", requireAuth, channelAdminRateLimit, (req, res) => {
   try {
     const channel = db.addWorkspaceChannelMember(req.params.channelId, req.user.syncId, req.body && req.body.syncId);
     const targetSyncId = String(req.body && req.body.syncId || "").trim().toUpperCase();
-    const targetSockets = channelUserSockets(targetSyncId);
+    const targetSockets = onlineUsers.get(targetSyncId);
     if (targetSockets) for (const socketId of targetSockets) authenticatedTo(socketId).emit("channel-membership-added", channel);
     emitToChannelMembers(channel, "channel-updated", targetSyncId);
     res.json({ ok: true, channel });
@@ -1030,7 +962,7 @@ app.post("/api/channels/:channelId/members", requireAuth, requireFeature("teamCh
   }
 });
 
-app.post("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
+app.post("/api/channels/:channelId/admins/:syncId", requireAuth, channelAdminRateLimit, (req, res) => {
   try {
     const channel = db.grantWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
     emitToChannelMembers(channel, "channel-updated", req.user.syncId);
@@ -1040,7 +972,7 @@ app.post("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeature(
   }
 });
 
-app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
+app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, channelAdminRateLimit, (req, res) => {
   try {
     const channel = db.revokeWorkspaceChannelAdmin(req.params.channelId, req.user.syncId, req.params.syncId);
     emitToChannelMembers(channel, "channel-updated", req.user.syncId);
@@ -1050,7 +982,7 @@ app.delete("/api/channels/:channelId/admins/:syncId", requireAuth, requireFeatur
   }
 });
 
-app.delete("/api/channels/:channelId/members/:syncId", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
+app.delete("/api/channels/:channelId/members/:syncId", requireAuth, channelAdminRateLimit, (req, res) => {
   try {
     const channelId = req.params.channelId;
     const targetSyncId = String(req.params.syncId || "").trim().toUpperCase();
@@ -1064,7 +996,7 @@ app.delete("/api/channels/:channelId/members/:syncId", requireAuth, requireFeatu
   }
 });
 
-app.delete("/api/channels/:channelId", requireAuth, requireFeature("teamChannels"), channelAdminRateLimit, (req, res) => {
+app.delete("/api/channels/:channelId", requireAuth, channelAdminRateLimit, (req, res) => {
   try {
     const channel = db.deleteWorkspaceChannel(req.params.channelId, req.user.syncId);
     revokeChannelSockets(channel.id, channel.memberSyncIds || [], "channel-deleted", channel);
@@ -1074,7 +1006,7 @@ app.delete("/api/channels/:channelId", requireAuth, requireFeature("teamChannels
   }
 });
 
-app.get("/api/channels/:channelId/messages", requireAuth, requireFeature("teamChannels"), (req, res) => {
+app.get("/api/channels/:channelId/messages", requireAuth, (req, res) => {
   try {
     const messages = db.getChannelMessages(req.params.channelId, req.user.syncId);
     res.json({ ok: true, messages: messages });
@@ -1141,27 +1073,14 @@ if (!isServerlessRuntime && process.env.DISABLE_LOCAL_TLS !== "true") {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: function (origin, callback) {
-      if (!origin || origin === "null" || origin.startsWith("chrome-extension://") || origin.startsWith("moz-extension://") || allowedOrigins.has(origin) || configuredCorsOrigins.has(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Origen no permitido por CORS"));
+    origin(origin, callback) {
+      callback(null, isCorsOriginAllowed(origin));
     },
     credentials: true,
     methods: ["GET", "POST"]
   },
   maxHttpBufferSize: 50e6
 });
-
-function canReceivePubSubEvent(user, payload) {
-  if (!user || !payload || typeof payload !== "object") return false;
-  const directAudience = [payload.targetSyncId, payload.recipientSyncId, payload.userSyncId]
-    .filter(Boolean)
-    .map((value) => String(value).trim().toUpperCase());
-  if (directAudience.length) return directAudience.includes(user.syncId);
-  if (payload.channelId) return db.isChannelMember(payload.channelId, user.syncId);
-  return false;
-}
 
 let httpsServer = null;
 const HTTPS_PORT = process.env.HTTPS_PORT || (Number(PORT) + 443);
@@ -1177,38 +1096,6 @@ if (sslOptions) {
 // Registro de Usuarios Online: Map<syncId, Set<socketId>>
 const onlineUsers = new Map();
 const socketToUser = new Map();
-
-function channelUserSockets(syncId) {
-  const normalized = String(syncId || "").trim().toUpperCase();
-  for (const [onlineSyncId, sockets] of onlineUsers) {
-    if (String(onlineSyncId || "").trim().toUpperCase() === normalized) return sockets;
-  }
-  return null;
-}
-
-function emitToChannelMembers(channel, event, excludedSyncId) {
-  if (!channel) return;
-  const excluded = String(excludedSyncId || "").trim().toUpperCase();
-  for (const syncId of channel.memberSyncIds || []) {
-    if (String(syncId || "").trim().toUpperCase() === excluded) continue;
-    const sockets = channelUserSockets(syncId);
-    if (!sockets) continue;
-    for (const socketId of sockets) authenticatedTo(socketId).emit(event, channel);
-  }
-}
-
-function revokeChannelSockets(channelId, syncIds, event, channel) {
-  for (const syncId of syncIds || []) {
-    const sockets = channelUserSockets(syncId);
-    if (!sockets) continue;
-    for (const socketId of sockets) {
-      const client = io.sockets.sockets.get(socketId);
-      if (!client || !currentSocketUser(client)) continue;
-      client.leave("channel:" + channelId);
-      client.emit(event, channel || { id: channelId });
-    }
-  }
-}
 
 function deliverPubSubEvent(payload) {
   return deliver(payload, socketToUser, io, (socketId, user) => {
@@ -1242,6 +1129,7 @@ function emitChannelAuthorizationError(socket, code, message) {
   socket.emit("authorization-error", { code: code, message: message });
 }
 
+// Revalidate both senders and recipients against the current persisted-session view.
 function currentSocketUser(socket) {
   const previous = socketToUser.get(socket.id);
   let user;
@@ -1264,6 +1152,38 @@ function authenticatedTo(room) {
   } };
 }
 
+function channelUserSockets(syncId) {
+  const normalized = String(syncId || "").trim().toUpperCase();
+  for (const [onlineSyncId, sockets] of onlineUsers) {
+    if (String(onlineSyncId || "").trim().toUpperCase() === normalized) return sockets;
+  }
+  return null;
+}
+
+function emitToChannelMembers(channel, event, excludedSyncId) {
+  if (!channel) return;
+  const excluded = String(excludedSyncId || "").trim().toUpperCase();
+  for (const syncId of channel.memberSyncIds || []) {
+    if (String(syncId || "").trim().toUpperCase() === excluded) continue;
+    const sockets = channelUserSockets(syncId);
+    if (!sockets) continue;
+    for (const socketId of sockets) authenticatedTo(socketId).emit(event, channel);
+  }
+}
+
+function revokeChannelSockets(channelId, syncIds, event, channel) {
+  for (const syncId of syncIds || []) {
+    const sockets = channelUserSockets(syncId);
+    if (!sockets) continue;
+    for (const socketId of sockets) {
+      const client = io.sockets.sockets.get(socketId);
+      if (!client || !currentSocketUser(client)) continue;
+      client.leave("channel:" + channelId);
+      client.emit(event, channel || { id: channelId });
+    }
+  }
+}
+
 function onMessage(socket, event, handler) {
   socket.on(event, (...args) => {
     const task = Promise.resolve().then(() => handler(...args));
@@ -1279,11 +1199,14 @@ io.on("connection", function (socket) {
     socket.emit("auth-error", { message: "Sesión expirada o inválida" });
     emitChannelAuthorizationError(socket, "UNAUTHENTICATED", "Autenticación requerida");
     socket.emit("error-message", { id: payload?.clientMsgId, message: "No autenticado" });
+    // Do not run any event handler after failed revalidation.
   });
+
   // Autenticación de Socket
   socket.on("authenticate", function (payload) {
     const token = payload && payload.token ? payload.token : null;
-    const user = db.getUserByToken(token);
+    let user;
+    try { user = db.getUserByToken(token); } catch (_) { user = null; }
     clearSocketIdentity(socket);
     if (!user) {
       socket.emit("auth-error", { message: "Token inválido" });
@@ -1334,11 +1257,6 @@ io.on("connection", function (socket) {
       return;
     }
 
-    if (!user.features || user.features.teamChannels !== true) {
-      emitChannelAuthorizationError(socket, "PLAN_REQUIRED", "Tu plan no incluye canales de equipo");
-      return;
-    }
-
     const rawChannelId = payload && typeof payload.channelId === "string" ? payload.channelId.trim() : "";
     if (!rawChannelId) {
       emitChannelAuthorizationError(socket, "FORBIDDEN", "No tienes permisos para acceder a este canal");
@@ -1362,11 +1280,6 @@ io.on("connection", function (socket) {
       emitChannelAuthorizationError(socket, "UNAUTHENTICATED", "Autenticación requerida");
       return;
     }
-    if (!sender.features || sender.features.teamChannels !== true) {
-      emitChannelAuthorizationError(socket, "PLAN_REQUIRED", "Tu plan no incluye canales de equipo");
-      return;
-    }
-
     const { channelId: rawChannelId, text, type, fileData, audioData } = payload || {};
     if (!rawChannelId) return;
 
@@ -1379,7 +1292,7 @@ io.on("connection", function (socket) {
     }
 
     try {
-      const msg = await db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });
+      const msg = db.saveChannelMessage(channelId, sender.syncId, { text, type, fileData, audioData });
       await db.flushWrites();
       authenticatedTo("channel:" + channelId).emit("channel-message-received", msg);
     } catch (err) {
@@ -1441,7 +1354,7 @@ io.on("connection", function (socket) {
 
     try {
       if (msgType === "text") {
-        messageObj = await db.saveTextMessage(
+        messageObj = db.saveTextMessage(
           sender.syncId,
           targetSyncId,
           text,
@@ -1453,6 +1366,7 @@ io.on("connection", function (socket) {
       } else {
         let finalAudioData = audioData || null;
 
+        // Si es audio en Base64, persistirlo en disco en /uploads/ para soporte de streaming y Range requests en iOS
         if (msgType === "audio" && audioData && typeof audioData === "string" && audioData.startsWith("data:audio/")) {
           try {
             const matches = audioData.match(/^data:audio\/([a-zA-Z0-9_\-+.]+);base64,(.+)$/);
@@ -1479,7 +1393,7 @@ io.on("connection", function (socket) {
           }
         }
 
-        messageObj = await db.saveMessage({
+        messageObj = db.saveMessage({
           id: clientMsgId || null,
           fromId: sender.syncId,
           toId: targetSyncId,
@@ -1492,18 +1406,14 @@ io.on("connection", function (socket) {
           status: initialStatus
         });
       }
-    } catch (err) {
-      emitMessageError(err.message || "No se pudo guardar el mensaje");
-      return;
-    }
-    try {
+
       await db.flushWrites();
     } catch (_) {
       emitMessageError("No se pudo persistir el mensaje");
       return;
     }
 
-    if (!isTargetOnline && !isRetry) {
+    if (!isRetry) {
       const pushPayload = {
         title: `Nuevo mensaje de ${sender.formattedName}`,
         body: (text && text.length > 100) ? text.slice(0, 97) + "..." : text,
@@ -1511,14 +1421,6 @@ io.on("connection", function (socket) {
         data: { syncId: targetSyncId, fromSyncId: sender.syncId, type: 'message' }
       };
       sendPushNotification(targetSyncId, pushPayload).catch(e => console.warn('[Push] envío fallido:', e.message));
-    }
-
-    if (!isRetry) {
-      sendMobilePushNotification(targetSyncId, {
-        title: `Nuevo mensaje de ${sender.formattedName}`,
-        body: (text && text.length > 100) ? text.slice(0, 97) + "..." : (text || "Tienes un mensaje nuevo"),
-        type: "message"
-      }).catch(e => console.warn("[FCM] Falló el aviso de mensaje:", e.message));
     }
 
     if (sender) {
@@ -1711,30 +1613,27 @@ io.on("connection", function (socket) {
     if (!sender || !payload || !payload.messageId || !payload.toSyncId || !payload.emoji) return;
 
     const targetSyncId = String(payload.toSyncId).trim().toUpperCase();
-    try {
-      const updatedReactions = db.updateMessageReaction(payload.messageId, sender.syncId, payload.emoji, targetSyncId);
-      const eventData = {
-        messageId: payload.messageId,
-        fromSyncId: sender.syncId,
-        emoji: payload.emoji,
-        reactions: updatedReactions
-      };
+    const updatedReactions = db.updateMessageReaction(payload.messageId, sender.syncId, payload.emoji);
 
-      const targetSockets = onlineUsers.get(targetSyncId);
-      if (targetSockets && targetSockets.size > 0) {
-        targetSockets.forEach((sockId) => {
-          authenticatedTo(sockId).emit("message-reaction-updated", eventData);
-        });
-      }
+    const eventData = {
+      messageId: payload.messageId,
+      fromSyncId: sender.syncId,
+      emoji: payload.emoji,
+      reactions: updatedReactions
+    };
 
-      const senderSockets = onlineUsers.get(sender.syncId);
-      if (senderSockets && senderSockets.size > 0) {
-        senderSockets.forEach((sockId) => {
-          authenticatedTo(sockId).emit("message-reaction-updated", eventData);
-        });
-      }
-    } catch (err) {
-      socket.emit("error-message", { message: err.message });
+    const targetSockets = onlineUsers.get(targetSyncId);
+    if (targetSockets && targetSockets.size > 0) {
+      targetSockets.forEach((sockId) => {
+        authenticatedTo(sockId).emit("message-reaction-updated", eventData);
+      });
+    }
+
+    const senderSockets = onlineUsers.get(sender.syncId);
+    if (senderSockets && senderSockets.size > 0) {
+      senderSockets.forEach((sockId) => {
+        authenticatedTo(sockId).emit("message-reaction-updated", eventData);
+      });
     }
   });
 
@@ -1882,7 +1781,7 @@ io.on("connection", function (socket) {
 
     let savedMsg;
     try {
-      savedMsg = await db.saveTextMessage(
+      savedMsg = db.saveTextMessage(
         sender.syncId,
         targetSyncId,
         payload.text,
@@ -1892,8 +1791,8 @@ io.on("connection", function (socket) {
         initialStatus
       );
       await db.flushWrites();
-    } catch (err) {
-      socket.emit("error-message", { message: err.message || "No se pudo guardar el mensaje" });
+    } catch (_) {
+      socket.emit("error-message", { message: "No se pudo persistir el mensaje" });
       return;
     }
     savedMsg.fromName = sender.formattedName;
@@ -1971,18 +1870,13 @@ function broadcastUserStatus(syncId, isOnline) {
   });
 }
 
-let shutdownTask = null;
+let shutdownTask;
 function shutdown() {
   if (shutdownTask) return shutdownTask;
   shuttingDown = true;
   shutdownTask = (async () => {
     let listenerError;
-    try {
-      if (typeof stopPubSub === "function") await stopPubSub();
-      else if (stopPubSub && typeof stopPubSub.close === "function") await stopPubSub.close();
-    } catch (error) {
-      listenerError = error;
-    }
+    try { if (stopPubSub) await stopPubSub(); } catch (error) { listenerError = error; }
     await new Promise((resolve) => io.close(resolve));
     if (httpsServer?.listening) await new Promise((resolve) => httpsServer.close(resolve));
     await Promise.allSettled([...messageTasks]);

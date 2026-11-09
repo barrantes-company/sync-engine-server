@@ -95,10 +95,13 @@ final class ApiClient {
     }
 
     /** Registra el token FCM de este teléfono en la cuenta autenticada. */
-    static void registerFcmToken(String origin, String authToken, String fcmToken)
+    static void registerFcmToken(String origin, String authToken, String fcmToken, String deviceId)
             throws IOException, JSONException {
-        JSONObject body = new JSONObject().put("token", fcmToken);
-        request("POST", origin + "/api/mobile/push-token", authToken, body.toString());
+        JSONObject body = new JSONObject()
+                .put("token", fcmToken)
+                .put("platform", "android")
+                .put("deviceId", deviceId);
+        request("POST", origin + "/api/devices/register", authToken, body.toString());
     }
 
     /** Retira el token FCM de este teléfono de la cuenta autenticada. */

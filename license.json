@@ -1,0 +1,16 @@
+{
+  "configuration": {
+    "licenseId": "LIC-2026-SYNC-001",
+    "clientName": "Cliente Corporativo Ejemplo S.A.",
+    "issuedDate": "2026-10-27",
+    "expirationDate": "2027-10-27",
+    "maxDevices": 50,
+    "allowedFeatures": {
+      "enterpriseChat": true,
+      "e2eEncryption": true,
+      "auditLogs": true,
+      "customStorage": true
+    }
+  },
+  "signature": "xgaXwc9lEEhNpWHR/JspodKB2oZnq36zXU3RLdgFqHh2iBJheM6VpXKDjUJyIlkGjilPi9asH/AU7Rn9zzXzWMVaDI1nnXrFphd6oh1ElCguAi0YRrm6FjzRlGZsiigts6Np+mWLcaPHkdICSYvoV0UPogFxWOFs2HJe6wfp2L16O37pzdfmQ6VsUijqFXQ5C/ycAg3h+Gts55E9GrH30IVoMZdc4O30LQIIdstepiysHLaSi+pI01lJdBSxx/XfhA6ROby8lVsAx2s8HWB4ch6GlajVqvYCQ5mbJFZeJCxYCwCVFqfoBiQtzWUya0JXKFfyvFejmqEdrfozLxyoFA=="
+}
