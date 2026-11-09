@@ -529,6 +529,144 @@ html[data-se-theme="energy"] #chat-messages .chat-bubble-sent, html[data-se-them
 html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-theme="energy"] #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #edf4ff) !important; }
 @media (max-width: 640px) { #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
 
+/* PHASE 2: readable conversation contract.
+   Keep spacing on rows, alignment on bubbles, and controls inside the composer. */
+#chat-messages {
+  box-sizing: border-box !important;
+  row-gap: 0 !important;
+  scrollbar-gutter: stable;
+}
+
+#chat-messages > .msg-item.message-row {
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 0 14px !important;
+  padding: 0 !important;
+}
+
+#chat-messages > .msg-item.message-row.msg-grouped {
+  margin-bottom: 5px !important;
+}
+
+#chat-messages > .msg-item.message-row.msg-group-start {
+  margin-top: 8px !important;
+}
+
+#chat-messages > .msg-item.message-row > .msg-meta {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-height: 16px;
+  margin: 0 0 5px !important;
+  padding: 0 4px !important;
+  color: var(--se-text-muted, #64748b) !important;
+  line-height: 1.25 !important;
+}
+
+#chat-messages > .msg-item.message-row > .chat-bubble-inner {
+  box-sizing: border-box !important;
+  flex: 0 1 auto !important;
+  width: fit-content !important;
+  max-width: min(78%, 760px) !important;
+  min-width: 84px;
+  padding: 12px 14px !important;
+  border: 1px solid rgba(8, 119, 249, .14) !important;
+  border-radius: 16px !important;
+  line-height: 1.45 !important;
+  overflow-wrap: anywhere;
+}
+
+#chat-messages > .msg-item.message-row > .chat-bubble-sent {
+  align-self: flex-end !important;
+  background: var(--se-chat-sent-bg, #dcecff) !important;
+  color: var(--se-chat-sent-text, #102d55) !important;
+  border-bottom-right-radius: 5px !important;
+}
+
+#chat-messages > .msg-item.message-row > .chat-bubble-received {
+  align-self: flex-start !important;
+  background: var(--se-chat-received-bg, #ffffff) !important;
+  color: var(--se-chat-received-text, #172b4d) !important;
+  border-bottom-left-radius: 5px !important;
+}
+
+#chat-messages > .msg-item.message-row > .chat-bubble-inner * {
+  color: inherit !important;
+}
+
+/* The appearance control must remain clickable above the header surface. */
+#chat-header-bar .chat-header-actions,
+#chat-header-bar .chat-header-actions button {
+  position: relative !important;
+  z-index: 3 !important;
+  pointer-events: auto !important;
+}
+
+#chat-appearance-modal:not(.hidden) {
+  display: flex !important;
+  pointer-events: auto !important;
+}
+
+#chat-appearance-modal .chat-appearance-sheet {
+  position: relative;
+  z-index: 1;
+  max-height: min(760px, calc(100vh - 32px));
+  overflow: auto;
+}
+
+#chat-appearance-modal input[type="color"] {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 7px;
+  padding: 3px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* Keep the writing field flexible while action buttons retain their hit area. */
+#normal-input-bar {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  min-width: 0 !important;
+}
+
+#normal-input-bar > .composer-icon-btn,
+#normal-input-bar > #send-btn {
+  flex: 0 0 auto !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+#normal-input-bar > #chat-textarea,
+#normal-input-bar > .composer-field,
+#normal-input-bar > label + textarea {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+@media (max-width: 720px) {
+  #chat-messages > .msg-item.message-row > .chat-bubble-inner {
+    max-width: 88% !important;
+  }
+
+  #chat-messages > .msg-item.message-row {
+    margin-bottom: 11px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #chat-appearance-modal,
+  #chat-appearance-modal .chat-appearance-sheet {
+    transition: none !important;
+  }
+}
+
 /* visual-19-shell-compat: keep the current desktop app shell in its three-column grid.
    Older refinement rules targeted the pre-grid layout and could pull the rail over
    the conversations column, clipping its heading and search controls. */
