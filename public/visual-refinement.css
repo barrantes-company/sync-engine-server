@@ -529,6 +529,39 @@ html[data-se-theme="energy"] #chat-messages .chat-bubble-sent, html[data-se-them
 html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-theme="energy"] #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #edf4ff) !important; }
 @media (max-width: 640px) { #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
 
+/* visual-19-shell-compat: keep the current desktop app shell in its three-column grid.
+   Older refinement rules targeted the pre-grid layout and could pull the rail over
+   the conversations column, clipping its heading and search controls. */
+@media (min-width: 769px) {
+  #app-container.app-shell > #sync-engine-nav-rail {
+    position: relative !important;
+    inset: auto !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    flex: none !important;
+  }
+
+  #app-container.app-shell > #sidebar-panel.middle-col {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 100% !important;
+  }
+
+  #app-container.app-shell > #chat-panel-container {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 100% !important;
+  }
+}
+
 /* PHASE 1 FINAL: the row owns width; the bubble owns alignment. */
 #chat-messages {
   display: flex !important;
