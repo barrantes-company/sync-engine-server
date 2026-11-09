@@ -1,16 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/transparent">
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/widget_bg_dark">
 
-    <ImageView
-        android:id="@+id/widget_content"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:contentDescription="@null"
-        android:importantForAccessibility="no"
-        android:scaleType="fitCenter" />
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SYNC ENGINE"
+            android:textColor="@color/widget_text"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/widget_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="○ Inicia sesión en SYNC ENGINE"
+            android:textColor="@color/widget_accent"
+            android:textSize="10sp" />
+    </LinearLayout>
 
-</FrameLayout>
+    <TextView
+        android:id="@+id/widget_latest"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:text="Sin mensajes nuevos"
+        android:textColor="@color/widget_text"
+        android:textSize="14sp"
+        android:background="@drawable/widget_action_chip"
+        android:padding="10dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/widget_unread"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="0 mensajes"
+            android:textColor="@color/widget_text_secondary"
+            android:textSize="12sp" />
+        <TextView
+            android:id="@+id/widget_missed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 llamadas"
+            android:textColor="@color/widget_text_secondary"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_last_sync"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="Widget listo · toca para abrir"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="10sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/widget_action_chats"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_action_chip"
+            android:gravity="center"
+            android:text="Chats"
+            android:textColor="@color/widget_accent"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+        <Space android:layout_width="6dp" android:layout_height="1dp" />
+        <TextView
+            android:id="@+id/widget_action_calls"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_action_chip"
+            android:gravity="center"
+            android:text="Llamadas"
+            android:textColor="@color/widget_accent"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+        <Space android:layout_width="6dp" android:layout_height="1dp" />
+        <TextView
+            android:id="@+id/widget_action_refresh"
+            android:layout_width="40dp"
+            android:layout_height="36dp"
+            android:background="@drawable/widget_action_chip"
+            android:gravity="center"
+            android:text="↻"
+            android:textColor="@color/widget_accent"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+</LinearLayout>
