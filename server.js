@@ -142,6 +142,9 @@ let shuttingDown = false;
 let stopPubSub = null;
 const messageTasks = new Set();
 const app = express();
+// Render termina el proxy TLS y reenvía X-Forwarded-For. Confiamos únicamente
+// en el primer salto para que express-rate-limit identifique correctamente al cliente.
+app.set("trust proxy", 1);
 const channelAdminRateLimit = rateLimit({
   windowMs: 60 * 1000,
   limit: 20,
