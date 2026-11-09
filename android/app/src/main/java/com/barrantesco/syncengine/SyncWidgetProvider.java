@@ -113,7 +113,18 @@ public class SyncWidgetProvider extends AppWidgetProvider {
 
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId, int style) {
         if (style < 0 || style >= PROVIDERS.length) style = 2;
+        Bundle options = manager.getAppWidgetOptions(widgetId);
+        int widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
+        int heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 180);
+        int[] size = WidgetRenderer.size(context, widthDp, heightDp);
         boolean loggedIn = AppSettings.isLoggedIn(context);
+        android.graphics.Bitmap bitmap = WidgetFaces.render(
+                context, style, size[0], size[1],
+                AppSettings.timeZone(context),
+                AppSettings.use24h(context),
+                loggedIn ? AppSettings.unread(context) : 0,
+                loggedIn ? AppSettings.missed(context) : 0,
+                loggedIn);
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sync_widget);
         int unread = loggedIn ? AppSettings.unread(context) : 0;
         int missed = loggedIn ? AppSettings.missed(context) : 0;
@@ -122,6 +133,7 @@ public class SyncWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.widget_missed, loggedIn ? countLabel(missed, "llamada") : "— llamadas");
         views.setTextViewText(R.id.widget_last_sync, syncLabel(context, loggedIn));
         views.setTextViewText(R.id.widget_latest, latestLabel(context, loggedIn));
+        views.setImageViewBitmap(R.id.widget_content, bitmap);
 
         PendingIntent openChats = activityIntent(context, 0, "chats");
         PendingIntent openCalls = activityIntent(context, 1, "calls");
