@@ -13,138 +13,145 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-/**
- * Dibuja el widget como bitmap. Hora primaria, mark S∞ solo como luz de estado,
- * negro puro, sin wordmarks. Estelas desactivadas por defecto (bajo consumo).
- */
+/** Renderiza el widget OLED con la hora como elemento visual principal. */
 final class WidgetRenderer {
-    private static final int MAX_WIDTH_PX = 800;
-    private static final int MAX_HEIGHT_PX = 800;
-    private static final float CORNER_DP = 20f;
+    private static final int MAX_WIDTH_PX = 480;
+    private static final int MAX_HEIGHT_PX = 320;
+    private static final int BACKGROUND = Color.BLACK;
+    private static final int PRIMARY = 0xFFE7E7E7;
+    private static final int SECONDARY = 0xFF969696;
+    private static final int MUTED = 0xFF686868;
+    private static final int ACCENT = 0xFF54BFA5;
+    private static final int BORDER = 0xFF242424;
+    private static final Locale SPANISH = new Locale("es", "ES");
 
-    private static Typeface display;
+    private static Typeface displayTypeface;
 
     private WidgetRenderer() {}
 
+    /** Calcula el bitmap a partir del tamaño del widget en dp y limita su memoria. */
     static int[] size(Context context, int widthDp, int heightDp) {
         float density = context.getResources().getDisplayMetrics().density;
-        float w = Math.max(widthDp, 110) * density;
-        float h = Math.max(heightDp, 60) * density;
-        float scale = Math.min(1f, Math.min(MAX_WIDTH_PX / w, MAX_HEIGHT_PX / h));
-        return new int[]{Math.round(w * scale), Math.round(h * scale), Math.round(density * scale * 100)};
+        float width = Math.max(110, widthDp) * density;
+        float height = Math.max(60, heightDp) * density;
+        float scale = Math.min(1f, Math.min(MAX_WIDTH_PX / width, MAX_HEIGHT_PX / height));
+        return new int[] {Math.max(1, Math.round(width * scale)),
+                Math.max(1, Math.round(height * scale))};
+    }
+
+    /** Dibuja hora, fecha y estados breves desde la caché local, sin acceso de red. */
+    static Bitmap render(Context context, int width, int height, String zoneId, boolean use24h,
+                         boolean signedIn, String receivedFile, String clipboardState) {
+        int w = Math.max(1, width);
+        int h = Math.max(1, height);
+        Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        canvas.drawColor(BACKGROUND);
+
+        float density = context.getResources().getDisplayMetrics().density;
+        float pad = Math.max(8f * density, Math.min(w, h) * 0.065f);
+        float radius = Math.max(8f * density, Math.min(w, h) * 0.09f);
+        RectF frame = new RectF(1f, 1f, w - 1f, h - 1f);
+        Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
+        border.setStyle(Paint.Style.STROKE);
+        border.setStrokeWidth(Math.max(1f, density));
+        border.setColor(BORDER);
+        canvas.drawRoundRect(frame, radius, radius, border);
+
+        TimeZone zone = TimeZone.getTimeZone(
+                zoneId == null || zoneId.trim().isEmpty() ? AppSettings.DEFAULT_TIME_ZONE : zoneId);
+        Date now = new Date();
+        SimpleDateFormat clockFormat = new SimpleDateFormat(use24h ? "HH:mm" : "h:mm", Locale.US);
+        clockFormat.setTimeZone(zone);
+        String clock = clockFormat.format(now);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, d 'de' MMMM", SPANISH);
+        dateFormat.setTimeZone(zone);
+        String date = capitalize(dateFormat.format(now).replace('.', ' '));
+
+        Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
+        text.setSubpixelText(true);
+        text.setTypeface(display(context));
+        text.setColor(SECONDARY);
+        text.setTextSize(Math.max(7f * density, Math.min(10f * density, h * 0.065f)));
+
+        // El identificador se limita a una luz de estado; no se dibuja un wordmark.
+        float markSize = Math.max(7f * density, Math.min(10f * density, h * 0.075f));
+        Paint mark = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mark.setColor(signedIn ? ACCENT : MUTED);
+        canvas.drawCircle(pad + markSize * 0.35f, pad + markSize * 0.35f,
+                markSize * 0.22f, mark);
+        text.setColor(SECONDARY);
+        text.setTextSize(markSize);
+        canvas.drawText("S∞", pad + markSize * 0.8f, pad + markSize, text);
+
+        Paint clockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        clockPaint.setAntiAlias(true);
+        clockPaint.setTypeface(display(context));
+        clockPaint.setColor(PRIMARY);
+        clockPaint.setTextSize(h * 0.39f);
+        fitText(clockPaint, clock, w - pad * 2f);
+        clockPaint.setTextAlign(Paint.Align.CENTER);
+        float clockBaseline = h * 0.53f - (clockPaint.ascent() + clockPaint.descent()) * 0.5f;
+        canvas.drawText(clock, w * 0.5f, clockBaseline, clockPaint);
+
+        text.setTextAlign(Paint.Align.CENTER);
+        text.setTextSize(Math.max(9f * density, Math.min(13f * density, h * 0.085f)));
+        text.setColor(SECONDARY);
+        fitText(text, date, w - pad * 2f);
+        canvas.drawText(date, w * 0.5f, h * 0.67f, text);
+
+        text.setTextAlign(Paint.Align.LEFT);
+        text.setTextSize(Math.max(7f * density, Math.min(10f * density, h * 0.065f)));
+        text.setColor(signedIn ? SECONDARY : MUTED);
+        String laptop = signedIn ? "Laptop · sin señal" : "Inicia sesión para sincronizar";
+        drawFitted(canvas, text, laptop, pad, h * 0.80f, w - pad * 2f);
+
+        String file = clean(receivedFile);
+        String clipboard = clean(clipboardState);
+        String detail;
+        if (!file.isEmpty()) {
+            detail = "Archivo · " + file;
+        } else {
+            detail = "Archivo · sin recientes";
+        }
+        if (!clipboard.isEmpty()) detail += "   ·   Portapapeles actualizado";
+        else detail += "   ·   Portapapeles vacío";
+        text.setColor(MUTED);
+        drawFitted(canvas, text, detail, pad, h - pad * 0.75f, w - pad * 2f);
+        return bitmap;
     }
 
     private static Typeface display(Context context) {
-        if (display == null) {
+        if (displayTypeface == null) {
             try {
-                display = Typeface.createFromAsset(context.getAssets(), "fonts/Manrope-ExtraBold.ttf");
+                displayTypeface = Typeface.createFromAsset(context.getAssets(), "fonts/Manrope-ExtraBold.ttf");
             } catch (RuntimeException ignored) {
-                display = Typeface.create("sans-serif-medium", Typeface.BOLD);
+                displayTypeface = Typeface.create("sans-serif", Typeface.BOLD);
             }
         }
-        return display;
+        return displayTypeface;
     }
 
-    /**
-     * Render principal. status: [onlineFlag, fileReceived, clipboardState] o null.
-     * onlineFlag no vacío = conectado.
-     */
-    static Bitmap render(Context context, int w, int h, String zone, boolean use24h,
-                         String[] status) {
-        Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        canvas.drawColor(Color.BLACK);
+    private static void drawFitted(Canvas canvas, Paint paint, String value, float x, float y,
+                                   float maxWidth) {
+        fitText(paint, value, maxWidth);
+        canvas.drawText(value, x, y, paint);
+    }
 
-        float pad = Math.max(8f, w * 0.04f);
-        float radius = Math.max(6f, h * 0.1f);
-        RectF bounds = new RectF(pad * 0.4f, pad * 0.4f, w - pad * 0.4f, h - pad * 0.4f);
-
-        Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
-        border.setStyle(Paint.Style.STROKE);
-        border.setStrokeWidth(Math.max(0.8f, h * 0.006f));
-        border.setColor(0xFF2A2A2A);
-        canvas.drawRoundRect(bounds, radius, radius, border);
-
-        Date now = new Date();
-        TimeZone tz = TimeZone.getTimeZone(zone);
-        Locale es = new Locale("es");
-
-        SimpleDateFormat clockFmt = new SimpleDateFormat(use24h ? "HH:mm" : "h:mm", Locale.US);
-        clockFmt.setTimeZone(tz);
-        String clock = clockFmt.format(now);
-
-        SimpleDateFormat dateFmt = new SimpleDateFormat("EEE d MMM", es);
-        dateFmt.setTimeZone(tz);
-        String date = dateFmt.format(now).replace(".", "").toLowerCase(es);
-
-        boolean wide = w >= h * 1.5f;
-        boolean compact = h < 140f;
-
-        Paint strong = new Paint(Paint.ANTI_ALIAS_FLAG);
-        strong.setTypeface(display(context));
-        strong.setAntiAlias(true);
-
-        Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
-        text.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
-        text.setAntiAlias(true);
-
-        // Mark S∞ pequeño como luz de estado (nunca hero)
-        boolean online = status != null && status.length > 0 && status[0] != null && !status[0].isEmpty();
-        float markSize = Math.max(6f, Math.min(10f, h * 0.075f));
-        float markX = pad;
-        float markY = pad + markSize;
-        Paint markDot = new Paint(Paint.ANTI_ALIAS_FLAG);
-        markDot.setColor(online ? 0xFF35D6A2 : 0xFF5A5A5A);
-        canvas.drawCircle(markX + markSize * 0.35f, markY - markSize * 0.35f, markSize * 0.2f, markDot);
-        strong.setColor(0xFFE0E0E0);
-        strong.setTextSize(markSize);
-        canvas.drawText("S∞", markX + markSize * 0.65f, markY, strong);
-
-        // Hora como hero
-        float clockSize = h * (compact ? 0.5f : (wide ? 0.46f : 0.44f));
-        Paint clockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        clockPaint.setTypeface(display(context));
-        clockPaint.setColor(Color.WHITE);
-        clockPaint.setTextSize(clockSize);
-        float maxClockW = wide ? w * 0.58f : w * 0.85f;
-        float measured = clockPaint.measureText(clock);
-        if (measured > maxClockW) {
-            clockPaint.setTextSize(clockSize * maxClockW / measured);
+    private static void fitText(Paint paint, String value, float maxWidth) {
+        float measured = paint.measureText(value);
+        if (measured > maxWidth && measured > 0) {
+            paint.setTextSize(paint.getTextSize() * maxWidth / measured);
         }
-        float clockBaseline = h * (compact ? 0.58f : 0.55f);
-        if (wide) {
-            float clockX = w - pad - clockPaint.measureText(clock);
-            canvas.drawText(clock, clockX, clockBaseline, clockPaint);
-            text.setTextSize(Math.max(8f, h * 0.07f));
-            text.setColor(0xFFB0B0B0);
-            float dateW = text.measureText(date);
-            canvas.drawText(date, w - pad - dateW, Math.min(h - pad, clockBaseline + text.getTextSize() * 1.25f), text);
-        } else {
-            float clockX = (w - clockPaint.measureText(clock)) / 2f;
-            canvas.drawText(clock, clockX, clockBaseline, clockPaint);
-            text.setTextSize(Math.max(8f, h * 0.07f));
-            text.setColor(0xFFB0B0B0);
-            canvas.drawText(date, (w - text.measureText(date)) / 2f, h * 0.68f, text);
-        }
+    }
 
-        // Datos secundarios: archivo recibido y portapapeles (si existen)
-        if (status != null && status.length >= 3) {
-            String file = status[1] != null ? status[1] : "";
-            String clip = status[2] != null ? status[2] : "";
-            if (!file.isEmpty() || !clip.isEmpty()) {
-                text.setTextSize(Math.max(7f, h * 0.06f));
-                text.setColor(0xFFC0C0C0);
-                String line = "";
-                if (!file.isEmpty()) line += "📎 " + file;
-                if (!clip.isEmpty()) {
-                    if (!line.isEmpty()) line += "  ·  ";
-                    line += "📋 " + clip;
-                }
-                float y = wide ? h * 0.88f : h * 0.84f;
-                canvas.drawText(line, pad, y, text);
-            }
-        }
+    private static String clean(String value) {
+        if (value == null) return "";
+        return value.replace('\n', ' ').replace('\r', ' ').trim();
+    }
 
-        return bitmap;
+    private static String capitalize(String value) {
+        if (value.isEmpty()) return value;
+        return value.substring(0, 1).toUpperCase(SPANISH) + value.substring(1);
     }
 }
