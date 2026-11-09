@@ -529,6 +529,22 @@ html[data-se-theme="energy"] #chat-messages .chat-bubble-sent, html[data-se-them
 html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-theme="energy"] #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #edf4ff) !important; }
 @media (max-width: 640px) { #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
 
+/* PHASE 4 style cleanup: custom chat colors remain compatible with the
+   unified light/dark interface theme and preserve readable text. */
+#chat-messages {
+  background: var(--se-chat-bg, var(--chat-main-bg, var(--se-surface-muted))) !important;
+}
+
+#chat-messages .chat-bubble-sent {
+  background: var(--se-chat-sent-bg, var(--bubble-outgoing-bg, #6b5ef4)) !important;
+  color: var(--se-chat-sent-text, var(--bubble-outgoing-text, #ffffff)) !important;
+}
+
+#chat-messages .chat-bubble-received {
+  background: var(--se-chat-received-bg, var(--bubble-incoming-bg, #ffffff)) !important;
+  color: var(--se-chat-received-text, var(--bubble-incoming-text, #172b4d)) !important;
+}
+
 /* PHASE 3: identity, media and responsive polish. */
 img.avatar-circle,
 #active-chat-avatar img,
