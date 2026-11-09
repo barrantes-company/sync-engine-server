@@ -545,6 +545,20 @@ html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-
   color: var(--se-chat-received-text, var(--bubble-incoming-text, #172b4d)) !important;
 }
 
+/* The style drawer previews the actual conversation surface, including the
+   empty state shown before a chat is selected. */
+#chat-messages[data-se-bg-tone="dark"] #chat-welcome .welcome-title,
+#chat-messages[data-se-bg-tone="dark"] #chat-welcome .welcome-desc,
+#chat-messages[data-se-bg-tone="dark"] #chat-welcome .empty-state-text,
+#chat-messages[data-se-bg-tone="dark"] #chat-welcome .secure-badge {
+  color: #f1f5f9 !important;
+}
+
+#chat-messages[data-se-bg-tone="dark"] #chat-welcome .secure-badge {
+  border-color: rgba(110, 231, 183, .42) !important;
+  background: rgba(6, 78, 59, .38) !important;
+}
+
 /* PHASE 3: identity, media and responsive polish. */
 img.avatar-circle,
 #active-chat-avatar img,
