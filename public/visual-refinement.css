@@ -520,7 +520,7 @@
 }
 
 
-/* visual-18-absolute-final: sender rows must span the full thread. */
+/* visual-18-absolute-final-LAST: sender rows must span the full thread. */
 #chat-messages > .msg-item { width: 100% !important; max-width: none !important; align-self: stretch !important; margin-inline: 0 !important; }
 #chat-messages > .msg-item .chat-bubble-inner { max-width: min(78%, 760px) !important; }
 #chat-messages .chat-bubble-sent, #chat-messages .chat-bubble-sent * { color: var(--se-chat-sent-text, #102d55) !important; }
@@ -528,6 +528,113 @@
 html[data-se-theme="energy"] #chat-messages .chat-bubble-sent, html[data-se-theme="energy"] #chat-messages .chat-bubble-sent * { color: var(--se-chat-sent-text, #f8fbff) !important; }
 html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-theme="energy"] #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #edf4ff) !important; }
 @media (max-width: 640px) { #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
+
+
+
+
+
+
+
+
+
+/* visual-19: contrato final de lectura y espaciado. Estas reglas deben ser
+   las últimas para que ningún refinamiento histórico reintroduzca colores
+   fijos ni pegue mensajes de emisores distintos. */
+#chat-messages {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  padding: clamp(24px, 3vw, 42px) clamp(20px, 4vw, 64px) !important;
+  background: var(--chat-main-bg) !important;
+}
+
+#chat-messages > .msg-item {
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  align-self: stretch !important;
+  margin: 0 0 14px !important;
+  padding: 0 !important;
+}
+
+#chat-messages > .msg-item.msg-grouped {
+  margin-bottom: 5px !important;
+}
+
+#chat-messages > .msg-item .chat-bubble-inner {
+  width: fit-content !important;
+  max-width: min(78%, 760px) !important;
+  min-width: 0 !important;
+  overflow-wrap: anywhere;
+}
+
+#chat-messages .chat-bubble-sent {
+  align-self: flex-end !important;
+  background: var(--bubble-outgoing-bg) !important;
+  color: var(--bubble-outgoing-text) !important;
+  border-color: color-mix(in srgb, var(--bubble-outgoing-bg) 78%, var(--border-subtle)) !important;
+}
+
+#chat-messages .chat-bubble-received {
+  align-self: flex-start !important;
+  background: var(--bubble-incoming-bg) !important;
+  color: var(--bubble-incoming-text) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+#chat-messages .chat-bubble-sent *,
+#chat-messages .chat-bubble-received * {
+  color: inherit !important;
+}
+
+#chat-messages .msg-meta {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 5px !important;
+  color: var(--text-muted) !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+}
+
+#chat-messages .msg-meta-sent { justify-content: flex-end; }
+#chat-messages .msg-meta-received { justify-content: flex-start; }
+
+#normal-input-bar {
+  background: var(--search-bg) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+#chat-textarea {
+  color: var(--text-primary) !important;
+}
+
+#send-btn {
+  background: var(--accent-gold-dark) !important;
+  color: #ffffff !important;
+}
+
+#channels-list .channel-item {
+  min-height: 72px !important;
+  margin: 0 !important;
+  padding: 11px 10px !important;
+  background: var(--card-hover-bg) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+#channels-list .channel-item:hover,
+#channels-list .channel-item:focus-visible,
+#channels-list .channel-item.is-active {
+  background: var(--card-active-bg) !important;
+  border-color: var(--accent-gold) !important;
+}
+
+@media (max-width: 640px) {
+  #chat-messages { padding-inline: 14px !important; }
+  #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; }
+}
 
 /* PHASE 4 style cleanup: custom chat colors remain compatible with the
    unified light/dark interface theme and preserve readable text. */
@@ -2867,3 +2974,18 @@ html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-
 html[data-se-theme="energy"] #chat-messages .chat-bubble-sent, html[data-se-theme="energy"] #chat-messages .chat-bubble-sent * { color: var(--se-chat-sent-text, #f8fbff) !important; }
 html[data-se-theme="energy"] #chat-messages .chat-bubble-received, html[data-se-theme="energy"] #chat-messages .chat-bubble-received * { color: var(--se-chat-received-text, #edf4ff) !important; }
 @media (max-width: 640px) { #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
+/* visual-19-final: last-cascade contract for theme-aware chat readability. */
+#chat-messages { background: var(--chat-main-bg) !important; }
+#chat-messages > .msg-item { width: 100% !important; max-width: none !important; align-self: stretch !important; margin: 0 0 14px !important; padding: 0 !important; }
+#chat-messages > .msg-item.msg-grouped { margin-bottom: 5px !important; }
+#chat-messages > .msg-item .chat-bubble-inner { width: fit-content !important; max-width: min(78%, 760px) !important; min-width: 0 !important; overflow-wrap: anywhere; }
+#chat-messages .chat-bubble-sent { align-self: flex-end !important; background: var(--bubble-outgoing-bg) !important; color: var(--bubble-outgoing-text) !important; border-color: var(--border-subtle) !important; }
+#chat-messages .chat-bubble-received { align-self: flex-start !important; background: var(--bubble-incoming-bg) !important; color: var(--bubble-incoming-text) !important; border-color: var(--border-subtle) !important; }
+#chat-messages .chat-bubble-sent *, #chat-messages .chat-bubble-received * { color: inherit !important; }
+#chat-messages .msg-meta { margin: 0 4px 5px !important; color: var(--text-muted) !important; }
+#normal-input-bar { background: var(--search-bg) !important; border-color: var(--border-subtle) !important; }
+#chat-textarea { color: var(--text-primary) !important; }
+#send-btn { background: var(--accent-gold-dark) !important; color: #ffffff !important; }
+#channels-list .channel-item { min-height: 72px !important; margin: 0 !important; padding: 11px 10px !important; background: var(--card-hover-bg) !important; border-color: var(--border-subtle) !important; color: var(--text-primary) !important; }
+#channels-list .channel-item:hover, #channels-list .channel-item:focus-visible, #channels-list .channel-item.is-active { background: var(--card-active-bg) !important; border-color: var(--accent-gold) !important; }
+@media (max-width: 640px) { #chat-messages { padding-inline: 14px !important; } #chat-messages > .msg-item .chat-bubble-inner { max-width: 88% !important; } }
