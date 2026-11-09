@@ -234,7 +234,6 @@
               <span id="header-user-clean-name">Usuario</span>
             </span>
           </div>
-          <button id="se-theme-toggle" type="button" class="se-nav-theme"><span>Oscuro</span></button>
           <button id="open-edit-profile-btn" type="button" aria-haspopup="dialog">Perfil</button>
         </div>
       </div>
@@ -430,15 +429,6 @@
         <div class="wa-drawer-body">
           <!-- PESTAÑA 1: ESTILO (Estilo del chat) -->
           <div class="settings-tab-pane" id="pane-style">
-            <button class="wa-setting-card-btn" id="btn-cycle-system-theme" type="button">
-              <div class="wa-setting-icon">☀️</div>
-              <div class="wa-setting-info">
-                <strong>Estilo de la interfaz</strong>
-                <small id="label-current-theme">Modo Claro</small>
-              </div>
-              <span class="wa-chevron">›</span>
-            </button>
-
             <!-- Switch Trama de fondo en el chat -->
             <div class="wa-switch-row">
               <span>Trama de fondo en el chat</span>
@@ -450,21 +440,21 @@
 
             <p class="settings-group-label" style="margin-top:16px;">Modos de interfaz</p>
             <div class="interface-theme-grid" role="radiogroup" aria-label="Modo de interfaz">
-              <button class="interface-theme-option is-selected" type="button" data-interface-theme="sync-blue" role="radio" aria-checked="true">
-                <span class="interface-theme-preview theme-preview-light"></span>
-                <span><strong>Claro</strong><small>Neutro y luminoso</small></span>
+              <button class="interface-theme-option is-selected" type="button" data-interface-theme="ink-wash" role="radio" aria-checked="true">
+                <span class="interface-theme-preview theme-preview-ink"></span>
+                <span><strong>Ink wash</strong><small>Marfil y tinta lavada</small></span>
               </button>
-              <button class="interface-theme-option" type="button" data-interface-theme="energy" role="radio" aria-checked="false">
-                <span class="interface-theme-preview theme-preview-dark"></span>
-                <span><strong>Oscuro</strong><small>Profundo y sobrio</small></span>
+              <button class="interface-theme-option" type="button" data-interface-theme="gothic-noir" role="radio" aria-checked="false">
+                <span class="interface-theme-preview theme-preview-gothic"></span>
+                <span><strong>Gothic noir</strong><small>Negro y marrón humo</small></span>
               </button>
-              <button class="interface-theme-option" type="button" data-interface-theme="mist" role="radio" aria-checked="false">
-                <span class="interface-theme-preview theme-preview-mist"></span>
-                <span><strong>Bruma</strong><small>Claro y suave</small></span>
+              <button class="interface-theme-option" type="button" data-interface-theme="urban-loft" role="radio" aria-checked="false">
+                <span class="interface-theme-preview theme-preview-urban"></span>
+                <span><strong>Urban loft</strong><small>Gris y ladrillo</small></span>
               </button>
-              <button class="interface-theme-option" type="button" data-interface-theme="slate" role="radio" aria-checked="false">
-                <span class="interface-theme-preview theme-preview-slate"></span>
-                <span><strong>Pizarra</strong><small>Oscuro y calmado</small></span>
+              <button class="interface-theme-option" type="button" data-interface-theme="frozen-lake" role="radio" aria-checked="false">
+                <span class="interface-theme-preview theme-preview-frozen"></span>
+                <span><strong>Frozen lake</strong><small>Hielo y azul pizarra</small></span>
               </button>
             </div>
           </div>
@@ -6081,11 +6071,9 @@
   const nav = document.getElementById('sync-engine-nav-rail');
   const split = document.getElementById('workspace-split-container');
   const callsHome = document.getElementById('se-calls-home');
-  const themeButton = document.getElementById('se-theme-toggle');
   const sectionHeadingTitle = document.getElementById('section-heading-title');
   const drawerProfile = document.getElementById('edit-profile-modal');
   const drawerSettings = document.getElementById('drawer-settings');
-  const labelCurrentTheme = document.getElementById('label-current-theme');
 
   const closeDrawers = () => {
     if (drawerProfile) {
@@ -6098,28 +6086,13 @@
   };
 
   const applyTheme = (theme) => {
-    const availableThemes = ['sync-blue', 'energy', 'mist', 'slate'];
-    const selected = availableThemes.includes(theme) ? theme : 'sync-blue';
-    const isDark = selected === 'energy' || selected === 'slate';
-    const themeNames = {
-      'sync-blue': 'Modo Claro',
-      energy: 'Modo Oscuro',
-      mist: 'Modo Bruma',
-      slate: 'Modo Pizarra'
-    };
+    const legacyThemes = { 'sync-blue': 'ink-wash', energy: 'gothic-noir', mist: 'urban-loft', slate: 'frozen-lake' };
+    const availableThemes = ['ink-wash', 'gothic-noir', 'urban-loft', 'frozen-lake'];
+    const selected = availableThemes.includes(theme) ? theme : (legacyThemes[theme] || 'ink-wash');
+    const isDark = selected === 'gothic-noir';
     app.dataset.seTheme = selected;
     document.documentElement.dataset.seTheme = selected;
     document.body.classList.toggle('dark-mode', isDark);
-    if (labelCurrentTheme) {
-      labelCurrentTheme.textContent = themeNames[selected];
-    }
-    if (themeButton) {
-      const label = isDark ? 'Claro' : 'Oscuro';
-      const span = themeButton.querySelector('span');
-      if (span) span.textContent = label;
-      themeButton.setAttribute('aria-label', label);
-      themeButton.title = label;
-    }
     try { localStorage.setItem('sync-engine-theme', selected); } catch (_) {}
     const themeMeta = document.querySelector('meta[name="theme-color"]') || document.head.appendChild(Object.assign(document.createElement('meta'), { name: 'theme-color' }));
     themeMeta.content = isDark ? '#101827' : '#f4f7fb';
@@ -6127,8 +6100,8 @@
       window.SyncAndroid.setTheme(selected);
     }
   };
-  let initialTheme = 'sync-blue';
-  try { initialTheme = localStorage.getItem('sync-engine-theme') || 'sync-blue'; } catch (_) {}
+  let initialTheme = 'ink-wash';
+  try { initialTheme = localStorage.getItem('sync-engine-theme') || 'ink-wash'; } catch (_) {}
   applyTheme(initialTheme);
 
   const setActiveNav = (view) => {
@@ -6245,10 +6218,6 @@
     if (messageComposer) messageComposer.classList.toggle('hidden', !hasConversation);
   });
 
-  themeButton?.addEventListener('click', () => {
-    applyTheme(app.dataset.seTheme === 'energy' ? 'sync-blue' : 'energy');
-  });
-
   // Drawer 1: Edición inline de Perfil
   const setupInlineEdit = (btnId, inputId, storageKey, onConfirm) => {
     const btn = document.getElementById(btnId);
@@ -6337,11 +6306,11 @@
       syncInterfaceThemeOptions(option.dataset.interfaceTheme);
     });
   });
-  syncInterfaceThemeOptions(document.documentElement.dataset.seTheme || 'sync-blue');
+  syncInterfaceThemeOptions(document.documentElement.dataset.seTheme || 'ink-wash');
 
   document.getElementById('btn-reset-styles')?.addEventListener('click', () => {
-    applyTheme('sync-blue');
-    syncInterfaceThemeOptions('sync-blue');
+    applyTheme('ink-wash');
+    syncInterfaceThemeOptions('ink-wash');
     const switchDoodles = document.getElementById('switch-doodles');
     if (switchDoodles) switchDoodles.checked = true;
     document.getElementById('chat-panel')?.classList.add('doodles-enabled');
@@ -6357,14 +6326,6 @@
       chatTimelineEl?.classList.toggle('has-doodles', switchDoodles.checked);
     });
   }
-
-  document.getElementById('btn-cycle-system-theme')?.addEventListener('click', () => {
-    const themes = ['sync-blue', 'energy', 'mist', 'slate'];
-    const current = document.documentElement.dataset.seTheme || 'sync-blue';
-    const next = themes[(themes.indexOf(current) + 1) % themes.length];
-    applyTheme(next);
-    syncInterfaceThemeOptions(next);
-  });
 
   const btnMediaQuality = document.getElementById('btn-cycle-media-quality');
   const labelMediaQuality = document.getElementById('label-media-quality');
