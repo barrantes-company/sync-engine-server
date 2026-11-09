@@ -430,59 +430,14 @@
         <div class="wa-drawer-body">
           <!-- PESTAÑA 1: ESTILO (Estilo del chat) -->
           <div class="settings-tab-pane" id="pane-style">
-            <p class="settings-group-label">Temas predefinidos</p>
-
-            <!-- Cuadrícula 3x2 con 6 tarjetas de temas visuales predefinidos -->
-            <div class="chat-styles-grid">
-              <!-- 1. Lavanda Original -->
-              <div class="style-preset-card selected" data-preset="lavender" data-bg="#f7f6fb" data-bubble="#6b5ef4" title="Lavanda Original">
-                <div class="preset-preview-box" style="background:#f7f6fb;">
-                  <span class="mini-bubble-in" style="background:#ffffff;"></span>
-                  <span class="mini-bubble-out" style="background:#6b5ef4;"></span>
-                </div>
-                <span class="preset-check-badge">✓</span>
+            <button class="wa-setting-card-btn" id="btn-cycle-system-theme" type="button">
+              <div class="wa-setting-icon">☀️</div>
+              <div class="wa-setting-info">
+                <strong>Estilo de la interfaz</strong>
+                <small id="label-current-theme">Modo Claro</small>
               </div>
-              <!-- 2. Dark Emerald -->
-              <div class="style-preset-card" data-preset="emerald" data-bg="#0b141a" data-bubble="#005c4b" title="Dark Emerald">
-                <div class="preset-preview-box" style="background:#0b141a;">
-                  <span class="mini-bubble-in" style="background:#202c33;"></span>
-                  <span class="mini-bubble-out" style="background:#005c4b;"></span>
-                </div>
-                <span class="preset-check-badge">✓</span>
-              </div>
-              <!-- 3. Midnight Royal Blue -->
-              <div class="style-preset-card" data-preset="royal" data-bg="#0c1324" data-bubble="#1d4ed8" title="Midnight Royal Blue">
-                <div class="preset-preview-box" style="background:#0c1324;">
-                  <span class="mini-bubble-in" style="background:#1e293b;"></span>
-                  <span class="mini-bubble-out" style="background:#1d4ed8;"></span>
-                </div>
-                <span class="preset-check-badge">✓</span>
-              </div>
-              <!-- 4. Rose Dusk -->
-              <div class="style-preset-card" data-preset="rose" data-bg="#1a1016" data-bubble="#be185d" title="Rose Dusk">
-                <div class="preset-preview-box" style="background:#1a1016;">
-                  <span class="mini-bubble-in" style="background:#2d1a24;"></span>
-                  <span class="mini-bubble-out" style="background:#be185d;"></span>
-                </div>
-                <span class="preset-check-badge">✓</span>
-              </div>
-              <!-- 5. Warm Amber -->
-              <div class="style-preset-card" data-preset="amber" data-bg="#18130d" data-bubble="#b45309" title="Warm Amber">
-                <div class="preset-preview-box" style="background:#18130d;">
-                  <span class="mini-bubble-in" style="background:#292118;"></span>
-                  <span class="mini-bubble-out" style="background:#b45309;"></span>
-                </div>
-                <span class="preset-check-badge">✓</span>
-              </div>
-              <!-- 6. Ocean Breeze -->
-              <div class="style-preset-card" data-preset="ocean" data-bg="#eef6ff" data-bubble="#0284c7" title="Ocean Breeze">
-                <div class="preset-preview-box" style="background:#eef6ff;">
-                  <span class="mini-bubble-in" style="background:#ffffff;"></span>
-                  <span class="mini-bubble-out" style="background:#0284c7;"></span>
-                </div>
-                <span class="preset-check-badge">✓</span>
-              </div>
-            </div>
+              <span class="wa-chevron">›</span>
+            </button>
 
             <!-- Switch Trama de fondo en el chat -->
             <div class="wa-switch-row">
@@ -494,7 +449,7 @@
             </div>
 
             <!-- Personalizar con selectores circulares de color en tiempo real -->
-            <p class="settings-group-label" style="margin-top:16px;">Personalizar</p>
+            <p class="settings-group-label" style="margin-top:16px;">Colores del chat</p>
 
             <div class="custom-color-block">
               <span>Burbuja de chat</span>
@@ -510,7 +465,7 @@
             <div class="custom-color-block">
               <span>Fondo</span>
               <div class="color-swatches-row" id="bg-color-swatches">
-                <button class="color-swatch-btn active" data-bg="#f7f6fb" style="background:#f7f6fb;" type="button" title="Claro Topográfico"></button>
+                <button class="color-swatch-btn active" data-bg="#f7f6fb" style="background:#f7f6fb;" type="button" title="Claro"></button>
                 <button class="color-swatch-btn" data-bg="#eef6ff" style="background:#eef6ff;" type="button" title="Brisa"></button>
                 <button class="color-swatch-btn" data-bg="#0b141a" style="background:#0b141a;" type="button" title="Noche"></button>
                 <button class="color-swatch-btn" data-bg="#0c1324" style="background:#0c1324;" type="button" title="Azul Profundo"></button>
@@ -521,15 +476,6 @@
 
           <!-- PESTAÑA 2: CHATS (Ajustes de chats) -->
           <div class="settings-tab-pane hidden" id="pane-chats">
-            <button class="wa-setting-card-btn" id="btn-cycle-system-theme" type="button">
-              <div class="wa-setting-icon">☀️</div>
-              <div class="wa-setting-info">
-                <strong>Estilo de la interfaz</strong>
-                <small id="label-current-theme">Modo Claro Topográfico</small>
-              </div>
-              <span class="wa-chevron">›</span>
-            </button>
-
             <button class="wa-setting-card-btn" id="btn-cycle-media-quality" type="button">
               <div class="wa-setting-icon">🖼️</div>
               <div class="wa-setting-info">
@@ -6298,7 +6244,7 @@
     document.documentElement.dataset.seTheme = selected;
     document.body.classList.toggle('dark-mode', isDark);
     if (labelCurrentTheme) {
-      labelCurrentTheme.textContent = isDark ? 'Modo Oscuro (OLED)' : 'Modo Claro (Topográfico)';
+      labelCurrentTheme.textContent = isDark ? 'Modo Oscuro' : 'Modo Claro';
     }
     if (themeButton) {
       const label = isDark ? 'Claro' : 'Oscuro';
@@ -6486,7 +6432,7 @@
   });
 
   const settingsTitleMap = {
-    style: 'Estilo del chat',
+    style: 'Estilo',
     chats: 'Ajustes de chats',
     notifs: 'Notificaciones'
   };
@@ -6506,6 +6452,13 @@
   const applyCustomColors = (bubbleBg, chatBg) => {
     if (bubbleBg) {
       document.documentElement.style.setProperty('--bubble-outgoing-bg', bubbleBg);
+      const value = String(bubbleBg).replace('#', '');
+      const channels = [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16) / 255);
+      const linear = channels.map(channel => channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
+      const luminance = .2126 * linear[0] + .7152 * linear[1] + .0722 * linear[2];
+      const textColor = luminance > .48 ? '#172b4d' : '#f8fbff';
+      document.documentElement.style.setProperty('--bubble-outgoing-text', textColor);
+      try { localStorage.setItem('sync_custom_bubble_text', textColor); } catch (_) {}
       try { localStorage.setItem('sync_custom_bubble_bg', bubbleBg); } catch (_) {}
     }
     if (chatBg) {
@@ -6517,20 +6470,11 @@
   try {
     const savedBubble = localStorage.getItem('sync_custom_bubble_bg');
     const savedChatBg = localStorage.getItem('sync_custom_chat_bg');
+    const savedBubbleText = localStorage.getItem('sync_custom_bubble_text');
     if (savedBubble) document.documentElement.style.setProperty('--bubble-outgoing-bg', savedBubble);
     if (savedChatBg) document.documentElement.style.setProperty('--chat-main-bg', savedChatBg);
+    if (savedBubbleText) document.documentElement.style.setProperty('--bubble-outgoing-text', savedBubbleText);
   } catch (_) {}
-
-  document.querySelectorAll('.style-preset-card').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.style-preset-card').forEach(c => {
-        const match = c === card;
-        c.classList.toggle('selected', match);
-        c.classList.toggle('active', match);
-      });
-      applyCustomColors(card.dataset.bubble, card.dataset.bg);
-    });
-  });
 
   document.querySelectorAll('#bubble-color-swatches .color-swatch-btn').forEach(swatch => {
     swatch.addEventListener('click', () => {
@@ -6548,16 +6492,17 @@
 
   document.getElementById('btn-reset-styles')?.addEventListener('click', () => {
     document.documentElement.style.removeProperty('--bubble-outgoing-bg');
+    document.documentElement.style.removeProperty('--bubble-outgoing-text');
     document.documentElement.style.removeProperty('--chat-main-bg');
     try {
       localStorage.removeItem('sync_custom_bubble_bg');
+      localStorage.removeItem('sync_custom_bubble_text');
       localStorage.removeItem('sync_custom_chat_bg');
     } catch (_) {}
-    const firstPreset = document.querySelector('.style-preset-card[data-preset="lavender"]');
-    document.querySelectorAll('.style-preset-card').forEach(c => {
-      const match = c === firstPreset;
-      c.classList.toggle('selected', match);
-      c.classList.toggle('active', match);
+    document.querySelectorAll('.color-swatch-btn').forEach(swatch => {
+      const isBubbleDefault = swatch.dataset.color === '#6b5ef4';
+      const isBackgroundDefault = swatch.dataset.bg === '#f7f6fb';
+      swatch.classList.toggle('active', isBubbleDefault || isBackgroundDefault);
     });
   });
 
