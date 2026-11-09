@@ -43,6 +43,7 @@ final class SyncRefresher {
             ApiClient.Summary summary = ApiClient.summary(
                     WidgetUrls.origin(url), token, AppSettings.callsSeenAt(app));
             AppSettings.saveCounts(app, summary.unreadMessages, summary.missedCalls);
+            AppSettings.saveLatest(app, summary);
             if (emitNotifications && AppSettings.notifications(app)) {
                 notifyNew(app, summary);
             }

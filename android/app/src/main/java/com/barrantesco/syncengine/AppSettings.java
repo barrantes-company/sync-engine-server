@@ -27,6 +27,11 @@ final class AppSettings {
     private static final String NOTIFIED_MISSED = "notified_missed";
     private static final String RECEIVED_FILE = "received_file";
     private static final String CLIPBOARD_STATE = "clipboard_state";
+    private static final String LATEST_FROM = "latest_from";
+    private static final String LATEST_TEXT = "latest_text";
+    private static final String LATEST_TYPE = "latest_type";
+    private static final String LATEST_TIMESTAMP = "latest_timestamp";
+    private static final String LAST_SYNC = "last_sync";
 
     static final String[] STYLE_NAMES = {
             "Reloj", "Señal", "Negro", "Línea", "Barra", "Fino", "Ciudad", "Accesos"
@@ -68,6 +73,11 @@ final class AppSettings {
                 .remove(USER_NAME)
                 .putInt(UNREAD, 0)
                 .putInt(MISSED, 0)
+                .remove(LATEST_FROM)
+                .remove(LATEST_TEXT)
+                .remove(LATEST_TYPE)
+                .remove(LATEST_TIMESTAMP)
+                .remove(LAST_SYNC)
                 .apply();
     }
 
@@ -139,6 +149,40 @@ final class AppSettings {
 
     static void saveCounts(Context context, int unread, int missed) {
         prefs(context).edit().putInt(UNREAD, unread).putInt(MISSED, missed).apply();
+    }
+
+    static void saveLatest(Context context, ApiClient.Summary summary) {
+        SharedPreferences.Editor editor = prefs(context).edit()
+                .putLong(LAST_SYNC, System.currentTimeMillis());
+        if (!summary.latest.isEmpty()) {
+            ApiClient.UnreadMessage message = summary.latest.get(0);
+            editor.putString(LATEST_FROM, message.fromName)
+                    .putString(LATEST_TEXT, message.text)
+                    .putString(LATEST_TYPE, message.type)
+                    .putLong(LATEST_TIMESTAMP, message.timestamp);
+        } else {
+            editor.remove(LATEST_FROM)
+                    .remove(LATEST_TEXT)
+                    .remove(LATEST_TYPE)
+                    .remove(LATEST_TIMESTAMP);
+        }
+        editor.apply();
+    }
+
+    static String latestFrom(Context context) {
+        return prefs(context).getString(LATEST_FROM, "");
+    }
+
+    static String latestText(Context context) {
+        return prefs(context).getString(LATEST_TEXT, "");
+    }
+
+    static String latestType(Context context) {
+        return prefs(context).getString(LATEST_TYPE, "text");
+    }
+
+    static long lastSync(Context context) {
+        return prefs(context).getLong(LAST_SYNC, 0);
     }
 
     /** Archivo recibido más reciente (texto corto o vacío). */
