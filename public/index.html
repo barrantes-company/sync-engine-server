@@ -448,29 +448,24 @@
               </label>
             </div>
 
-            <!-- Personalizar con selectores circulares de color en tiempo real -->
-            <p class="settings-group-label" style="margin-top:16px;">Colores del chat</p>
-
-            <div class="custom-color-block">
-              <span>Burbuja de chat</span>
-              <div class="color-swatches-row" id="bubble-color-swatches">
-                <button class="color-swatch-btn active" data-color="#6b5ef4" style="background:#6b5ef4;" type="button" title="Lavanda"></button>
-                <button class="color-swatch-btn" data-color="#005c4b" style="background:#005c4b;" type="button" title="Esmeralda"></button>
-                <button class="color-swatch-btn" data-color="#0284c7" style="background:#0284c7;" type="button" title="Azul Cielo"></button>
-                <button class="color-swatch-btn" data-color="#be185d" style="background:#be185d;" type="button" title="Rosa"></button>
-                <button class="color-swatch-btn" data-color="#ea580c" style="background:#ea580c;" type="button" title="Naranja"></button>
-              </div>
-            </div>
-
-            <div class="custom-color-block">
-              <span>Fondo</span>
-              <div class="color-swatches-row" id="bg-color-swatches">
-                <button class="color-swatch-btn active" data-bg="#f7f6fb" style="background:#f7f6fb;" type="button" title="Claro"></button>
-                <button class="color-swatch-btn" data-bg="#eef6ff" style="background:#eef6ff;" type="button" title="Brisa"></button>
-                <button class="color-swatch-btn" data-bg="#0b141a" style="background:#0b141a;" type="button" title="Noche"></button>
-                <button class="color-swatch-btn" data-bg="#0c1324" style="background:#0c1324;" type="button" title="Azul Profundo"></button>
-                <button class="color-swatch-btn" data-bg="#141418" style="background:#141418;" type="button" title="Carbón"></button>
-              </div>
+            <p class="settings-group-label" style="margin-top:16px;">Modos de interfaz</p>
+            <div class="interface-theme-grid" role="radiogroup" aria-label="Modo de interfaz">
+              <button class="interface-theme-option is-selected" type="button" data-interface-theme="sync-blue" role="radio" aria-checked="true">
+                <span class="interface-theme-preview theme-preview-light"></span>
+                <span><strong>Claro</strong><small>Neutro y luminoso</small></span>
+              </button>
+              <button class="interface-theme-option" type="button" data-interface-theme="energy" role="radio" aria-checked="false">
+                <span class="interface-theme-preview theme-preview-dark"></span>
+                <span><strong>Oscuro</strong><small>Profundo y sobrio</small></span>
+              </button>
+              <button class="interface-theme-option" type="button" data-interface-theme="mist" role="radio" aria-checked="false">
+                <span class="interface-theme-preview theme-preview-mist"></span>
+                <span><strong>Bruma</strong><small>Claro y suave</small></span>
+              </button>
+              <button class="interface-theme-option" type="button" data-interface-theme="slate" role="radio" aria-checked="false">
+                <span class="interface-theme-preview theme-preview-slate"></span>
+                <span><strong>Pizarra</strong><small>Oscuro y calmado</small></span>
+              </button>
             </div>
           </div>
 
@@ -641,9 +636,6 @@
             </div>
 
             <div class="chat-header-actions">
-              <button id="open-chat-appearance-btn" type="button" class="header-tool-btn chat-appearance-trigger" title="Personalizar apariencia del chat" aria-label="Personalizar apariencia del chat">
-                <span aria-hidden="true">◐</span><span class="chat-appearance-label">Apariencia</span>
-              </button>
               <button id="toggle-chat-search-btn" type="button" class="header-tool-btn" title="Buscar en mensajes" aria-label="Buscar en la conversación">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="11" cy="11" r="8"/>
@@ -1038,42 +1030,6 @@
     </div>
   </div>
 
-  <!-- MODAL: APARIENCIA POR CONVERSACIÓN -->
-  <div id="chat-appearance-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="chat-appearance-sheet bg-white rounded-3xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl text-[#0A1A3A]">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="font-bold text-base font-title">Apariencia del chat</h3>
-          <p class="text-xs text-[#64748B] mt-1">Personalización guardada solo para esta conversación.</p>
-        </div>
-        <button id="close-chat-appearance-btn" type="button" aria-label="Cerrar" class="h-8 w-8 rounded-full text-[#64748B] hover:bg-[#F1F5F9] flex items-center justify-center cursor-pointer">✕</button>
-      </div>
-      <div class="chat-appearance-grid">
-        <label for="chat-bg-color">Fondo del chat<input id="chat-bg-color" type="color" value="#f7f9fc"></label>
-        <label for="chat-sent-bg-color">Fondo de mis mensajes<input id="chat-sent-bg-color" type="color" value="#dcecff"></label>
-        <label for="chat-sent-text-color">Texto de mis mensajes<input id="chat-sent-text-color" type="color" value="#102d55"></label>
-        <label for="chat-received-bg-color">Fondo del contacto<input id="chat-received-bg-color" type="color" value="#ffffff"></label>
-        <label for="chat-received-text-color">Texto del contacto<input id="chat-received-text-color" type="color" value="#172b4d"></label>
-      </div>
-      <label class="chat-appearance-contrast"><input id="chat-auto-contrast" type="checkbox" checked> Ajustar automáticamente el contraste del texto</label>
-      <div id="chat-appearance-preview" class="chat-appearance-preview" aria-live="polite">
-        <span class="chat-appearance-preview-title">Vista previa</span>
-        <div class="chat-appearance-preview-canvas">
-          <div id="chat-preview-received" class="chat-appearance-preview-bubble is-received">Mensaje del contacto</div>
-          <div id="chat-preview-sent" class="chat-appearance-preview-bubble is-sent">Tu mensaje</div>
-        </div>
-        <p id="chat-appearance-contrast-status" class="chat-appearance-contrast-status"></p>
-      </div>
-      <div class="flex items-center justify-between gap-2 pt-2 border-t border-[#E2E8F0]">
-        <button id="reset-chat-appearance-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer">Restaurar</button>
-        <div class="flex gap-2">
-          <button id="cancel-chat-appearance-btn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer">Cancelar</button>
-          <button id="save-chat-appearance-btn" type="button" class="px-4 py-2 rounded-xl bg-[#0877F9] text-white font-bold text-xs cursor-pointer">Guardar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div id="channel-admin-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-md flex flex-col gap-3 shadow-2xl border border-[rgba(197,160,89,0.3)] text-[#0A1A3A]">
       <div class="flex items-center justify-between">
@@ -1318,23 +1274,6 @@
   const cancelRecordingBtn = document.getElementById('cancel-recording-btn');
   const sendRecordingBtn = document.getElementById('send-recording-btn');
 
-  const openChatAppearanceBtn = document.getElementById('open-chat-appearance-btn');
-  const chatAppearanceModal = document.getElementById('chat-appearance-modal');
-  const closeChatAppearanceBtn = document.getElementById('close-chat-appearance-btn');
-  const cancelChatAppearanceBtn = document.getElementById('cancel-chat-appearance-btn');
-  const saveChatAppearanceBtn = document.getElementById('save-chat-appearance-btn');
-  const resetChatAppearanceBtn = document.getElementById('reset-chat-appearance-btn');
-  const chatBgColor = document.getElementById('chat-bg-color');
-  const chatSentBgColor = document.getElementById('chat-sent-bg-color');
-  const chatSentTextColor = document.getElementById('chat-sent-text-color');
-  const chatReceivedBgColor = document.getElementById('chat-received-bg-color');
-  const chatReceivedTextColor = document.getElementById('chat-received-text-color');
-  const chatAutoContrast = document.getElementById('chat-auto-contrast');
-  const chatPreviewCanvas = document.querySelector('.chat-appearance-preview-canvas');
-  const chatPreviewReceived = document.getElementById('chat-preview-received');
-  const chatPreviewSent = document.getElementById('chat-preview-sent');
-  const chatAppearanceContrastStatus = document.getElementById('chat-appearance-contrast-status');
-
   // Fallback visual para imágenes que caducan o no pueden descargarse.
   // Evita dejar círculos o tarjetas completamente vacíos en la interfaz.
   document.addEventListener('error', (event) => {
@@ -1357,110 +1296,6 @@
       document.getElementById('profile-avatar-fallback')?.classList.remove('hidden');
     }
   }, true);
-
-  const chatAppearanceDefaults = Object.freeze({
-    background: '#f7f9fc', sentBackground: '#dcecff', sentText: '#102d55',
-    receivedBackground: '#ffffff', receivedText: '#172b4d', autoContrast: true
-  });
-
-  function chatAppearanceKey() {
-    if (!currentUser) return null;
-    const thread = activeChannelId ? `channel:${activeChannelId}` : activeContactSyncId ? `dm:${activeContactSyncId}` : null;
-    return thread ? `sync-engine-chat-appearance:${currentUser.syncId}:${thread}` : null;
-  }
-
-  function readChatAppearance() {
-    const key = chatAppearanceKey();
-    if (!key) return { ...chatAppearanceDefaults };
-    try { return { ...chatAppearanceDefaults, ...JSON.parse(localStorage.getItem(key) || '{}') }; }
-    catch (_) { return { ...chatAppearanceDefaults }; }
-  }
-
-  function readableTextColor(hex) {
-    const value = String(hex || '').replace('#', '');
-    if (!/^[0-9a-f]{6}$/i.test(value)) return '#172b4d';
-    const channels = [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16) / 255);
-    const luminance = channels.map(channel => channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
-    return (0.2126 * luminance[0] + 0.7152 * luminance[1] + 0.0722 * luminance[2]) > .48 ? '#172b4d' : '#f8fbff';
-  }
-
-  function contrastRatio(foreground, background) {
-    const luminance = (hex) => {
-      const value = String(hex || '').replace('#', '');
-      if (!/^[0-9a-f]{6}$/i.test(value)) return 1;
-      return [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16) / 255)
-        .map(channel => channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4)
-        .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
-    };
-    const lighter = Math.max(luminance(foreground), luminance(background));
-    const darker = Math.min(luminance(foreground), luminance(background));
-    return (lighter + .05) / (darker + .05);
-  }
-
-  function currentChatAppearanceForm() {
-    return {
-      background: chatBgColor?.value || chatAppearanceDefaults.background,
-      sentBackground: chatSentBgColor?.value || chatAppearanceDefaults.sentBackground,
-      sentText: chatSentTextColor?.value || chatAppearanceDefaults.sentText,
-      receivedBackground: chatReceivedBgColor?.value || chatAppearanceDefaults.receivedBackground,
-      receivedText: chatReceivedTextColor?.value || chatAppearanceDefaults.receivedText,
-      autoContrast: Boolean(chatAutoContrast?.checked)
-    };
-  }
-
-  function updateChatAppearancePreview(settings = currentChatAppearanceForm()) {
-    if (!chatPreviewCanvas || !chatPreviewSent || !chatPreviewReceived) return;
-    const sentText = settings.autoContrast ? readableTextColor(settings.sentBackground) : settings.sentText;
-    const receivedText = settings.autoContrast ? readableTextColor(settings.receivedBackground) : settings.receivedText;
-    chatPreviewCanvas.style.background = settings.background;
-    chatPreviewSent.style.background = settings.sentBackground;
-    chatPreviewSent.style.color = sentText;
-    chatPreviewReceived.style.background = settings.receivedBackground;
-    chatPreviewReceived.style.color = receivedText;
-    const sentRatio = contrastRatio(sentText, settings.sentBackground);
-    const receivedRatio = contrastRatio(receivedText, settings.receivedBackground);
-    const passes = sentRatio >= 4.5 && receivedRatio >= 4.5;
-    if (chatAppearanceContrastStatus) {
-      chatAppearanceContrastStatus.textContent = `${passes ? '✓ Contraste recomendado' : '⚠ Contraste bajo'} · Mis mensajes ${sentRatio.toFixed(1)}:1 · Contacto ${receivedRatio.toFixed(1)}:1`;
-      chatAppearanceContrastStatus.dataset.state = passes ? 'pass' : 'warn';
-    }
-  }
-
-  function applyChatAppearance(settings = readChatAppearance()) {
-    if (!chatMessages) return;
-    chatMessages.style.setProperty('--se-chat-bg', settings.background);
-    chatMessages.style.setProperty('--se-chat-sent-bg', settings.sentBackground);
-    chatMessages.style.setProperty('--se-chat-sent-text', settings.autoContrast ? readableTextColor(settings.sentBackground) : settings.sentText);
-    chatMessages.style.setProperty('--se-chat-received-bg', settings.receivedBackground);
-    chatMessages.style.setProperty('--se-chat-received-text', settings.autoContrast ? readableTextColor(settings.receivedBackground) : settings.receivedText);
-  }
-
-  function fillChatAppearanceForm(settings) {
-    chatBgColor.value = settings.background; chatSentBgColor.value = settings.sentBackground;
-    chatSentTextColor.value = settings.sentText; chatReceivedBgColor.value = settings.receivedBackground;
-    chatReceivedTextColor.value = settings.receivedText; chatAutoContrast.checked = settings.autoContrast;
-    updateChatAppearancePreview(settings);
-  }
-
-  function closeChatAppearance() { chatAppearanceModal?.classList.add('hidden'); }
-  function openChatAppearance() {
-    if (!chatAppearanceKey()) return;
-    fillChatAppearanceForm(readChatAppearance());
-    chatAppearanceModal?.classList.remove('hidden');
-  }
-  openChatAppearanceBtn?.addEventListener('click', openChatAppearance);
-  closeChatAppearanceBtn?.addEventListener('click', closeChatAppearance);
-  cancelChatAppearanceBtn?.addEventListener('click', closeChatAppearance);
-  resetChatAppearanceBtn?.addEventListener('click', () => fillChatAppearanceForm(chatAppearanceDefaults));
-  [chatBgColor, chatSentBgColor, chatSentTextColor, chatReceivedBgColor, chatReceivedTextColor, chatAutoContrast]
-    .filter(Boolean).forEach(control => control.addEventListener('input', () => updateChatAppearancePreview()));
-  saveChatAppearanceBtn?.addEventListener('click', () => {
-    const settings = currentChatAppearanceForm();
-    const key = chatAppearanceKey();
-    if (key) localStorage.setItem(key, JSON.stringify(settings));
-    applyChatAppearance(settings);
-    closeChatAppearance();
-  });
 
   // Perfil y Foto Circular (1080 × 1080 px)
   const editProfileModal = document.getElementById('edit-profile-modal');
@@ -2593,7 +2428,9 @@
 
   contactSearchInput.addEventListener('input', () => {
     const term = contactSearchInput.value.trim().toLowerCase();
-    const items = contactsList.querySelectorAll('div[class*="cursor-pointer"]');
+    const channelsMode = !sidebarChannelsView.classList.contains('hidden');
+    const activeList = channelsMode ? channelsList : contactsList;
+    const items = activeList.querySelectorAll(channelsMode ? '.channel-item' : '.contact-item');
     let visible = 0;
     items.forEach((it) => {
       const match = it.textContent.toLowerCase().includes(term);
@@ -2601,12 +2438,13 @@
       if (match) visible += 1;
     });
 
-    const previousEmpty = document.getElementById('contact-search-empty');
+    const emptyId = channelsMode ? 'channel-search-empty' : 'contact-search-empty';
+    const previousEmpty = document.getElementById(emptyId);
     if (previousEmpty) previousEmpty.remove();
 
     if (items.length > 0 && visible === 0) {
       const block = document.createElement('div');
-      block.id = 'contact-search-empty';
+      block.id = emptyId;
       block.className = 'empty-state flex flex-col items-center p-6 text-center text-[#64748B]';
       block.setAttribute('role', 'status');
 
@@ -2616,14 +2454,14 @@
 
       const title = document.createElement('p');
       title.className = 'text-xs font-bold text-[#0A1A3A] font-title';
-      title.textContent = 'No se encontraron contactos';
+      title.textContent = channelsMode ? 'No se encontraron canales' : 'No se encontraron contactos';
 
       const hint = document.createElement('p');
       hint.className = 'text-[11px] mt-1.5 text-[#64748B] leading-relaxed';
-      hint.textContent = 'Prueba con otro término de búsqueda o revisa el Código ID.';
+      hint.textContent = channelsMode ? 'Prueba con otro nombre o descripción.' : 'Prueba con otro término de búsqueda o revisa el Código ID.';
 
       block.append(icon, title, hint);
-      contactsList.appendChild(block);
+      activeList.appendChild(block);
     }
   });
 
@@ -5783,9 +5621,15 @@
     channelsList.innerHTML = '';
     if (channelsCountBadge) channelsCountBadge.textContent = workspaceChannels.length;
     if (!workspaceChannels.length) {
-      const emptyState = document.createElement('p');
-      emptyState.className = 'px-3 py-4 text-xs text-[#64748B]';
-      emptyState.textContent = 'Aún no tienes canales. Crea uno para empezar.';
+      const emptyState = document.createElement('div');
+      emptyState.className = 'channel-empty-state';
+      emptyState.innerHTML = `
+        <span class="channel-empty-icon" aria-hidden="true">#</span>
+        <strong>Aún no tienes canales</strong>
+        <span>Organiza conversaciones de equipo por tema, proyecto o área.</span>
+        <button type="button" class="channel-empty-action">Crear mi primer canal</button>
+      `;
+      emptyState.querySelector('.channel-empty-action')?.addEventListener('click', () => openCreateChannelBtn?.click());
       channelsList.appendChild(emptyState);
       return;
     }
@@ -5794,17 +5638,33 @@
       const item = document.createElement('div');
       const isActive = (activeChannelId === chan.id);
       item.className = `channel-item ${isActive ? 'is-active' : ''}`;
+      item.setAttribute('role', 'button');
+      item.setAttribute('tabindex', '0');
+      item.setAttribute('aria-selected', String(isActive));
+      item.setAttribute('aria-label', `Abrir canal ${chan.name}`);
+      const members = Array.isArray(chan.memberSyncIds) ? chan.memberSyncIds.length : Number(chan.memberCount || 0);
+      const memberLabel = members ? `${members} ${members === 1 ? 'miembro' : 'miembros'}` : 'Equipo';
+      const description = chan.description || 'Canal de equipo';
       item.innerHTML = `
-        <div class="flex items-center gap-2 min-w-0">
-          <span class="text-[#C5A059] font-bold">#</span>
-          <div class="min-w-0">
+        <span class="channel-icon" aria-hidden="true">#</span>
+        <div class="channel-copy min-w-0">
+          <div class="channel-title-row">
             <p class="channel-name">${escapeHtml(chan.name)}</p>
-            <p class="text-[10px] text-[#64748B] truncate">${escapeHtml(chan.description || '')}</p>
+            <span class="channel-members">${escapeHtml(memberLabel)}</span>
           </div>
+          <p class="channel-description truncate">${escapeHtml(description)}</p>
+          <p class="channel-preview truncate">Abrir conversación del equipo</p>
         </div>
-        ${currentUser && (String(chan.creatorSyncId || '').toUpperCase() === String(currentUser.syncId || '').toUpperCase() || (Array.isArray(chan.adminSyncIds) && chan.adminSyncIds.some(id => String(id).toUpperCase() === String(currentUser.syncId || '').toUpperCase()))) ? '<button type="button" class="channel-manage-btn rounded-lg px-2 py-1 text-xs text-[#64748B] hover:bg-[#F1F5F9]" aria-label="Administrar canal" title="Administrar canal">⋯</button>' : ''}
+        <span class="channel-chevron" aria-hidden="true">›</span>
+        ${currentUser && (String(chan.creatorSyncId || '').toUpperCase() === String(currentUser.syncId || '').toUpperCase() || (Array.isArray(chan.adminSyncIds) && chan.adminSyncIds.some(id => String(id).toUpperCase() === String(currentUser.syncId || '').toUpperCase()))) ? '<button type="button" class="channel-manage-btn" aria-label="Administrar canal" title="Administrar canal">⋯</button>' : ''}
       `;
       item.addEventListener('click', () => selectChannel(chan));
+      item.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          selectChannel(chan);
+        }
+      });
       const manageBtn = item.querySelector('.channel-manage-btn');
       if (manageBtn) manageBtn.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -6238,13 +6098,20 @@
   };
 
   const applyTheme = (theme) => {
-    const isDark = theme === 'energy' || theme === 'dark';
-    const selected = isDark ? 'energy' : 'sync-blue';
+    const availableThemes = ['sync-blue', 'energy', 'mist', 'slate'];
+    const selected = availableThemes.includes(theme) ? theme : 'sync-blue';
+    const isDark = selected === 'energy' || selected === 'slate';
+    const themeNames = {
+      'sync-blue': 'Modo Claro',
+      energy: 'Modo Oscuro',
+      mist: 'Modo Bruma',
+      slate: 'Modo Pizarra'
+    };
     app.dataset.seTheme = selected;
     document.documentElement.dataset.seTheme = selected;
     document.body.classList.toggle('dark-mode', isDark);
     if (labelCurrentTheme) {
-      labelCurrentTheme.textContent = isDark ? 'Modo Oscuro' : 'Modo Claro';
+      labelCurrentTheme.textContent = themeNames[selected];
     }
     if (themeButton) {
       const label = isDark ? 'Claro' : 'Oscuro';
@@ -6255,7 +6122,7 @@
     }
     try { localStorage.setItem('sync-engine-theme', selected); } catch (_) {}
     const themeMeta = document.querySelector('meta[name="theme-color"]') || document.head.appendChild(Object.assign(document.createElement('meta'), { name: 'theme-color' }));
-    themeMeta.content = isDark ? '#060911' : '#eceaf8';
+    themeMeta.content = isDark ? '#101827' : '#f4f7fb';
     if (window.SyncAndroid && typeof window.SyncAndroid.setTheme === 'function') {
       window.SyncAndroid.setTheme(selected);
     }
@@ -6350,11 +6217,18 @@
       if (window.innerWidth <= 768) document.body.classList.add('mobile-view-contacts');
       dmsView?.classList.add('hidden');
       channelsView?.classList.remove('hidden');
+      const searchInput = document.getElementById('contact-search-input');
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.placeholder = 'Buscar canales';
+      }
       if (sectionHeadingTitle) sectionHeadingTitle.textContent = 'Canales';
       setActiveNav('channels');
     } else {
       dmsView?.classList.remove('hidden');
       channelsView?.classList.add('hidden');
+      const searchInput = document.getElementById('contact-search-input');
+      if (searchInput) searchInput.placeholder = 'Buscar o ID';
       if (view === 'contacts') {
         document.body.classList.remove('mobile-view-chat');
         if (window.innerWidth <= 768) document.body.classList.add('mobile-view-contacts');
@@ -6449,85 +6323,29 @@
     });
   });
 
-  const applyChatSurfacePreview = (chatBg) => {
-    if (!chatBg) return;
-    const timeline = document.getElementById('chat-messages');
-    if (!timeline) return;
-    timeline.style.setProperty('--se-chat-bg', chatBg);
-    timeline.style.backgroundColor = chatBg;
-
-    const value = String(chatBg).replace('#', '');
-    const channels = [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16) / 255);
-    const linear = channels.map(channel => channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
-    const luminance = .2126 * linear[0] + .7152 * linear[1] + .0722 * linear[2];
-    timeline.dataset.seBgTone = luminance < .45 ? 'dark' : 'light';
+  const interfaceThemeOptions = document.querySelectorAll('[data-interface-theme]');
+  const syncInterfaceThemeOptions = (theme) => {
+    interfaceThemeOptions.forEach(option => {
+      const selected = option.dataset.interfaceTheme === theme;
+      option.classList.toggle('is-selected', selected);
+      option.setAttribute('aria-checked', selected ? 'true' : 'false');
+    });
   };
-
-  const applyCustomColors = (bubbleBg, chatBg) => {
-    if (bubbleBg) {
-      document.documentElement.style.setProperty('--bubble-outgoing-bg', bubbleBg);
-      const value = String(bubbleBg).replace('#', '');
-      const channels = [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16) / 255);
-      const linear = channels.map(channel => channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
-      const luminance = .2126 * linear[0] + .7152 * linear[1] + .0722 * linear[2];
-      const textColor = luminance > .48 ? '#172b4d' : '#f8fbff';
-      document.documentElement.style.setProperty('--bubble-outgoing-text', textColor);
-      try { localStorage.setItem('sync_custom_bubble_text', textColor); } catch (_) {}
-      try { localStorage.setItem('sync_custom_bubble_bg', bubbleBg); } catch (_) {}
-    }
-    if (chatBg) {
-      document.documentElement.style.setProperty('--chat-main-bg', chatBg);
-      applyChatSurfacePreview(chatBg);
-      try { localStorage.setItem('sync_custom_chat_bg', chatBg); } catch (_) {}
-    }
-  };
-
-  try {
-    const savedBubble = localStorage.getItem('sync_custom_bubble_bg');
-    const savedChatBg = localStorage.getItem('sync_custom_chat_bg');
-    const savedBubbleText = localStorage.getItem('sync_custom_bubble_text');
-    if (savedBubble) document.documentElement.style.setProperty('--bubble-outgoing-bg', savedBubble);
-    if (savedChatBg) {
-      document.documentElement.style.setProperty('--chat-main-bg', savedChatBg);
-      applyChatSurfacePreview(savedChatBg);
-    }
-    if (savedBubbleText) document.documentElement.style.setProperty('--bubble-outgoing-text', savedBubbleText);
-  } catch (_) {}
-
-  document.querySelectorAll('#bubble-color-swatches .color-swatch-btn').forEach(swatch => {
-    swatch.addEventListener('click', () => {
-      document.querySelectorAll('#bubble-color-swatches .color-swatch-btn').forEach(s => s.classList.toggle('active', s === swatch));
-      applyCustomColors(swatch.dataset.color, null);
+  interfaceThemeOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      applyTheme(option.dataset.interfaceTheme);
+      syncInterfaceThemeOptions(option.dataset.interfaceTheme);
     });
   });
-
-  document.querySelectorAll('#bg-color-swatches .color-swatch-btn').forEach(swatch => {
-    swatch.addEventListener('click', () => {
-      document.querySelectorAll('#bg-color-swatches .color-swatch-btn').forEach(s => s.classList.toggle('active', s === swatch));
-      applyCustomColors(null, swatch.dataset.bg);
-    });
-  });
+  syncInterfaceThemeOptions(document.documentElement.dataset.seTheme || 'sync-blue');
 
   document.getElementById('btn-reset-styles')?.addEventListener('click', () => {
-    document.documentElement.style.removeProperty('--bubble-outgoing-bg');
-    document.documentElement.style.removeProperty('--bubble-outgoing-text');
-    document.documentElement.style.removeProperty('--chat-main-bg');
-    const timeline = document.getElementById('chat-messages');
-    if (timeline) {
-      timeline.style.removeProperty('--se-chat-bg');
-      timeline.style.removeProperty('background-color');
-      delete timeline.dataset.seBgTone;
-    }
-    try {
-      localStorage.removeItem('sync_custom_bubble_bg');
-      localStorage.removeItem('sync_custom_bubble_text');
-      localStorage.removeItem('sync_custom_chat_bg');
-    } catch (_) {}
-    document.querySelectorAll('.color-swatch-btn').forEach(swatch => {
-      const isBubbleDefault = swatch.dataset.color === '#6b5ef4';
-      const isBackgroundDefault = swatch.dataset.bg === '#f7f6fb';
-      swatch.classList.toggle('active', isBubbleDefault || isBackgroundDefault);
-    });
+    applyTheme('sync-blue');
+    syncInterfaceThemeOptions('sync-blue');
+    const switchDoodles = document.getElementById('switch-doodles');
+    if (switchDoodles) switchDoodles.checked = true;
+    document.getElementById('chat-panel')?.classList.add('doodles-enabled');
+    document.getElementById('chat-messages')?.classList.add('has-doodles');
   });
 
   const switchDoodles = document.getElementById('switch-doodles');
@@ -6541,8 +6359,11 @@
   }
 
   document.getElementById('btn-cycle-system-theme')?.addEventListener('click', () => {
-    const nextDark = !document.body.classList.contains('dark-mode');
-    applyTheme(nextDark ? 'energy' : 'sync-blue');
+    const themes = ['sync-blue', 'energy', 'mist', 'slate'];
+    const current = document.documentElement.dataset.seTheme || 'sync-blue';
+    const next = themes[(themes.indexOf(current) + 1) % themes.length];
+    applyTheme(next);
+    syncInterfaceThemeOptions(next);
   });
 
   const btnMediaQuality = document.getElementById('btn-cycle-media-quality');
