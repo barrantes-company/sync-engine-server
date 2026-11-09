@@ -3,81 +3,113 @@
    Fase 6: Variables CSS Raíz Unificadas (Modo Claro & Oscuro)
    ============================================================================ */
 
-:root {
-  /* Tema Claro (Por Defecto) */
-  --page-bg: #f4f7fb;
-  --shell-bg: #ffffff;
-  --nav-rail-bg: #11131a;
-  --nav-icon-idle: #7e8599;
+/* Los cuatro modos oficiales de interfaz. No se crean variantes adicionales. */
+:root,
+html[data-se-theme="ink-wash"] {
+  --page-bg: #f1f1ee;
+  --shell-bg: #ffffe3;
+  --nav-rail-bg: #4a4a4a;
+  --nav-icon-idle: #cbcbcb;
   --nav-icon-active: #ffffff;
-  --nav-btn-active-bg: #252836;
-
-  --col-list-bg: #ffffff;
-  --card-active-bg: #f1efff;
-  --card-hover-bg: #f8f7fc;
-  --search-bg: #f5f5fa;
-
-  --chat-main-bg: #f7f6fb;
+  --nav-btn-active-bg: #6d8196;
+  --col-list-bg: #ffffe3;
+  --card-active-bg: #e3e3dc;
+  --card-hover-bg: #f4f4ed;
+  --search-bg: #cbcbcb;
+  --chat-main-bg: #ffffe3;
   --chat-header-bg: #ffffff;
-  --bubble-incoming-bg: #ffffff;
-  --bubble-incoming-text: #1c1e26;
-  --bubble-outgoing-bg: #6b5ef4;
+  --bubble-incoming-bg: #fffef0;
+  --bubble-incoming-text: #222222;
+  --bubble-outgoing-bg: #5d7184;
   --bubble-outgoing-text: #ffffff;
-
-  --text-primary: #181a24;
-  --text-secondary: #686d80;
-  --text-muted: #9aa0b3;
-  --border-subtle: #ebebf2;
-
-  --accent-badge: #ff5630;
-  --online-green: #22c55e;
-  --wa-teal: #00a884;
-  --shadow-shell: 0 24px 60px rgba(20, 18, 45, 0.12);
-
-  /* Compatibilidad con componentes modales y auxiliares */
+  --text-primary: #222222;
+  --text-secondary: #595959;
+  --text-muted: #767676;
+  --border-subtle: #d4d4d0;
+  --accent-badge: #5c4e4e;
+  --online-green: #2d8b63;
+  --wa-teal: #4f7b91;
+  --shadow-shell: 0 24px 60px rgba(74, 74, 74, .14);
   --bg-main: var(--chat-main-bg);
   --bg-bubble-self: var(--bubble-outgoing-bg);
   --text-bubble-self: var(--bubble-outgoing-text);
   --bg-bubble-other: var(--bubble-incoming-bg);
-  --accent-gold: #6b5ef4;
-  --accent-gold-dark: #5446d9;
-  --accent-gold-glow: rgba(107, 94, 244, 0.28);
-  --accent-tech: #0ea5e9;
+  --accent-gold: #6d8196;
+  --accent-gold-dark: #4a647d;
+  --accent-gold-glow: rgba(109, 129, 150, .24);
+  --accent-tech: #6d8196;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-body.dark-mode {
-  /* Tema Oscuro */
-  --page-bg: #060911;
-  --shell-bg: #0f131f;
-  --nav-rail-bg: #090c14;
-  --col-list-bg: #111624;
-  --card-active-bg: #1b2236;
-  --card-hover-bg: #161c2e;
-  --search-bg: #181f30;
-
-  --chat-main-bg: #0b0f1a;
-  --chat-header-bg: #111624;
-  --bubble-incoming-bg: #1b2234;
-  --bubble-incoming-text: #e2e8f0;
-  --bubble-outgoing-bg: #5148b8;
+html[data-se-theme="gothic-noir"] {
+  --page-bg: #0b0b0b;
+  --shell-bg: #171515;
+  --nav-rail-bg: #000000;
+  --nav-icon-idle: #988686;
+  --nav-icon-active: #ffffff;
+  --nav-btn-active-bg: #5c4e4e;
+  --col-list-bg: #171515;
+  --card-active-bg: #302727;
+  --card-hover-bg: #231f1f;
+  --search-bg: #2d2b2b;
+  --chat-main-bg: #121111;
+  --chat-header-bg: #1d1a1a;
+  --bubble-incoming-bg: #292323;
+  --bubble-incoming-text: #f3eeee;
+  --bubble-outgoing-bg: #5c4e4e;
   --bubble-outgoing-text: #ffffff;
-
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-subtle: #1e293b;
-  --shadow-shell: 0 28px 70px rgba(0, 0, 0, 0.65);
+  --text-primary: #f4eeee;
+  --text-secondary: #d1d0d0;
+  --text-muted: #988686;
+  --border-subtle: #493d3d;
+  --accent-badge: #a35e47;
+  --online-green: #70b08e;
+  --wa-teal: #988686;
+  --shadow-shell: 0 28px 70px rgba(0, 0, 0, .6);
+  --accent-gold: #a59696;
+  --accent-gold-dark: #d1d0d0;
+  --accent-gold-glow: rgba(152, 134, 134, .25);
+  --accent-tech: #a35e47;
 }
 
-/* Modos adicionales: paletas contenidas, sin saturación dominante. */
-html[data-se-theme="mist"] {
+html[data-se-theme="urban-loft"] {
+  --page-bg: #e9e7e7;
+  --shell-bg: #f5f4f3;
+  --nav-rail-bg: #464646;
+  --nav-icon-idle: #c6c3c3;
+  --nav-icon-active: #ffffff;
+  --nav-btn-active-bg: #a35e47;
+  --col-list-bg: #f5f4f3;
+  --card-active-bg: #e4d9d3;
+  --card-hover-bg: #f0ecea;
+  --search-bg: #d4d1d1;
+  --chat-main-bg: #f1efee;
+  --chat-header-bg: #ffffff;
+  --bubble-incoming-bg: #fffdfc;
+  --bubble-incoming-text: #292929;
+  --bubble-outgoing-bg: #8d513e;
+  --bubble-outgoing-text: #ffffff;
+  --text-primary: #292929;
+  --text-secondary: #5e5b5b;
+  --text-muted: #777373;
+  --border-subtle: #d2cccc;
+  --accent-badge: #5c4e4e;
+  --online-green: #287c55;
+  --wa-teal: #8d513e;
+  --shadow-shell: 0 24px 60px rgba(70, 70, 70, .18);
+  --accent-gold: #a35e47;
+  --accent-gold-dark: #7c4231;
+  --accent-gold-glow: rgba(163, 94, 71, .22);
+  --accent-tech: #a35e47;
+}
+
+html[data-se-theme="frozen-lake"] {
   --page-bg: #eef2f7;
   --shell-bg: #ffffff;
-  --nav-rail-bg: #26364a;
-  --nav-icon-idle: #9aabba;
+  --nav-rail-bg: #6d8196;
+  --nav-icon-idle: #e8f4f8;
   --nav-icon-active: #ffffff;
-  --nav-btn-active-bg: #3c5873;
+  --nav-btn-active-bg: #365d79;
   --col-list-bg: #f8fafc;
   --card-active-bg: #e4edf5;
   --card-hover-bg: #eef4f8;
@@ -86,42 +118,16 @@ html[data-se-theme="mist"] {
   --chat-header-bg: #ffffff;
   --bubble-incoming-bg: #ffffff;
   --bubble-incoming-text: #203044;
-  --bubble-outgoing-bg: #d8e8f2;
+  --bubble-outgoing-bg: #5d7184;
   --bubble-outgoing-text: #1f3b52;
   --text-primary: #1f3044;
   --text-secondary: #5f7185;
   --text-muted: #8292a3;
   --border-subtle: #d9e2eb;
-  --accent-gold: #3f7896;
-  --accent-gold-dark: #315f78;
-  --accent-gold-glow: rgba(63, 120, 150, .22);
-}
-
-html[data-se-theme="slate"] {
-  --page-bg: #17202d;
-  --shell-bg: #1b2635;
-  --nav-rail-bg: #142033;
-  --nav-icon-idle: #8ea1b5;
-  --nav-icon-active: #f5f8fb;
-  --nav-btn-active-bg: #2d435b;
-  --col-list-bg: #202c3d;
-  --card-active-bg: #2b3a50;
-  --card-hover-bg: #26364a;
-  --search-bg: #263448;
-  --chat-main-bg: #1a2534;
-  --chat-header-bg: #202c3d;
-  --bubble-incoming-bg: #253447;
-  --bubble-incoming-text: #e7edf4;
-  --bubble-outgoing-bg: #3d6479;
-  --bubble-outgoing-text: #f2f7fa;
-  --text-primary: #edf3f8;
-  --text-secondary: #b0bfcd;
-  --text-muted: #899bad;
-  --border-subtle: #35485d;
-  --accent-gold: #83b4c8;
-  --accent-gold-dark: #6d9daf;
-  --accent-gold-glow: rgba(131, 180, 200, .2);
-  --shadow-shell: 0 28px 70px rgba(4, 10, 18, .42);
+  --accent-gold: #2f6f8d;
+  --accent-gold-dark: #20526d;
+  --accent-gold-glow: rgba(47, 111, 141, .2);
+  --accent-tech: #000080;
 }
 
 /* ============================================================================
@@ -1215,11 +1221,11 @@ body {
   flex: 0 0 34px;
   border: 1px solid rgba(100, 116, 139, .28);
   border-radius: 9px;
-  background: linear-gradient(145deg, #ffffff 0 48%, #dcecff 48% 100%);
+  background: linear-gradient(145deg, #ffffe3 0 48%, #6d8196 48% 100%);
 }
-.theme-preview-dark { background: linear-gradient(145deg, #111624 0 48%, #5148b8 48% 100%); }
-.theme-preview-mist { background: linear-gradient(145deg, #f8fafc 0 48%, #d8e8f2 48% 100%); }
-.theme-preview-slate { background: linear-gradient(145deg, #253447 0 48%, #3d6479 48% 100%); }
+.theme-preview-gothic { background: linear-gradient(145deg, #000000 0 48%, #5c4e4e 48% 100%); }
+.theme-preview-urban { background: linear-gradient(145deg, #9c9a9a 0 48%, #a35e47 48% 100%); }
+.theme-preview-frozen { background: linear-gradient(145deg, #6d8196 0 48%, #add8e6 48% 100%); }
 
 /* Canales: lista escaneable, estados claros y acciones táctiles consistentes. */
 #channels-list {
