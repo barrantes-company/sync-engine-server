@@ -35,7 +35,7 @@ public class SyncWidgetProvider extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
-        String action = intent.getAction();
+        String action = intent == null ? null : intent.getAction();
         if (ACTION_TICK.equals(action)
                 || ACTION_REFRESH.equals(action)
                 || Intent.ACTION_TIME_CHANGED.equals(action)
