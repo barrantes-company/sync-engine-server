@@ -4,6 +4,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.appwidget.AppWidgetProviderInfo;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -79,7 +80,7 @@ public class SyncWidgetProvider extends AppWidgetProvider {
 
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId) {
         int style = 2;
-        AppWidgetManager.AppWidgetProviderInfo info = manager.getAppWidgetInfo(widgetId);
+        AppWidgetProviderInfo info = manager.getAppWidgetInfo(widgetId);
         if (info != null && info.provider != null) {
             for (int index = 0; index < PROVIDERS.length; index++) {
                 if (PROVIDERS[index].getName().equals(info.provider.getClassName())) {
