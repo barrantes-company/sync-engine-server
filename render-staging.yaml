@@ -7,7 +7,7 @@ services:
     plan: free
     region: ohio
     repo: https://github.com/barrantes-company/sync-engine-server
-    branch: staging-sync-engine-2
+    branch: main
     autoDeployTrigger: "off"
     numInstances: 1
     buildCommand: npm ci --omit=dev
