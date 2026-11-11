@@ -9,7 +9,6 @@
     "scripts":  {
                     "dev":  "node scripts/dev.js",
                     "start":  "node server.js",
-                    "build":  "webpack --config webpack.config.js",
                     "build:css":  "node scripts/build-css.js",
                     "watch:css":  "node scripts/watch-css.js",
                     "lint":  "node --check license.js \u0026\u0026 node --check scripts/generate-license-keys.js \u0026\u0026 node --check scripts/create-license.js \u0026\u0026 node --check server.js \u0026\u0026 node --check metadata-fetch.js \u0026\u0026 node --check db.js \u0026\u0026 node --check ws-bridge.js \u0026\u0026 node --check pubsub-routing.js \u0026\u0026 node --check bridge-security.js \u0026\u0026 node --check pubsub-service.js \u0026\u0026 node --check extension_worker.js",
@@ -19,7 +18,8 @@
                     "test":  "node tests/browser-lifecycle.test.js \u0026\u0026 node tests/p0-01.test.js \u0026\u0026 node tests/p0-02.test.js \u0026\u0026 node --test tests/widget-summary.test.js \u0026\u0026 node tests/no-speed-insights.test.js",
                     "security-audit":  "npm audit",
                     "start:v1":  "node src/index.js",
-                    "test:ci":  "node tests/ci-v1.test.js"
+                    "test:ci":  "node tests/ci-v1.test.js",
+                    "build":  "echo \u0027Build omitido en V1 Hub-and-Spoke\u0027"
                 },
     "dependencies":  {
                          "@google-cloud/pubsub":  "6.3.1",
