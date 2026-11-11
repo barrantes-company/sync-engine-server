@@ -2,7 +2,7 @@
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "feat/android-home-widget-sync-design" ]
   pull_request:
     branches: [ "main" ]
 
@@ -29,3 +29,6 @@ jobs:
 
     - name: Compilar proyecto
       run: npm run build --if-present
+
+    - name: Pruebas desacopladas V1
+      run: npm run test:ci
