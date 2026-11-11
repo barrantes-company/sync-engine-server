@@ -1,44 +1,65 @@
-{
-  "name": "sync-engine-server",
-  "version": "1.0.0",
-  "private": true,
-  "main": "server.js",
-  "engines": {
-    "node": ">=20"
-  },
-  "scripts": {
-    "dev": "node scripts/dev.js",
-    "start": "node server.js",
-    "build": "webpack --config webpack.config.js",
-    "build:css": "node scripts/build-css.js",
-    "watch:css": "node scripts/watch-css.js",
-    "lint": "node --check license.js && node --check scripts/generate-license-keys.js && node --check scripts/create-license.js && node --check server.js && node --check metadata-fetch.js && node --check db.js && node --check ws-bridge.js && node --check pubsub-routing.js && node --check bridge-security.js && node --check pubsub-service.js && node --check extension_worker.js",
-    "license:keys": "node scripts/generate-license-keys.js",
-    "test:license": "node --test tests/license.test.js tests/license-keys.test.js",
-    "test:staging": "node --test tests/security-fixes.test.js tests/staging-integration.test.js tests/persistence.test.js tests/ack-persistence.test.js tests/metadata-fetch.test.js",
-    "test": "node tests/browser-lifecycle.test.js && node tests/p0-01.test.js && node tests/p0-02.test.js && node --test tests/widget-summary.test.js && node tests/no-speed-insights.test.js",
-    "security-audit": "npm audit"
-  },
-  "dependencies": {
-    "@google-cloud/pubsub": "6.3.1",
-    "@vercel/connect": "^2.4.1",
-    "@vercel/toolbar": "^0.2.7",
-    "cors": "^2.8.6",
-    "dotenv": "^18.0.5",
-    "express": "^5.2.1",
-    "express-rate-limit": "8.7.1",
-    "firebase-admin": "^14.5.0",
-    "multer": "^2.5.0",
-    "selfsigned": "^5.5.0",
-    "socket.io": "^4.8.4",
-    "socket.io-client": "^4.8.4",
-    "web-push": "^3.6.7",
-    "ws": "^8.18.3"
-  },
-  "devDependencies": {
-    "tailwindcss": "^3.4.17",
-    "webpack": "^5.111.1",
-    "webpack-cli": "^5.1.4",
-    "webpack-node-externals": "^3.0.0"
-  }
+﻿{
+    "name":  "sync-engine-server",
+    "version":  "1.0.0",
+    "private":  true,
+    "main":  "server.js",
+    "engines":  {
+                    "node":  "\u003e=20"
+                },
+    "scripts":  {
+                    "dev":  "node scripts/dev.js",
+                    "start":  "node server.js",
+                    "build:css":  "node scripts/build-css.js",
+                    "watch:css":  "node scripts/watch-css.js",
+                    "lint":  "node --check license.js \u0026\u0026 node --check scripts/generate-license-keys.js \u0026\u0026 node --check scripts/create-license.js \u0026\u0026 node --check server.js \u0026\u0026 node --check metadata-fetch.js \u0026\u0026 node --check db.js \u0026\u0026 node --check ws-bridge.js \u0026\u0026 node --check pubsub-routing.js \u0026\u0026 node --check bridge-security.js \u0026\u0026 node --check pubsub-service.js \u0026\u0026 node --check extension_worker.js",
+                    "license:keys":  "node scripts/generate-license-keys.js",
+                    "test:license":  "node --test tests/license.test.js tests/license-keys.test.js",
+                    "test:staging":  "node --test tests/security-fixes.test.js tests/staging-integration.test.js tests/persistence.test.js tests/ack-persistence.test.js tests/metadata-fetch.test.js",
+                    "test":  "node tests/browser-lifecycle.test.js \u0026\u0026 node tests/p0-01.test.js \u0026\u0026 node tests/p0-02.test.js \u0026\u0026 node --test tests/widget-summary.test.js \u0026\u0026 node tests/no-speed-insights.test.js",
+                    "security-audit":  "npm audit",
+                    "start:v1":  "node src/index.js",
+                    "test:ci":  "node tests/ci-v1.test.js",
+                    "build":  "echo \u0027Build omitido en V1 Hub-and-Spoke\u0027"
+                },
+    "dependencies":  {
+                         "@google-cloud/pubsub":  "6.3.1",
+                         "@vercel/connect":  "^2.4.1",
+                         "@vercel/toolbar":  "^0.2.7",
+                         "cors":  "^2.8.6",
+                         "dotenv":  "^18.0.10",
+                         "express":  "^5.3.0",
+                         "express-rate-limit":  "8.7.1",
+                         "firebase-admin":  "^14.5.0",
+                         "multer":  "^2.5.0",
+                         "selfsigned":  "^5.5.0",
+                         "socket.io":  "^4.8.4",
+                         "socket.io-client":  "^4.8.4",
+                         "web-push":  "^3.6.7",
+                         "ws":  "^8.18.3"
+                     },
+    "devDependencies":  {
+                            "tailwindcss":  "^3.4.17",
+                            "webpack":  "^5.111.1",
+                            "webpack-cli":  "^5.1.4",
+                            "webpack-node-externals":  "^3.0.0"
+                        },
+    "description":  "",
+    "directories":  {
+                        "doc":  "docs",
+                        "test":  "tests"
+                    },
+    "repository":  {
+                       "type":  "git",
+                       "url":  "git+https://github.com/barrantes-company/sync-engine-server.git"
+                   },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "type":  "commonjs",
+    "bugs":  {
+                 "url":  "https://github.com/barrantes-company/sync-engine-server/issues"
+             },
+    "homepage":  "https://github.com/barrantes-company/sync-engine-server#readme"
 }
