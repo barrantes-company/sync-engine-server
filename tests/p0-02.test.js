@@ -90,7 +90,8 @@ before(async () => {
   fs.copyFileSync(path.join(root, 'public', 'assets', 'logo.png'), path.join(tempDir, 'public', 'assets', 'logo.png'));
   db = isolatedDb(root, tempDir, users);
   const context = {
-    __dirname: tempDir, process: { env: { NODE_ENV: 'test', PORT: '3000' } },
+    // Worst case: uploads inside public/ so the interceptor must authorize even when files sit in the static tree.
+    __dirname: tempDir, process: { env: { NODE_ENV: 'test', PORT: '3000', UPLOADS_DIR: path.join(tempDir, 'public', 'uploads') } },
     console: { log() {}, warn() {}, error() {} },
     Buffer, URL, AbortController, AbortSignal, fetch, setTimeout, clearTimeout, setInterval, clearInterval, setImmediate,
     require(name) {
