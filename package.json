@@ -18,7 +18,8 @@
                     "test:staging":  "node --test tests/security-fixes.test.js tests/staging-integration.test.js tests/persistence.test.js tests/ack-persistence.test.js tests/metadata-fetch.test.js",
                     "test":  "node tests/browser-lifecycle.test.js \u0026\u0026 node tests/p0-01.test.js \u0026\u0026 node tests/p0-02.test.js \u0026\u0026 node --test tests/widget-summary.test.js \u0026\u0026 node tests/no-speed-insights.test.js",
                     "security-audit":  "npm audit",
-                    "start:v1":  "node src/index.js"
+                    "start:v1":  "node src/index.js",
+                    "test:ci":  "node tests/ci-v1.test.js"
                 },
     "dependencies":  {
                          "@google-cloud/pubsub":  "6.3.1",
