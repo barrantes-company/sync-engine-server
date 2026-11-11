@@ -229,8 +229,12 @@ app.use((req, res, next) => {
   } catch (_) {
     return res.status(400).json({ error: "Ruta no válida" });
   }
-  const parts = pathname.split("/").filter(Boolean);
+  let parts = pathname.split("/").filter(Boolean);
   if (pathname.includes(":")) return res.status(400).json({ error: "Ruta no válida" });
+  // /public is a static alias of the same physical tree; strip that prefix so
+  // /public/uploads/<file> is authorized exactly like /uploads/<file> instead of
+  // being served statically without authorization.
+  if ((parts[0] || "").toLowerCase() === "public") parts = parts.slice(1);
   if ((parts[0] || "").replace(/[. ]+$/, "").toLowerCase() !== "uploads") return next();
   res.setHeader("Cache-Control", "private, no-store");
   requireFileAuth(req, res, () => {
@@ -252,7 +256,9 @@ app.use((err, req, res, next) => {
   next(err);
 });
 // Directorio y almacenamiento Multer para documentos y archivos pesados (hasta 2 GB sin compresión)
-const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads"));
+// Defense in depth: default uploads OUT of the statically served public/ tree, so no
+// static middleware can expose a private file even if the auth interceptor were bypassed.
+const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname, "uploads"));
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }

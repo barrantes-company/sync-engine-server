@@ -3,6 +3,7 @@ node_modules/
 data/sync_db.json
 data/vapid.json
 data/ssl/
+/uploads/
 *.pem
 .env
 .env.local
