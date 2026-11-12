@@ -14,7 +14,7 @@ final class WidgetFaces {
         if (file.isEmpty() && "file".equals(AppSettings.latestType(context))) {
             file = "Archivo recibido";
         }
-        return WidgetRenderer.render(context, width, height, zone, use24h, signedIn,
+        return WidgetRenderer.render(context, kind, width, height, zone, use24h, signedIn,
                 file, AppSettings.clipboardState(context));
     }
 }
