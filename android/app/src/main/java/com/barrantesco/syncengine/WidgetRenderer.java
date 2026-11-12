@@ -40,7 +40,7 @@ final class WidgetRenderer {
     }
 
     /** Dibuja hora, fecha y estados breves desde la caché local, sin acceso de red. */
-    static Bitmap render(Context context, int width, int height, String zoneId, boolean use24h,
+    static Bitmap render(Context context, int style, int width, int height, String zoneId, boolean use24h,
                          boolean signedIn, String receivedFile, String clipboardState) {
         int w = Math.max(1, width);
         int h = Math.max(1, height);
@@ -88,23 +88,35 @@ final class WidgetRenderer {
         clockPaint.setAntiAlias(true);
         clockPaint.setTypeface(display(context));
         clockPaint.setColor(PRIMARY);
-        clockPaint.setTextSize(h * 0.39f);
+        clockPaint.setTextSize(h * (style == 1 ? 0.43f : style == 2 ? 0.32f : 0.39f));
         fitText(clockPaint, clock, w - pad * 2f);
         clockPaint.setTextAlign(Paint.Align.CENTER);
         float clockBaseline = h * 0.53f - (clockPaint.ascent() + clockPaint.descent()) * 0.5f;
-        canvas.drawText(clock, w * 0.5f, clockBaseline, clockPaint);
+        if (style == 1) {
+            clockPaint.setTextAlign(Paint.Align.LEFT);
+            fitText(clockPaint, clock, w * 0.56f);
+            canvas.drawText(clock, pad, clockBaseline, clockPaint);
+        } else {
+            canvas.drawText(clock, w * 0.5f, clockBaseline, clockPaint);
+        }
 
         text.setTextAlign(Paint.Align.CENTER);
         text.setTextSize(Math.max(9f * density, Math.min(13f * density, h * 0.085f)));
         text.setColor(SECONDARY);
         fitText(text, date, w - pad * 2f);
-        canvas.drawText(date, w * 0.5f, h * 0.67f, text);
+        if (style == 1) {
+            text.setTextAlign(Paint.Align.RIGHT);
+            fitText(text, date, w * 0.43f);
+            canvas.drawText(date, w - pad, h * 0.56f, text);
+        } else {
+            canvas.drawText(date, w * 0.5f, h * 0.67f, text);
+        }
 
         text.setTextAlign(Paint.Align.LEFT);
         text.setTextSize(Math.max(7f * density, Math.min(10f * density, h * 0.065f)));
         text.setColor(signedIn ? SECONDARY : MUTED);
-        String laptop = signedIn ? "Laptop · sin señal" : "Inicia sesión para sincronizar";
-        drawFitted(canvas, text, laptop, pad, h * 0.80f, w - pad * 2f);
+        String laptop = signedIn ? "Sesión activa · estado sin confirmar" : "Inicia sesión para sincronizar";
+        drawFitted(canvas, text, laptop, pad, h * (style == 1 ? 0.77f : 0.80f), w - pad * 2f);
 
         String file = clean(receivedFile);
         String clipboard = clean(clipboardState);
@@ -118,6 +130,16 @@ final class WidgetRenderer {
         else detail += "   ·   Portapapeles vacío";
         text.setColor(MUTED);
         drawFitted(canvas, text, detail, pad, h - pad * 0.75f, w - pad * 2f);
+        if (style == 2) {
+            // Decorative ring: no fabricated progress or connectivity metric.
+            Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+            ring.setStyle(Paint.Style.STROKE);
+            ring.setStrokeWidth(Math.max(2f, Math.min(w, h) * 0.012f));
+            ring.setColor(signedIn ? ACCENT : MUTED);
+            ring.setAlpha(150);
+            float r = Math.min(w, h) * 0.29f;
+            canvas.drawCircle(w * 0.5f, h * 0.43f, r, ring);
+        }
         return bitmap;
     }
 
