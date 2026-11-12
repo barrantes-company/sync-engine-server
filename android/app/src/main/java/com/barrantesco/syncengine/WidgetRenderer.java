@@ -99,7 +99,6 @@ final class WidgetRenderer {
         clockPaint.setTypeface(display(context));
         clockPaint.setColor(PRIMARY);
         clockPaint.setTextSize(h * (style == 1 ? 0.43f : style == 2 ? 0.32f : 0.39f));
-        fitText(clockPaint, clock, w - pad * 2f);
         clockPaint.setTextAlign(Paint.Align.CENTER);
         float clockBaseline = h * 0.53f - (clockPaint.ascent() + clockPaint.descent()) * 0.5f;
         if (style == 1) {
@@ -107,18 +106,19 @@ final class WidgetRenderer {
             fitText(clockPaint, clock, w * 0.56f);
             canvas.drawText(clock, pad, clockBaseline, clockPaint);
         } else {
+            fitText(clockPaint, clock, w - pad * 2f);
             canvas.drawText(clock, w * 0.5f, clockBaseline, clockPaint);
         }
 
         text.setTextAlign(Paint.Align.CENTER);
         text.setTextSize(Math.max(9f * density, Math.min(13f * density, h * 0.085f)));
         text.setColor(SECONDARY);
-        fitText(text, date, w - pad * 2f);
         if (style == 1) {
             text.setTextAlign(Paint.Align.RIGHT);
             fitText(text, date, w * 0.43f);
             canvas.drawText(date, w - pad, h * 0.56f, text);
         } else {
+            fitText(text, date, w - pad * 2f);
             canvas.drawText(date, w * 0.5f, h * 0.67f, text);
         }
 
@@ -162,7 +162,7 @@ final class WidgetRenderer {
 
     private static void fitText(Paint paint, String value, float maxWidth) {
         float measured = paint.measureText(value);
-        if (measured > maxWidth && measured > 0) {
+        if (maxWidth > 0 && measured > maxWidth && measured > 0) {
             paint.setTextSize(paint.getTextSize() * maxWidth / measured);
         }
     }
