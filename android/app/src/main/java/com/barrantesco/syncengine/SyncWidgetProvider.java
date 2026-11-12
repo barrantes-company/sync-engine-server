@@ -107,8 +107,11 @@ public class SyncWidgetProvider extends AppWidgetProvider {
             file = "Archivo recibido";
         }
         String clipboard = signedIn ? AppSettings.clipboardState(context) : "";
-        android.graphics.Bitmap bitmap = WidgetRenderer.render(context, size[0], size[1],
-                AppSettings.timeZone(context), AppSettings.use24h(context), signedIn, file, clipboard);
+        android.graphics.Bitmap bitmap = WidgetRenderer.render(context, style, size[0], size[1],
+                AppSettings.timeZone(context), AppSettings.use24h(context), signedIn,
+                signedIn ? AppSettings.unread(context) : 0,
+                signedIn ? AppSettings.missed(context) : 0,
+                signedIn ? AppSettings.lastSync(context) : 0L, file, clipboard);
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sync_widget);
         views.setImageViewBitmap(R.id.widget_content, bitmap);
