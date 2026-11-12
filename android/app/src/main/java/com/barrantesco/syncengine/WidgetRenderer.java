@@ -84,6 +84,16 @@ final class WidgetRenderer {
         text.setTextSize(markSize);
         canvas.drawText("S∞", pad + markSize * 0.8f, pad + markSize, text);
 
+        if (style == 2) {
+            // Decorative ring: no fabricated progress or connectivity metric.
+            Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+            ring.setStyle(Paint.Style.STROKE);
+            ring.setStrokeWidth(Math.max(2f, Math.min(w, h) * 0.012f));
+            ring.setColor(signedIn ? ACCENT : MUTED);
+            ring.setAlpha(150);
+            float r = Math.min(w, h) * 0.29f;
+            canvas.drawCircle(w * 0.5f, h * 0.43f, r, ring);
+        }
         Paint clockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         clockPaint.setAntiAlias(true);
         clockPaint.setTypeface(display(context));
@@ -130,16 +140,6 @@ final class WidgetRenderer {
         else detail += "   ·   Portapapeles vacío";
         text.setColor(MUTED);
         drawFitted(canvas, text, detail, pad, h - pad * 0.75f, w - pad * 2f);
-        if (style == 2) {
-            // Decorative ring: no fabricated progress or connectivity metric.
-            Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
-            ring.setStyle(Paint.Style.STROKE);
-            ring.setStrokeWidth(Math.max(2f, Math.min(w, h) * 0.012f));
-            ring.setColor(signedIn ? ACCENT : MUTED);
-            ring.setAlpha(150);
-            float r = Math.min(w, h) * 0.29f;
-            canvas.drawCircle(w * 0.5f, h * 0.43f, r, ring);
-        }
         return bitmap;
     }
 
