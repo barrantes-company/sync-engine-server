@@ -44,6 +44,7 @@ final class SyncRefresher {
                     WidgetUrls.origin(url), token, AppSettings.callsSeenAt(app));
             AppSettings.saveCounts(app, summary.unreadMessages, summary.missedCalls);
             AppSettings.saveLatest(app, summary);
+            maybeBanner(app, summary);
             if (emitNotifications && AppSettings.notifications(app)) {
                 notifyNew(app, summary);
             }
@@ -56,6 +57,15 @@ final class SyncRefresher {
         } catch (IOException | JSONException exception) {
             return false;
         }
+    }
+
+    /** Activa el pop-up temporal del remitente cuando llega un mensaje nuevo (independiente de avisos). */
+    private static void maybeBanner(Context context, ApiClient.Summary summary) {
+        if (summary.latest.isEmpty()) return;
+        ApiClient.UnreadMessage message = summary.latest.get(0);
+        if (message.timestamp <= AppSettings.bannerTimestamp(context)) return;
+        AppSettings.setBannerTimestamp(context, message.timestamp);
+        AppSettings.setBannerUntil(context, System.currentTimeMillis() + 12000L);
     }
 
     private static void notifyNew(Context context, ApiClient.Summary summary) {

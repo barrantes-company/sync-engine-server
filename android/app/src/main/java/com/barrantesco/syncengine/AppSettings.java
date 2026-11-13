@@ -37,6 +37,8 @@ final class AppSettings {
     private static final String LATEST_TEXT = "latest_text";
     private static final String LATEST_TYPE = "latest_type";
     private static final String LATEST_TIMESTAMP = "latest_timestamp";
+    private static final String BANNER_UNTIL = "banner_until";
+    private static final String BANNER_TS = "banner_ts";
     private static final String LAST_SYNC = "last_sync";
 
     static final String[] STYLE_NAMES = {
@@ -83,6 +85,8 @@ final class AppSettings {
                 .remove(LATEST_TEXT)
                 .remove(LATEST_TYPE)
                 .remove(LATEST_TIMESTAMP)
+                .remove(BANNER_UNTIL)
+                .remove(BANNER_TS)
                 .remove(LAST_SYNC)
                 .apply();
     }
@@ -204,6 +208,24 @@ final class AppSettings {
 
     static String latestType(Context context) {
         return prefs(context).getString(LATEST_TYPE, "text");
+    }
+
+    /** Fin de la ventana del pop-up del remitente (epoch ms); 0 si no hay pop-up activo. */
+    static long bannerUntil(Context context) {
+        return prefs(context).getLong(BANNER_UNTIL, 0);
+    }
+
+    static void setBannerUntil(Context context, long value) {
+        prefs(context).edit().putLong(BANNER_UNTIL, value).apply();
+    }
+
+    /** Timestamp del último mensaje que activó el pop-up, para no reactivarlo en cada sync. */
+    static long bannerTimestamp(Context context) {
+        return prefs(context).getLong(BANNER_TS, 0);
+    }
+
+    static void setBannerTimestamp(Context context, long value) {
+        prefs(context).edit().putLong(BANNER_TS, value).apply();
     }
 
     static long lastSync(Context context) {

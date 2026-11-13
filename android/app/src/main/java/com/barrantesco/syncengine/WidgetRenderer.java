@@ -18,9 +18,9 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * Renderiza las tres caras premium del widget (Ciudad, Barra, Anillo) desde la caché local.
- * Cada variante se distingue por su fondo y composición; los datos mostrados son reales
- * (hora, fecha, contadores, archivo/portapapeles y frescura de sincronización). Sin red.
+ * Renderiza el fondo premium de las tres caras (Ciudad, Barra, Anillo) en dos fases de glow
+ * para el ViewFlipper. La hora NO se dibuja aquí: la superpone un TextClock vivo del sistema.
+ * Solo datos reales de la caché (contadores y remitente del último mensaje). Sin red.
  */
 final class WidgetRenderer {
     private static final int MAX_WIDTH_PX = 480;
@@ -28,9 +28,7 @@ final class WidgetRenderer {
 
     private static final int PRIMARY = 0xFFEAF2FF;
     private static final int SECONDARY = 0xFF9FB3D1;
-    private static final int MUTED = 0xFF6B7A90;
     private static final int ACCENT = 0xFF54BFA5;
-    private static final int GREEN = 0xFF22C55E;
     private static final int CYAN = 0xFF22D3EE;
     private static final int AMBER = 0xFFF59E0B;
     private static final int BORDER = 0xFF24304A;
@@ -52,21 +50,36 @@ final class WidgetRenderer {
                 Math.max(1, Math.round(height * scale))};
     }
 
-    /** Estado derivado de la caché que comparten las tres caras. */
+    /** Etiqueta de ciudad derivada de la zona horaria efectiva (para el TextView de Ciudad). */
+    static String city(Context context) {
+        TimeZone zone = TimeZone.getTimeZone(AppSettings.effectiveTimeZone(context));
+        String id = zone.getID();
+        int slash = id.lastIndexOf('/');
+        String city = slash >= 0 ? id.substring(slash + 1) : id;
+        return capitalize(city.replace('_', ' '));
+    }
+
+    /** Fecha larga en español para el TextView bajo el reloj. */
+    static String date(Context context) {
+        TimeZone zone = TimeZone.getTimeZone(AppSettings.effectiveTimeZone(context));
+        SimpleDateFormat format = new SimpleDateFormat("EEEE, d 'de' MMMM", SPANISH);
+        format.setTimeZone(zone);
+        return capitalize(format.format(new Date()).replace('.', ' '));
+    }
+
     private static final class S {
         int w, h;
         float d;
-        String clock, date, status, city, detail;
-        int unread, missed, led, minute;
-        boolean showCounters, animations;
+        int unread, missed, minute, phase;
+        boolean showCounters, animations, banner;
+        String bannerFrom, bannerText;
     }
 
     /**
-     * Dibuja la cara indicada por {@code style} (0 = Ciudad, 1 = Barra, 2 = Anillo).
-     * Conserva la firma histórica y añade el selector de variante que antes se ignoraba.
+     * Dibuja el fondo de la cara {@code style} (0 = Ciudad, 1 = Barra, 2 = Anillo) en la fase
+     * {@code phase} (0/1). Las dos fases solo cambian el glow ambiental para el bucle sutil.
      */
-    static Bitmap render(Context context, int width, int height, int style, String zoneId,
-                         boolean use24h, boolean signedIn, String receivedFile, String clipboardState) {
+    static Bitmap render(Context context, int width, int height, int style, int phase) {
         int w = Math.max(1, width);
         int h = Math.max(1, height);
         display(context);
@@ -80,37 +93,25 @@ final class WidgetRenderer {
         clip.addRoundRect(new RectF(0f, 0f, w, h), radius, radius, Path.Direction.CW);
         canvas.clipPath(clip);
 
-        TimeZone zone = TimeZone.getTimeZone(
-                zoneId == null || zoneId.trim().isEmpty() ? AppSettings.DEFAULT_TIME_ZONE : zoneId);
-        Date now = new Date();
+        boolean signedIn = AppSettings.isLoggedIn(context);
+        long now = System.currentTimeMillis();
+        TimeZone zone = TimeZone.getTimeZone(AppSettings.effectiveTimeZone(context));
         Calendar calendar = Calendar.getInstance(zone);
-        calendar.setTime(now);
-
-        SimpleDateFormat clockFormat = new SimpleDateFormat(use24h ? "HH:mm" : "h:mm", Locale.US);
-        clockFormat.setTimeZone(zone);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, d 'de' MMMM", SPANISH);
-        dateFormat.setTimeZone(zone);
-
-        String file = clean(receivedFile);
-        String clipboard = clean(clipboardState);
-        String detail = file.isEmpty() ? "Archivo · sin recientes" : "Archivo · " + file;
-        detail += clipboard.isEmpty() ? "   ·   Portapapeles vacío" : "   ·   Portapapeles listo";
+        calendar.setTimeInMillis(now);
 
         S s = new S();
         s.w = w;
         s.h = h;
         s.d = density;
-        s.clock = clockFormat.format(now);
-        s.date = capitalize(dateFormat.format(now).replace('.', ' '));
         s.minute = calendar.get(Calendar.MINUTE);
+        s.phase = phase;
         s.unread = signedIn ? AppSettings.unread(context) : 0;
         s.missed = signedIn ? AppSettings.missed(context) : 0;
         s.showCounters = AppSettings.showCounters(context);
         s.animations = AppSettings.animations(context);
-        s.led = ledColor(signedIn, AppSettings.lastSync(context), now.getTime());
-        s.status = statusLabel(signedIn, AppSettings.lastSync(context), now.getTime());
-        s.city = cityFromZone(zone);
-        s.detail = detail;
+        s.banner = signedIn && AppSettings.bannerUntil(context) > now;
+        s.bannerFrom = clean(AppSettings.latestFrom(context));
+        s.bannerText = bannerText(context);
 
         switch (style) {
             case 0:
@@ -132,106 +133,66 @@ final class WidgetRenderer {
         return bitmap;
     }
 
+    private static String bannerText(Context context) {
+        String text = clean(AppSettings.latestText(context));
+        if (!text.isEmpty()) return text;
+        String type = AppSettings.latestType(context);
+        if ("audio".equals(type)) return context.getString(R.string.preview_audio);
+        if ("file".equals(type)) return context.getString(R.string.preview_file);
+        return context.getString(R.string.preview_message);
+    }
+
     // ---------------------------------------------------------------- Caras
 
-    /** Anillo: reloj dentro de un anillo con brillo y chips de contadores reales. */
+    /** Anillo: reloj vivo centrado dentro de un anillo orbital; contadores abajo. */
     private static void anillo(Canvas cv, S s) {
         radialBg(cv, s.w, s.h);
+        ambientGlow(cv, s);
         float cx = s.w * 0.5f;
-        float cy = s.h * 0.36f;
-        float r = Math.min(s.w, s.h) * 0.25f;
-        float stroke = Math.max(3f, r * 0.13f);
+        float cy = s.h * 0.5f;
+        float r = Math.min(s.w, s.h) * 0.30f;
+        float stroke = Math.max(3f, r * 0.10f);
         float sweep = s.animations ? 24f + (s.minute / 60f) * 336f : 300f;
         ring(cv, cx, cy, r, stroke, sweep, ACCENT);
-
-        Paint t = paint();
-        t.setTextAlign(Paint.Align.CENTER);
-        t.setColor(SECONDARY);
-        t.setTextSize(r * 0.20f);
-        cv.drawText("SYNC", cx, cy - r * 0.50f, t);
-        t.setColor(PRIMARY);
-        t.setTextSize(r * 0.60f);
-        fit(t, s.clock, r * 1.7f);
-        cv.drawText(s.clock, cx, cy - (t.ascent() + t.descent()) * 0.5f, t);
-
-        t.setColor(SECONDARY);
-        t.setTextSize(Math.max(9f * s.d, s.h * 0.055f));
-        fit(t, s.date, s.w * 0.86f);
-        cv.drawText(s.date, cx, s.h * 0.685f, t);
-        t.setTextAlign(Paint.Align.LEFT);
 
         if (s.showCounters) {
             float cw = s.w * 0.30f;
             float ch = s.h * 0.085f;
-            countChip(cv, cx - s.w * 0.17f, s.h * 0.745f, cw, ch, CYAN, s.unread, "Mensajes");
-            countChip(cv, cx + s.w * 0.17f, s.h * 0.745f, cw, ch, AMBER, s.missed, "Llamadas");
+            countChip(cv, cx - s.w * 0.17f, s.h * 0.84f, cw, ch, CYAN, s.unread, "Mensajes");
+            countChip(cv, cx + s.w * 0.17f, s.h * 0.84f, cw, ch, AMBER, s.missed, "Llamadas");
         }
-        status(cv, cx, s.h * 0.93f, s.w, s.led, s.status);
+        if (s.banner) banner(cv, s, s.w * 0.5f, s.h * 0.055f, s.w * 0.82f);
     }
 
-    /** Barra: fondo mesh, reloj a la izquierda y nube de sincronización a la derecha. */
+    /** Barra: fondo mesh, reloj vivo a la izquierda, nube y contadores a la derecha. */
     private static void barra(Canvas cv, S s) {
         meshBg(cv, s.w, s.h);
+        ambientGlow(cv, s);
         float pad = Math.max(10f * s.d, s.w * 0.05f);
-        Paint t = paint();
-        t.setTextAlign(Paint.Align.LEFT);
-        t.setColor(PRIMARY);
-        t.setTextSize(s.h * 0.30f);
-        fit(t, s.clock, s.w * 0.46f);
-        cv.drawText(s.clock, pad, s.h * 0.44f, t);
-        t.setColor(SECONDARY);
-        t.setTextSize(Math.max(9f * s.d, s.h * 0.072f));
-        fit(t, s.date, s.w * 0.50f);
-        cv.drawText(s.date, pad, s.h * 0.60f, t);
-        statusLeft(cv, pad, s.h * 0.755f, s.w, s.led, s.status);
-        t.setColor(MUTED);
-        t.setTextSize(Math.max(7f * s.d, s.h * 0.052f));
-        fit(t, s.detail, s.w * 0.52f);
-        cv.drawText(s.detail, pad, s.h * 0.865f, t);
-
-        cloudIcon(cv, s.w * 0.78f, s.h * 0.28f, s.h * 0.13f, s.led);
+        cloudIcon(cv, s.w * 0.80f, s.h * 0.22f, s.h * 0.12f, ACCENT);
         if (s.showCounters) {
-            float cw = s.w * 0.19f;
+            float cw = s.w * 0.18f;
             float ch = s.h * 0.10f;
-            countChip(cv, s.w * 0.65f, s.h * 0.50f, cw, ch, CYAN, s.unread, "Mensajes");
-            countChip(cv, s.w * 0.85f, s.h * 0.50f, cw, ch, AMBER, s.missed, "Llamadas");
+            countChip(cv, s.w * 0.70f, s.h * 0.42f, cw, ch, CYAN, s.unread, "Mensajes");
+            countChip(cv, s.w * 0.88f, s.h * 0.42f, cw, ch, AMBER, s.missed, "Llamadas");
         }
-        accentBar(cv, pad, s.h * 0.925f, s.w - pad * 2f, Math.max(3f, s.h * 0.022f),
+        accentBar(cv, pad, s.h * 0.90f, s.w - pad * 2f, Math.max(3f, s.h * 0.022f),
                 s.minute, s.animations);
+        if (s.banner) banner(cv, s, s.w * 0.42f, s.h * 0.06f, s.w * 0.62f);
     }
 
-    /** Ciudad: cielo degradado, skyline con ventanas y datos de sesión (sin clima inventado). */
+    /** Ciudad: cielo degradado, skyline con ventanas, reloj vivo arriba a la izquierda. */
     private static void ciudad(Canvas cv, S s) {
         skyBg(cv, s.w, s.h);
+        ambientGlow(cv, s);
         skyline(cv, s.w, s.h, s.minute, s.animations);
-        float pad = Math.max(10f * s.d, s.w * 0.05f);
-        float dotR = Math.max(3f, s.w * 0.011f);
-        Paint t = paint();
-        t.setTextAlign(Paint.Align.LEFT);
-        t.setColor(s.led);
-        t.setShadowLayer(dotR * 2.2f, 0f, 0f, s.led);
-        cv.drawCircle(pad + dotR, s.h * 0.145f, dotR, t);
-        t.setShadowLayer(0f, 0f, 0f, 0);
-        t.setColor(PRIMARY);
-        t.setTextSize(Math.max(9f * s.d, s.h * 0.075f));
-        cv.drawText(s.city, pad + dotR * 2.6f, s.h * 0.165f, t);
-
-        t.setColor(PRIMARY);
-        t.setTextSize(s.h * 0.28f);
-        fit(t, s.clock, s.w * 0.46f);
-        cv.drawText(s.clock, pad, s.h * 0.47f, t);
-        t.setColor(0xFFCFE0F5);
-        t.setTextSize(Math.max(9f * s.d, s.h * 0.068f));
-        fit(t, s.date, s.w * 0.50f);
-        cv.drawText(s.date, pad, s.h * 0.62f, t);
-
-        statusLeft(cv, s.w * 0.60f, s.h * 0.30f, s.w, s.led, s.status);
         if (s.showCounters) {
-            float cw = s.w * 0.19f;
+            float cw = s.w * 0.18f;
             float ch = s.h * 0.10f;
-            countChip(cv, s.w * 0.65f, s.h * 0.42f, cw, ch, CYAN, s.unread, "Mensajes");
-            countChip(cv, s.w * 0.85f, s.h * 0.42f, cw, ch, AMBER, s.missed, "Llamadas");
+            countChip(cv, s.w * 0.70f, s.h * 0.40f, cw, ch, CYAN, s.unread, "Mensajes");
+            countChip(cv, s.w * 0.88f, s.h * 0.40f, cw, ch, AMBER, s.missed, "Llamadas");
         }
+        if (s.banner) banner(cv, s, s.w * 0.5f, s.h * 0.62f, s.w * 0.82f);
     }
 
     // ------------------------------------------------------------ Fondos
@@ -267,6 +228,19 @@ final class WidgetRenderer {
                 new int[] {0xFF0B1230, 0xFF1B1F4A, 0xFF3A2A63, 0xFF0A0F1E},
                 new float[] {0f, 0.45f, 0.75f, 1f}, Shader.TileMode.CLAMP));
         cv.drawRect(0f, 0f, w, h, p);
+        p.setShader(null);
+    }
+
+    /** Glow ambiental que respira entre las dos fases del ViewFlipper. */
+    private static void ambientGlow(Canvas cv, S s) {
+        float intensity = s.animations ? (s.phase == 0 ? 0.28f : 0.52f) : 0.38f;
+        int alpha = Math.max(0, Math.min(255, Math.round(intensity * 255f)));
+        int color = (alpha << 24) | (CYAN & 0x00FFFFFF);
+        float cx = s.phase == 1 ? s.w * 0.62f : s.w * 0.40f;
+        Paint p = paint();
+        p.setShader(new RadialGradient(cx, s.h * 0.10f, Math.max(s.w, s.h) * 0.85f,
+                color, 0x00000000, Shader.TileMode.CLAMP));
+        cv.drawRect(0f, 0f, s.w, s.h, p);
         p.setShader(null);
     }
 
@@ -352,7 +326,9 @@ final class WidgetRenderer {
         p.setColor(0x14FFFFFF);
         cv.drawRoundRect(new RectF(x, y, x + cw, y + ch), ch * 0.5f, ch * 0.5f, p);
         p.setColor(col);
+        p.setShadowLayer(ch * 0.30f, 0f, 0f, col);
         cv.drawCircle(x + ch * 0.42f, y + ch * 0.5f, ch * 0.16f, p);
+        p.setShadowLayer(0f, 0f, 0f, 0);
         p.setColor(PRIMARY);
         p.setTextAlign(Paint.Align.LEFT);
         p.setTextSize(ch * 0.52f);
@@ -364,59 +340,47 @@ final class WidgetRenderer {
         p.setTextAlign(Paint.Align.LEFT);
     }
 
-    private static void status(Canvas cv, float cx, float y, int w, int led, String label) {
+    /** Pop-up temporal tipo glass con el remitente del nuevo mensaje. */
+    private static void banner(Canvas cv, S s, float cx, float y, float bw) {
+        float bh = Math.max(30f * s.d, s.h * 0.15f);
+        float x = cx - bw / 2f;
+        float corner = bh * 0.30f;
+        RectF card = new RectF(x, y, x + bw, y + bh);
         Paint p = paint();
-        p.setTextSize(Math.max(8f, w * 0.038f));
-        p.setTextAlign(Paint.Align.LEFT);
-        float dotR = Math.max(3f, w * 0.012f);
-        float gap = dotR * 2.6f;
-        float x = cx - (gap + p.measureText(label)) / 2f;
-        p.setColor(led);
-        p.setShadowLayer(dotR * 2.2f, 0f, 0f, led);
-        cv.drawCircle(x + dotR, y - dotR * 0.6f, dotR, p);
+        p.setColor(0xF2101A2E);
+        cv.drawRoundRect(card, corner, corner, p);
+        p.setStyle(Paint.Style.STROKE);
+        p.setStrokeWidth(Math.max(1f, s.d));
+        p.setColor(0x5522D3EE);
+        cv.drawRoundRect(card, corner, corner, p);
+        p.setStyle(Paint.Style.FILL);
+
+        float av = bh * 0.60f;
+        float avx = x + bh * 0.52f;
+        float avy = y + bh * 0.5f;
+        p.setColor(CYAN);
+        p.setShadowLayer(av * 0.45f, 0f, 0f, CYAN);
+        cv.drawCircle(avx, avy, av * 0.5f, p);
         p.setShadowLayer(0f, 0f, 0f, 0);
-        p.setColor(PRIMARY);
-        cv.drawText(label, x + gap, y, p);
-    }
+        p.setColor(0xFF04121A);
+        p.setTextAlign(Paint.Align.CENTER);
+        p.setTextSize(av * 0.52f);
+        String initial = s.bannerFrom.isEmpty() ? "?"
+                : s.bannerFrom.substring(0, 1).toUpperCase(SPANISH);
+        cv.drawText(initial, avx, avy - (p.ascent() + p.descent()) * 0.5f, p);
 
-    private static void statusLeft(Canvas cv, float x, float y, int w, int led, String label) {
-        Paint p = paint();
-        p.setTextSize(Math.max(8f, w * 0.036f));
+        float tx = avx + av * 0.78f;
+        float maxw = x + bw - tx - bh * 0.30f;
         p.setTextAlign(Paint.Align.LEFT);
-        float dotR = Math.max(3f, w * 0.011f);
-        p.setColor(led);
-        p.setShadowLayer(dotR * 2.2f, 0f, 0f, led);
-        cv.drawCircle(x + dotR, y - dotR * 0.6f, dotR, p);
-        p.setShadowLayer(0f, 0f, 0f, 0);
         p.setColor(PRIMARY);
-        cv.drawText(label, x + dotR * 2.6f, y, p);
-    }
-
-    // ------------------------------------------------------------- Estado
-
-    private static int ledColor(boolean signedIn, long lastSync, long now) {
-        if (!signedIn) return MUTED;
-        if (lastSync <= 0) return CYAN;
-        long age = Math.max(0L, now - lastSync);
-        if (age <= 5L * 60L * 1000L) return GREEN;
-        if (age <= 30L * 60L * 1000L) return ACCENT;
-        return AMBER;
-    }
-
-    private static String statusLabel(boolean signedIn, long lastSync, long now) {
-        if (!signedIn) return "Inicia sesión";
-        if (lastSync <= 0) return "Sincronizando…";
-        long age = Math.max(0L, now - lastSync);
-        if (age <= 5L * 60L * 1000L) return "Sesión activa";
-        if (age <= 30L * 60L * 1000L) return "Sincronizado";
-        return "Sin señal reciente";
-    }
-
-    private static String cityFromZone(TimeZone zone) {
-        String id = zone.getID();
-        int slash = id.lastIndexOf('/');
-        String city = slash >= 0 ? id.substring(slash + 1) : id;
-        return capitalize(city.replace('_', ' '));
+        p.setTextSize(bh * 0.30f);
+        String from = s.bannerFrom.isEmpty() ? "Mensaje nuevo" : s.bannerFrom;
+        fit(p, from, maxw);
+        cv.drawText(from, tx, y + bh * 0.42f, p);
+        p.setColor(SECONDARY);
+        p.setTextSize(bh * 0.24f);
+        fit(p, s.bannerText, maxw);
+        cv.drawText(s.bannerText, tx, y + bh * 0.74f, p);
     }
 
     private static Typeface display(Context context) {
