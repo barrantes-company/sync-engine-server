@@ -25,7 +25,6 @@ final class AppSettings {
     private static final String SHOW_COUNTERS = "show_counters";
     private static final String NOTIFICATIONS = "notifications";
     private static final String ANIMATIONS = "animations";
-    private static final String WIDGET_STYLE = "widget_style";
     private static final String UNREAD = "unread";
     private static final String MISSED = "missed";
     private static final String CALLS_SEEN_AT = "calls_seen_at";
@@ -40,10 +39,6 @@ final class AppSettings {
     private static final String BANNER_UNTIL = "banner_until";
     private static final String BANNER_TS = "banner_ts";
     private static final String LAST_SYNC = "last_sync";
-
-    static final String[] STYLE_NAMES = {
-            "Reloj", "Señal", "Negro", "Línea", "Barra", "Fino", "Ciudad", "Accesos"
-    };
 
     private AppSettings() {
     }
@@ -156,16 +151,6 @@ final class AppSettings {
 
     static void setAnimations(Context context, boolean value) {
         prefs(context).edit().putBoolean(ANIMATIONS, value).apply();
-    }
-
-    static int widgetStyle(Context context) {
-        int value = prefs(context).getInt(WIDGET_STYLE, 2);
-        if (value < 0 || value >= STYLE_NAMES.length) return 2;
-        return value;
-    }
-
-    static void setWidgetStyle(Context context, int value) {
-        prefs(context).edit().putInt(WIDGET_STYLE, value).apply();
     }
 
     static int unread(Context context) {
