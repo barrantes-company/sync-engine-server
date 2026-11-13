@@ -26,9 +26,13 @@ public final class MainActivity extends Activity {
     private static final int GOLD = 0xFFFFC15A;
     private static final int MUTED = 0xFF9AABBD;
     private static final int WHITE = 0xFFF7F8FB;
-    private static final List<String> ZONES = Arrays.asList(
-            "America/Lima", "America/Bogota", "America/Mexico_City", "America/Santiago",
-            "America/Argentina/Buenos_Aires", "America/New_York", "Europe/Madrid", "UTC");
+    private static final List<String> ZONE_VALUES = Arrays.asList(
+            AppSettings.DEVICE_ZONE, "America/Lima", "America/Bogota", "America/Mexico_City",
+            "America/Santiago", "America/Argentina/Buenos_Aires", "America/New_York",
+            "Europe/Madrid", "UTC");
+    private static final List<String> ZONE_LABELS = Arrays.asList(
+            "Automática (dispositivo)", "Lima", "Bogotá", "Ciudad de México", "Santiago",
+            "Buenos Aires", "Nueva York", "Madrid", "UTC");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +68,8 @@ public final class MainActivity extends Activity {
         card.addView(section("APARIENCIA"), matchWrap());
         card.addView(toggle("Mostrar contadores", AppSettings.showCounters(this), value ->
                 AppSettings.setShowCounters(this, value)), matchWrap());
+        card.addView(toggle("Formato horario del dispositivo", AppSettings.auto24h(this), value ->
+                AppSettings.setAuto24h(this, value)), matchWrap());
         card.addView(toggle("Formato de 24 horas", AppSettings.use24h(this), value ->
                 AppSettings.setUse24h(this, value)), matchWrap());
         card.addView(toggle("Estelas animadas", AppSettings.animations(this), value ->
@@ -80,19 +86,19 @@ public final class MainActivity extends Activity {
 
         card.addView(section("ZONA HORARIA"), matchWrap());
         Spinner zones = new Spinner(this);
-        zones.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, ZONES) {
+        zones.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, ZONE_LABELS) {
             @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
                 TextView view = (TextView) super.getView(position, convertView, parent);
                 view.setTextColor(WHITE);
                 return view;
             }
         });
-        int current = ZONES.indexOf(AppSettings.timeZone(this));
+        int current = ZONE_VALUES.indexOf(AppSettings.timeZone(this));
         zones.setSelection(Math.max(current, 0));
         zones.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GOLD));
         zones.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                String zone = ZONES.get(position);
+                String zone = ZONE_VALUES.get(position);
                 if (!zone.equals(AppSettings.timeZone(MainActivity.this))) {
                     AppSettings.setTimeZone(MainActivity.this, zone);
                     SyncWidgetProvider.refreshAll(MainActivity.this);
