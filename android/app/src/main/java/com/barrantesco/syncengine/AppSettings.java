@@ -2,6 +2,9 @@ package com.barrantesco.syncengine;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.format.DateFormat;
+
+import java.util.TimeZone;
 
 /**
  * Preferencias de la app: opciones del widget, sesión y caché de contadores.
@@ -9,12 +12,15 @@ import android.content.SharedPreferences;
  */
 final class AppSettings {
     static final String DEFAULT_TIME_ZONE = "America/Lima";
+    /** Sentinel: seguir la zona horaria del dispositivo en lugar de una fija. */
+    static final String DEVICE_ZONE = "device";
     private static final String FILE = "sync_state";
 
     private static final String TOKEN = "token";
     private static final String FCM_TOKEN = "fcm_token";
     private static final String USER_NAME = "user_name";
     private static final String USE_24H = "use_24h";
+    private static final String USE_24H_AUTO = "use_24h_auto";
     private static final String TIME_ZONE = "time_zone";
     private static final String SHOW_COUNTERS = "show_counters";
     private static final String NOTIFICATIONS = "notifications";
@@ -90,19 +96,38 @@ final class AppSettings {
     }
 
     static boolean use24h(Context context) {
+        if (auto24h(context)) return DateFormat.is24HourFormat(context);
         return prefs(context).getBoolean(USE_24H, true);
     }
 
     static void setUse24h(Context context, boolean value) {
-        prefs(context).edit().putBoolean(USE_24H, value).apply();
+        prefs(context).edit().putBoolean(USE_24H, value).putBoolean(USE_24H_AUTO, false).apply();
+    }
+
+    /** Cuando está activo, el formato 12/24 sigue al dispositivo. */
+    static boolean auto24h(Context context) {
+        return prefs(context).getBoolean(USE_24H_AUTO, true);
+    }
+
+    static void setAuto24h(Context context, boolean value) {
+        prefs(context).edit().putBoolean(USE_24H_AUTO, value).apply();
     }
 
     static String timeZone(Context context) {
-        return prefs(context).getString(TIME_ZONE, DEFAULT_TIME_ZONE);
+        return prefs(context).getString(TIME_ZONE, DEVICE_ZONE);
     }
 
     static void setTimeZone(Context context, String zoneId) {
         prefs(context).edit().putString(TIME_ZONE, zoneId).apply();
+    }
+
+    /** Zona efectiva: la del dispositivo en modo automático, o la elegida manualmente. */
+    static String effectiveTimeZone(Context context) {
+        String zone = timeZone(context);
+        if (zone == null || zone.isEmpty() || DEVICE_ZONE.equals(zone)) {
+            return TimeZone.getDefault().getID();
+        }
+        return zone;
     }
 
     static boolean showCounters(Context context) {

@@ -8,6 +8,7 @@ import android.appwidget.AppWidgetProviderInfo;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -107,11 +108,8 @@ public class SyncWidgetProvider extends AppWidgetProvider {
             file = "Archivo recibido";
         }
         String clipboard = signedIn ? AppSettings.clipboardState(context) : "";
-        android.graphics.Bitmap bitmap = WidgetRenderer.render(context, style, size[0], size[1],
-                AppSettings.timeZone(context), AppSettings.use24h(context), signedIn,
-                signedIn ? AppSettings.unread(context) : 0,
-                signedIn ? AppSettings.missed(context) : 0,
-                signedIn ? AppSettings.lastSync(context) : 0L, file, clipboard);
+        android.graphics.Bitmap bitmap = WidgetRenderer.render(context, size[0], size[1], style,
+                AppSettings.effectiveTimeZone(context), AppSettings.use24h(context), signedIn, file, clipboard);
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.sync_widget);
         views.setImageViewBitmap(R.id.widget_content, bitmap);
@@ -136,11 +134,21 @@ public class SyncWidgetProvider extends AppWidgetProvider {
     private static void scheduleTick(Context context) {
         AlarmManager alarms = context.getSystemService(AlarmManager.class);
         if (alarms == null) return;
+        long next = (System.currentTimeMillis() / 60000L + 1) * 60000L;
+        PendingIntent intent = tickIntent(context);
         try {
-            long next = (System.currentTimeMillis() / 60000L + 1) * 60000L;
-            alarms.set(AlarmManager.RTC, next, tickIntent(context));
+            if (Build.VERSION.SDK_INT >= 31 && !alarms.canScheduleExactAlarms()) {
+                alarms.setAndAllowWhileIdle(AlarmManager.RTC, next, intent);
+            } else {
+                alarms.setExactAndAllowWhileIdle(AlarmManager.RTC, next, intent);
+            }
         } catch (SecurityException error) {
-            Log.w(TAG, "No se pudo programar el reloj del widget", error);
+            Log.w(TAG, "No se pudo programar el reloj exacto del widget", error);
+            try {
+                alarms.set(AlarmManager.RTC, next, intent);
+            } catch (SecurityException ignored) {
+                // Sin permiso de alarmas: el widget se repintará en el próximo evento del sistema.
+            }
         }
     }
 
