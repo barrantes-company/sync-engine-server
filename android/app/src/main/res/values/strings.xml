@@ -2,24 +2,10 @@
 <resources>
     <string name="app_name">SYNC ENGINE</string>
     <string name="widget_name">SYNC ENGINE</string>
-    <string name="widget_reloj">Cristal</string>
-    <string name="widget_reloj_hint">Hora, fecha y avisos</string>
-    <string name="widget_senal">Pulso</string>
-    <string name="widget_senal_hint">Hora y accesos</string>
-    <string name="widget_negro">Núcleo</string>
-    <string name="widget_negro_hint">Hora y estado</string>
-    <string name="widget_linea">Avisos</string>
-    <string name="widget_linea_hint">Mensajes y llamadas</string>
-    <string name="widget_barra">Barra</string>
-    <string name="widget_barra_hint">Hora, avisos y temperatura</string>
-    <string name="widget_fino">Barra</string>
-    <string name="widget_fino_hint">Hora y estado</string>
     <string name="widget_ciudad">Ciudad</string>
     <string name="widget_ciudad_hint">Hora, Lima y cielo</string>
     <string name="widget_anillo">Anillo</string>
     <string name="widget_anillo_hint">Hora y avisos en órbita</string>
-    <string name="widget_accesos">Contacto</string>
-    <string name="widget_accesos_hint">Abrir mensajes y llamadas</string>
     <string name="configure_widget">Configurar widget SYNC ENGINE</string>
     <string name="setup_instructions">Mantén pulsada la pantalla de inicio, abre Widgets, busca SYNC ENGINE y arrastra el widget. La aplicación usa el servidor configurado de forma predeterminada.</string>
     <string name="save_url">Guardar URL predeterminada</string>
@@ -47,7 +33,6 @@
     <string name="credentials_required">Escribe usuario y contraseña.</string>
     <string name="sign_in_failed">No se pudo iniciar sesión: %1$s</string>
     <string name="widget_sign_in">Inicia sesión en Ajustes</string>
-    <string name="widget_counts">%1$s · %2$s</string>
     <string name="channel_messages">Mensajes</string>
     <string name="channel_calls">Llamadas perdidas</string>
     <string name="notif_messages_title">%1$d mensajes sin leer</string>

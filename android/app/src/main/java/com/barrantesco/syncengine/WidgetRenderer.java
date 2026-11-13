@@ -9,6 +9,7 @@ import android.graphics.Path;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.SweepGradient;
 import android.graphics.Typeface;
 
 import java.text.SimpleDateFormat;
@@ -18,34 +19,37 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * Renderiza el fondo premium de las tres caras (Ciudad, Barra, Anillo) en dos fases de glow
- * para el ViewFlipper. La hora NO se dibuja aquí: la superpone un TextClock vivo del sistema.
- * Solo datos reales de la caché (contadores y remitente del último mensaje). Sin red.
+ * Renderiza el fondo premium de las dos caras (Ciudad ancha y Anillo cuadrado) en dos fases
+ * de glow para el ViewFlipper. La hora NO se dibuja aquí: la superpone un TextClock vivo del
+ * sistema. El bitmap es full-bleed con esquinas transparentes para que el widget flote sobre
+ * el wallpaper sin bordes negros. Solo datos reales de la caché. Sin red.
  */
 final class WidgetRenderer {
-    private static final int MAX_WIDTH_PX = 480;
-    private static final int MAX_HEIGHT_PX = 320;
+    /** Presupuesto de píxeles por frame; dos frames siguen siendo seguros para el binder. */
+    private static final int MAX_PIXELS = 153600;
 
-    private static final int PRIMARY = 0xFFEAF2FF;
-    private static final int SECONDARY = 0xFF9FB3D1;
-    private static final int ACCENT = 0xFF54BFA5;
-    private static final int CYAN = 0xFF22D3EE;
-    private static final int AMBER = 0xFFF59E0B;
-    private static final int BORDER = 0xFF24304A;
-    private static final int SKY_LINE = 0xFF0A0F1E;
-    private static final int WINDOW = 0xFFFFD98A;
+    private static final int PRIMARY = 0xFFF3F7FF;
+    private static final int SECONDARY = 0xFFAAB9D6;
+    private static final int ACCENT = 0xFF4FD1C5;
+    private static final int CYAN = 0xFF38BDF8;
+    private static final int AMBER = 0xFFFBBF24;
+    private static final int SKY_LINE = 0xFF070B16;
+    private static final int SKY_HAZE = 0xFF1C2547;
+    private static final int WINDOW = 0xFFFFD9A0;
+    private static final int GLASS = 0x16FFFFFF;
+    private static final int HAIRLINE = 0x24FFFFFF;
     private static final Locale SPANISH = new Locale("es", "ES");
 
     private static Typeface displayTypeface;
 
     private WidgetRenderer() {}
 
-    /** Calcula el bitmap a partir del tamaño del widget en dp y limita su memoria. */
+    /** Bitmap full-bleed con presupuesto de píxeles que preserva el aspecto del widget. */
     static int[] size(Context context, int widthDp, int heightDp) {
         float density = context.getResources().getDisplayMetrics().density;
         float width = Math.max(110, widthDp) * density;
         float height = Math.max(60, heightDp) * density;
-        float scale = Math.min(1f, Math.min(MAX_WIDTH_PX / width, MAX_HEIGHT_PX / height));
+        float scale = Math.min(1f, (float) Math.sqrt(MAX_PIXELS / (width * height)));
         return new int[] {Math.max(1, Math.round(width * scale)),
                 Math.max(1, Math.round(height * scale))};
     }
@@ -87,7 +91,7 @@ final class WidgetRenderer {
         Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         float density = context.getResources().getDisplayMetrics().density;
-        float radius = Math.max(8f * density, Math.min(w, h) * 0.09f);
+        float radius = Math.max(10f * density, Math.min(w, h) * 0.10f);
 
         Path clip = new Path();
         clip.addRoundRect(new RectF(0f, 0f, w, h), radius, radius, Path.Direction.CW);
@@ -117,19 +121,18 @@ final class WidgetRenderer {
             case 0:
                 ciudad(canvas, s);
                 break;
-            case 1:
-                barra(canvas, s);
-                break;
             default:
                 anillo(canvas, s);
                 break;
         }
 
-        Paint border = paint();
-        border.setStyle(Paint.Style.STROKE);
-        border.setStrokeWidth(Math.max(1f, density));
-        border.setColor(BORDER);
-        canvas.drawRoundRect(new RectF(0.5f, 0.5f, w - 0.5f, h - 0.5f), radius, radius, border);
+        Paint edge = paint();
+        edge.setStyle(Paint.Style.STROKE);
+        edge.setStrokeWidth(Math.max(1f, density * 0.75f));
+        edge.setColor(HAIRLINE);
+        float inset = edge.getStrokeWidth() * 0.5f;
+        canvas.drawRoundRect(new RectF(inset, inset, w - inset, h - inset),
+                radius - inset, radius - inset, edge);
         return bitmap;
     }
 
@@ -144,91 +147,63 @@ final class WidgetRenderer {
 
     // ---------------------------------------------------------------- Caras
 
-    /** Anillo: reloj vivo centrado dentro de un anillo orbital; contadores abajo. */
+    /** Anillo: reloj vivo centrado en un anillo orbital tonal; contadores glass abajo. */
     private static void anillo(Canvas cv, S s) {
         radialBg(cv, s.w, s.h);
         ambientGlow(cv, s);
         float cx = s.w * 0.5f;
-        float cy = s.h * 0.5f;
+        float cy = s.h * 0.47f;
         float r = Math.min(s.w, s.h) * 0.30f;
-        float stroke = Math.max(3f, r * 0.10f);
-        float sweep = s.animations ? 24f + (s.minute / 60f) * 336f : 300f;
-        ring(cv, cx, cy, r, stroke, sweep, ACCENT);
+        float stroke = Math.max(3f, r * 0.09f);
+        float sweep = s.animations ? 30f + (s.minute / 60f) * 330f : 300f;
+        ring(cv, cx, cy, r, stroke, sweep);
 
         if (s.showCounters) {
-            float cw = s.w * 0.30f;
-            float ch = s.h * 0.085f;
-            countChip(cv, cx - s.w * 0.17f, s.h * 0.84f, cw, ch, CYAN, s.unread, "Mensajes");
-            countChip(cv, cx + s.w * 0.17f, s.h * 0.84f, cw, ch, AMBER, s.missed, "Llamadas");
+            float cw = s.w * 0.34f;
+            float ch = s.h * 0.075f;
+            countChip(cv, cx - s.w * 0.19f, s.h * 0.84f, cw, ch, CYAN, s.unread, "Mensajes");
+            countChip(cv, cx + s.w * 0.19f, s.h * 0.84f, cw, ch, AMBER, s.missed, "Llamadas");
         }
-        if (s.banner) banner(cv, s, s.w * 0.5f, s.h * 0.055f, s.w * 0.82f);
+        if (s.banner) banner(cv, s, s.w * 0.5f, s.h * 0.05f, s.w * 0.84f);
     }
 
-    /** Barra: fondo mesh, reloj vivo a la izquierda, nube y contadores a la derecha. */
-    private static void barra(Canvas cv, S s) {
-        meshBg(cv, s.w, s.h);
-        ambientGlow(cv, s);
-        float pad = Math.max(10f * s.d, s.w * 0.05f);
-        cloudIcon(cv, s.w * 0.80f, s.h * 0.22f, s.h * 0.12f, ACCENT);
-        if (s.showCounters) {
-            float cw = s.w * 0.18f;
-            float ch = s.h * 0.10f;
-            countChip(cv, s.w * 0.70f, s.h * 0.42f, cw, ch, CYAN, s.unread, "Mensajes");
-            countChip(cv, s.w * 0.88f, s.h * 0.42f, cw, ch, AMBER, s.missed, "Llamadas");
-        }
-        accentBar(cv, pad, s.h * 0.90f, s.w - pad * 2f, Math.max(3f, s.h * 0.022f),
-                s.minute, s.animations);
-        if (s.banner) banner(cv, s, s.w * 0.42f, s.h * 0.06f, s.w * 0.62f);
-    }
-
-    /** Ciudad: cielo degradado, skyline con ventanas, reloj vivo arriba a la izquierda. */
+    /** Ciudad: cielo dusk por capas, skyline con ventanas, reloj vivo arriba a la izquierda. */
     private static void ciudad(Canvas cv, S s) {
         skyBg(cv, s.w, s.h);
         ambientGlow(cv, s);
         skyline(cv, s.w, s.h, s.minute, s.animations);
         if (s.showCounters) {
-            float cw = s.w * 0.18f;
-            float ch = s.h * 0.10f;
-            countChip(cv, s.w * 0.70f, s.h * 0.40f, cw, ch, CYAN, s.unread, "Mensajes");
-            countChip(cv, s.w * 0.88f, s.h * 0.40f, cw, ch, AMBER, s.missed, "Llamadas");
+            float cw = s.w * 0.165f;
+            float ch = s.h * 0.12f;
+            countChip(cv, s.w * 0.70f, s.h * 0.30f, cw, ch, CYAN, s.unread, "Mensajes");
+            countChip(cv, s.w * 0.875f, s.h * 0.30f, cw, ch, AMBER, s.missed, "Llamadas");
         }
-        if (s.banner) banner(cv, s, s.w * 0.5f, s.h * 0.62f, s.w * 0.82f);
+        if (s.banner) banner(cv, s, s.w * 0.5f, s.h * 0.60f, s.w * 0.84f);
     }
 
     // ------------------------------------------------------------ Fondos
 
     private static void radialBg(Canvas cv, int w, int h) {
         Paint p = paint();
-        p.setShader(new RadialGradient(w * 0.5f, h * 0.16f, Math.max(w, h) * 0.95f,
-                0xFF10203A, 0xFF05070E, Shader.TileMode.CLAMP));
+        p.setShader(new RadialGradient(w * 0.5f, h * 0.40f, Math.max(w, h) * 0.85f,
+                new int[] {0xFF15263F, 0xFF0A1424, 0xFF04060D},
+                new float[] {0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
         cv.drawRect(0f, 0f, w, h, p);
         p.setShader(null);
-    }
-
-    private static void meshBg(Canvas cv, int w, int h) {
-        Paint base = paint();
-        base.setShader(new LinearGradient(0f, 0f, w, h, 0xFF1A0F2E, 0xFF0A1730, Shader.TileMode.CLAMP));
-        cv.drawRect(0f, 0f, w, h, base);
-        base.setShader(null);
-        Paint warm = paint();
-        warm.setShader(new RadialGradient(w * 0.80f, h * 0.08f, Math.max(w, h) * 0.70f,
-                0x66FB923C, 0x00000000, Shader.TileMode.CLAMP));
-        cv.drawRect(0f, 0f, w, h, warm);
-        warm.setShader(null);
-        Paint cool = paint();
-        cool.setShader(new RadialGradient(w * 0.08f, h * 0.96f, Math.max(w, h) * 0.70f,
-                0x66A855F7, 0x00000000, Shader.TileMode.CLAMP));
-        cv.drawRect(0f, 0f, w, h, cool);
-        cool.setShader(null);
     }
 
     private static void skyBg(Canvas cv, int w, int h) {
         Paint p = paint();
         p.setShader(new LinearGradient(0f, 0f, 0f, h,
-                new int[] {0xFF0B1230, 0xFF1B1F4A, 0xFF3A2A63, 0xFF0A0F1E},
-                new float[] {0f, 0.45f, 0.75f, 1f}, Shader.TileMode.CLAMP));
+                new int[] {0xFF070C20, 0xFF181A47, 0xFF3A2A68, 0xFF7C4A66, 0xFF0A0E1C},
+                new float[] {0f, 0.34f, 0.58f, 0.80f, 1f}, Shader.TileMode.CLAMP));
         cv.drawRect(0f, 0f, w, h, p);
         p.setShader(null);
+        Paint horizon = paint();
+        horizon.setShader(new RadialGradient(w * 0.5f, h * 0.94f, Math.max(w, h) * 0.62f,
+                0x55FF9E6B, 0x00000000, Shader.TileMode.CLAMP));
+        cv.drawRect(0f, 0f, w, h, horizon);
+        horizon.setShader(null);
     }
 
     /** Glow ambiental que respira entre las dos fases del ViewFlipper. */
@@ -245,9 +220,21 @@ final class WidgetRenderer {
     }
 
     private static void skyline(Canvas cv, int w, int h, int minute, boolean animations) {
+        float base = h * 0.995f;
+        int[] back = {52, 64, 44, 70, 56, 62, 42, 68, 50, 60, 46, 66, 54, 58};
+        float bbw = w / (float) back.length;
+        Paint haze = paint();
+        haze.setColor(SKY_HAZE);
+        haze.setAlpha(150);
+        for (int i = 0; i < back.length; i++) {
+            float bh = h * 0.26f * (back[i] / 70f);
+            float x = i * bbw + bbw * 0.12f;
+            cv.drawRect(x, base - bh, x + bbw * 0.82f, base, haze);
+        }
+        haze.setAlpha(255);
+
         int[] heights = {46, 58, 40, 66, 50, 56, 38, 62, 48, 54, 40, 60, 46, 52};
         float bw = w / (float) heights.length;
-        float base = h * 0.995f;
         Paint body = paint();
         body.setColor(SKY_LINE);
         for (int i = 0; i < heights.length; i++) {
@@ -278,65 +265,62 @@ final class WidgetRenderer {
 
     // --------------------------------------------------------- Componentes
 
-    private static void ring(Canvas cv, float cx, float cy, float r, float stroke, float sweep, int col) {
+    private static void ring(Canvas cv, float cx, float cy, float r, float stroke, float sweep) {
         RectF oval = new RectF(cx - r, cy - r, cx + r, cy + r);
         Paint track = paint();
         track.setStyle(Paint.Style.STROKE);
         track.setStrokeWidth(stroke);
-        track.setColor(0x22FFFFFF);
+        track.setColor(0x1AFFFFFF);
         cv.drawArc(oval, 0f, 360f, false, track);
+
         Paint arc = paint();
         arc.setStyle(Paint.Style.STROKE);
         arc.setStrokeWidth(stroke);
         arc.setStrokeCap(Paint.Cap.ROUND);
-        arc.setColor(col);
-        arc.setShadowLayer(stroke * 1.3f, 0f, 0f, col);
+        arc.setShader(new SweepGradient(cx, cy,
+                new int[] {ACCENT, CYAN, ACCENT}, new float[] {0f, 0.5f, 1f}));
+        arc.setShadowLayer(stroke * 1.6f, 0f, 0f, CYAN);
         cv.drawArc(oval, -90f, sweep, false, arc);
         arc.setShadowLayer(0f, 0f, 0f, 0);
-    }
+        arc.setShader(null);
 
-    private static void cloudIcon(Canvas cv, float cx, float cy, float r, int col) {
-        Paint p = paint();
-        p.setStyle(Paint.Style.STROKE);
-        p.setStrokeWidth(Math.max(2f, r * 0.16f));
-        p.setStrokeCap(Paint.Cap.ROUND);
-        p.setColor(col);
-        p.setShadowLayer(r * 0.55f, 0f, 0f, col);
-        cv.drawCircle(cx - r * 0.34f, cy + r * 0.06f, r * 0.42f, p);
-        cv.drawCircle(cx + r * 0.30f, cy - r * 0.10f, r * 0.50f, p);
-        cv.drawLine(cx - r * 0.74f, cy + r * 0.46f, cx + r * 0.78f, cy + r * 0.46f, p);
-        p.setShadowLayer(0f, 0f, 0f, 0);
-        p.setStyle(Paint.Style.FILL);
-    }
-
-    private static void accentBar(Canvas cv, float x, float y, float w, float h, int minute, boolean animations) {
-        Paint track = paint();
-        track.setColor(0x1FFFFFFF);
-        cv.drawRoundRect(new RectF(x, y, x + w, y + h), h / 2f, h / 2f, track);
-        float frac = animations ? 0.15f + (minute / 60f) * 0.85f : 0.6f;
-        Paint fill = paint();
-        fill.setShader(new LinearGradient(x, y, x + w, y, ACCENT, CYAN, Shader.TileMode.CLAMP));
-        cv.drawRoundRect(new RectF(x, y, x + w * frac, y + h), h / 2f, h / 2f, fill);
-        fill.setShader(null);
+        double end = Math.toRadians(-90f + sweep);
+        float dx = cx + (float) Math.cos(end) * r;
+        float dy = cy + (float) Math.sin(end) * r;
+        Paint dot = paint();
+        dot.setColor(PRIMARY);
+        dot.setShadowLayer(stroke * 1.8f, 0f, 0f, CYAN);
+        cv.drawCircle(dx, dy, stroke * 0.62f, dot);
+        dot.setShadowLayer(0f, 0f, 0f, 0);
     }
 
     private static void countChip(Canvas cv, float cx, float y, float cw, float ch, int col, int value, String caption) {
         float x = cx - cw / 2f;
+        float corner = ch * 0.46f;
+        RectF chip = new RectF(x, y, x + cw, y + ch);
         Paint p = paint();
-        p.setColor(0x14FFFFFF);
-        cv.drawRoundRect(new RectF(x, y, x + cw, y + ch), ch * 0.5f, ch * 0.5f, p);
+        p.setColor(GLASS);
+        cv.drawRoundRect(chip, corner, corner, p);
+        p.setStyle(Paint.Style.STROKE);
+        p.setStrokeWidth(Math.max(1f, ch * 0.035f));
+        p.setColor(HAIRLINE);
+        cv.drawRoundRect(chip, corner, corner, p);
+        p.setStyle(Paint.Style.FILL);
+
         p.setColor(col);
-        p.setShadowLayer(ch * 0.30f, 0f, 0f, col);
-        cv.drawCircle(x + ch * 0.42f, y + ch * 0.5f, ch * 0.16f, p);
+        p.setShadowLayer(ch * 0.34f, 0f, 0f, col);
+        cv.drawCircle(x + ch * 0.44f, y + ch * 0.5f, ch * 0.15f, p);
         p.setShadowLayer(0f, 0f, 0f, 0);
+
         p.setColor(PRIMARY);
         p.setTextAlign(Paint.Align.LEFT);
-        p.setTextSize(ch * 0.52f);
-        cv.drawText(String.valueOf(value), x + ch * 0.78f, y + ch * 0.68f, p);
+        p.setTextSize(ch * 0.50f);
+        cv.drawText(String.valueOf(value), x + ch * 0.78f, y + ch * 0.67f, p);
+
         p.setColor(SECONDARY);
         p.setTextAlign(Paint.Align.CENTER);
-        p.setTextSize(ch * 0.34f);
-        cv.drawText(caption, cx, y + ch + ch * 0.44f, p);
+        p.setTextSize(ch * 0.32f);
+        cv.drawText(caption, cx, y + ch + ch * 0.46f, p);
         p.setTextAlign(Paint.Align.LEFT);
     }
 
@@ -344,14 +328,14 @@ final class WidgetRenderer {
     private static void banner(Canvas cv, S s, float cx, float y, float bw) {
         float bh = Math.max(30f * s.d, s.h * 0.15f);
         float x = cx - bw / 2f;
-        float corner = bh * 0.30f;
+        float corner = bh * 0.34f;
         RectF card = new RectF(x, y, x + bw, y + bh);
         Paint p = paint();
-        p.setColor(0xF2101A2E);
+        p.setColor(0xF20E1729);
         cv.drawRoundRect(card, corner, corner, p);
         p.setStyle(Paint.Style.STROKE);
-        p.setStrokeWidth(Math.max(1f, s.d));
-        p.setColor(0x5522D3EE);
+        p.setStrokeWidth(Math.max(1f, s.d * 0.75f));
+        p.setColor(0x4438BDF8);
         cv.drawRoundRect(card, corner, corner, p);
         p.setStyle(Paint.Style.FILL);
 

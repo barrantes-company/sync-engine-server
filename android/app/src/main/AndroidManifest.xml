@@ -38,15 +38,6 @@
         </activity>
 
         <activity
-            android:name=".WidgetConfigActivity"
-            android:exported="true"
-            android:label="@string/configure_widget">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
             android:name=".OpenAppActivity"
             android:exported="false"
             android:excludeFromRecents="true"
@@ -73,15 +64,6 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_6" />
-        </receiver>
-        <receiver android:name=".WidgetBarra" android:exported="true" android:label="@string/widget_barra" android:permission="android.permission.BIND_APPWIDGET">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.intent.action.TIME_SET" />
-                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_4" />
         </receiver>
         <receiver android:name=".WidgetAnillo" android:exported="true" android:label="@string/widget_anillo" android:permission="android.permission.BIND_APPWIDGET">
             <intent-filter>
