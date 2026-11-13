@@ -24,12 +24,16 @@ public class SyncWidgetProvider extends AppWidgetProvider {
 
     private static final Class<?>[] PROVIDERS = {
             WidgetCiudad.class,
-            WidgetBarra.class,
             WidgetAnillo.class
     };
 
-    /** Ciudad = 0, Barra = 1, Anillo = 2. */
+    /** Ciudad = 0 (ancha), Anillo = 2 (cuadrada). */
     int styleIndex() { return 2; }
+
+    /** Estilo de render de cada proveedor, independiente del índice del array. */
+    private static int styleOf(Class<?> provider) {
+        return provider == WidgetCiudad.class ? 0 : 2;
+    }
 
     @Override public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
@@ -80,8 +84,9 @@ public class SyncWidgetProvider extends AppWidgetProvider {
     /** Repinta todas las instancias activas desde valores locales; no realiza consultas de red. */
     static void refreshAll(Context context) {
         AppWidgetManager manager = AppWidgetManager.getInstance(context);
-        for (int style = 0; style < PROVIDERS.length; style++) {
-            int[] ids = manager.getAppWidgetIds(new ComponentName(context, PROVIDERS[style]));
+        for (Class<?> provider : PROVIDERS) {
+            int style = styleOf(provider);
+            int[] ids = manager.getAppWidgetIds(new ComponentName(context, provider));
             for (int id : ids) updateWidget(context, manager, id, style);
         }
     }
@@ -90,9 +95,9 @@ public class SyncWidgetProvider extends AppWidgetProvider {
         int style = 2;
         AppWidgetProviderInfo info = manager.getAppWidgetInfo(widgetId);
         if (info != null && info.provider != null) {
-            for (int index = 0; index < PROVIDERS.length; index++) {
-                if (PROVIDERS[index].getName().equals(info.provider.getClassName())) {
-                    style = index;
+            for (Class<?> provider : PROVIDERS) {
+                if (provider.getName().equals(info.provider.getClassName())) {
+                    style = styleOf(provider);
                     break;
                 }
             }
@@ -102,7 +107,7 @@ public class SyncWidgetProvider extends AppWidgetProvider {
 
     /** Compone el fondo premium, superpone el reloj vivo del sistema y enlaza los accesos. */
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId, int style) {
-        if (style < 0 || style >= PROVIDERS.length) style = 2;
+        if (style != 0 && style != 2) style = 2;
         Bundle options = manager.getAppWidgetOptions(widgetId);
         int widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,
                 options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250));
@@ -110,8 +115,7 @@ public class SyncWidgetProvider extends AppWidgetProvider {
                 options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 180));
         int[] size = WidgetRenderer.size(context, widthDp, heightDp);
 
-        int layout = style == 0 ? R.layout.widget_ciudad
-                : style == 1 ? R.layout.widget_barra : R.layout.widget_anillo;
+        int layout = style == 0 ? R.layout.widget_ciudad : R.layout.widget_anillo;
         RemoteViews views = new RemoteViews(context.getPackageName(), layout);
 
         boolean animations = AppSettings.animations(context);
@@ -135,7 +139,7 @@ public class SyncWidgetProvider extends AppWidgetProvider {
         views.setCharSequence(R.id.widget_clock, "setFormat12Hour", fmt12);
         views.setCharSequence(R.id.widget_clock, "setFormat24Hour", fmt24);
         views.setTextViewTextSize(R.id.widget_clock, TypedValue.COMPLEX_UNIT_DIP,
-                heightDp * (style == 2 ? 0.20f : 0.30f));
+                heightDp * (style == 2 ? 0.22f : 0.28f));
         views.setTextViewText(R.id.widget_date, WidgetRenderer.date(context));
         views.setTextViewTextSize(R.id.widget_date, TypedValue.COMPLEX_UNIT_DIP,
                 Math.max(10f, heightDp * 0.055f));
