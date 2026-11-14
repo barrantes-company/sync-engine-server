@@ -19,12 +19,16 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * Renderiza el fondo premium de las dos caras (Ciudad ancha y Anillo cuadrado) en dos fases
- * de glow para el ViewFlipper. La hora NO se dibuja aquí: la superpone un TextClock vivo del
+ * Renderiza los cuatro lenguajes visuales del reloj en dos fases de movimiento ambiental.
+ * La hora NO se dibuja aquí: la superpone un TextClock vivo del
  * sistema. El bitmap es full-bleed con esquinas transparentes para que el widget flote sobre
  * el wallpaper sin bordes negros. Solo datos reales de la caché. Sin red.
  */
 final class WidgetRenderer {
+    static final int STYLE_CHROMATIC = 0;
+    static final int STYLE_COMPACT = 1;
+    static final int STYLE_MINIMAL = 2;
+    static final int STYLE_MATERIAL = 3;
     /** Presupuesto de píxeles por frame; dos frames siguen siendo seguros para el binder. */
     private static final int MAX_PIXELS = 153600;
 
@@ -75,15 +79,16 @@ final class WidgetRenderer {
         int w, h;
         float d;
         int unread, missed, minute, phase;
-        boolean showCounters, animations, banner;
+        boolean showCounters, animations, banner, transparent;
         String bannerFrom, bannerText;
     }
 
     /**
-     * Dibuja el fondo de la cara {@code style} (0 = Ciudad, 1 = Barra, 2 = Anillo) en la fase
-     * {@code phase} (0/1). Las dos fases solo cambian el glow ambiental para el bucle sutil.
+     * Dibuja el estilo solicitado en la fase {@code phase} (0/1). La superficie exterior
+     * puede ser sólida o conservar alfa cero para integrarse con el wallpaper del launcher.
      */
-    static Bitmap render(Context context, int width, int height, int style, int phase) {
+    static Bitmap render(Context context, int width, int height, int style, int phase,
+                         boolean transparent) {
         int w = Math.max(1, width);
         int h = Math.max(1, height);
         display(context);
@@ -116,23 +121,32 @@ final class WidgetRenderer {
         s.banner = signedIn && AppSettings.bannerUntil(context) > now;
         s.bannerFrom = clean(AppSettings.latestFrom(context));
         s.bannerText = bannerText(context);
+        s.transparent = transparent;
 
         switch (style) {
-            case 0:
-                ciudad(canvas, s);
+            case STYLE_CHROMATIC:
+                chromatic(canvas, s);
+                break;
+            case STYLE_COMPACT:
+                compact(canvas, s);
+                break;
+            case STYLE_MATERIAL:
+                material(canvas, s);
                 break;
             default:
-                anillo(canvas, s);
+                minimal(canvas, s);
                 break;
         }
 
-        Paint edge = paint();
-        edge.setStyle(Paint.Style.STROKE);
-        edge.setStrokeWidth(Math.max(1f, density * 0.75f));
-        edge.setColor(HAIRLINE);
-        float inset = edge.getStrokeWidth() * 0.5f;
-        canvas.drawRoundRect(new RectF(inset, inset, w - inset, h - inset),
-                radius - inset, radius - inset, edge);
+        if (!transparent) {
+            Paint edge = paint();
+            edge.setStyle(Paint.Style.STROKE);
+            edge.setStrokeWidth(Math.max(1f, density * 0.75f));
+            edge.setColor(HAIRLINE);
+            float inset = edge.getStrokeWidth() * 0.5f;
+            canvas.drawRoundRect(new RectF(inset, inset, w - inset, h - inset),
+                    radius - inset, radius - inset, edge);
+        }
         return bitmap;
     }
 
@@ -146,6 +160,70 @@ final class WidgetRenderer {
     }
 
     // ---------------------------------------------------------------- Caras
+
+    /** 5x2: gradiente eléctrico, barrido superior y aviso con giro entre fases. */
+    private static void chromatic(Canvas cv, S s) {
+        if (!s.transparent) chromaticBg(cv, s.w, s.h);
+        ambientGlow(cv, s);
+        statusButtons(cv, s, s.w * 0.83f, s.h * 0.38f, false);
+        if (s.banner) {
+            banner(cv, s, s.w * 0.50f, s.h * 0.70f, s.w * 0.88f);
+        } else {
+            idleBanner(cv, s, s.w * 0.50f, s.h * 0.70f, s.w * 0.88f, false);
+        }
+        Paint sweep = paint();
+        sweep.setShader(new LinearGradient(0f, 0f, s.w * 0.34f, 0f,
+                new int[] {0x004DE4FF, 0xFF4DE4FF, 0x0062E2CF}, null,
+                Shader.TileMode.CLAMP));
+        float x = s.phase == 0 ? s.w * 0.08f : s.w * 0.58f;
+        cv.drawRoundRect(new RectF(x, 0f, Math.min(s.w, x + s.w * 0.34f),
+                Math.max(2f, s.d)), s.d, s.d, sweep);
+    }
+
+    /** 3x2: composición compacta y aviso que sube desde la base. */
+    private static void compact(Canvas cv, S s) {
+        if (!s.transparent) compactBg(cv, s.w, s.h);
+        ambientGlow(cv, s);
+        statusButtons(cv, s, s.w * 0.80f, s.h * 0.40f, false);
+        float y = s.banner && s.phase == 0 ? s.h * 0.76f : s.h * 0.70f;
+        if (s.banner) banner(cv, s, s.w * 0.50f, y, s.w * 0.88f);
+        else idleBanner(cv, s, s.w * 0.50f, s.h * 0.70f, s.w * 0.88f, false);
+    }
+
+    /** 2x2: reloj protagonista y controles circulares con pulso de notificación. */
+    private static void minimal(Canvas cv, S s) {
+        if (!s.transparent) radialBg(cv, s.w, s.h);
+        if (!s.transparent) ambientGlow(cv, s);
+        float cx = s.w * 0.5f;
+        float cy = s.h * 0.76f;
+        statusButtons(cv, s, cx, cy, true);
+        if (s.unread > 0) {
+            Paint halo = paint();
+            halo.setStyle(Paint.Style.STROKE);
+            halo.setStrokeWidth(Math.max(1f, s.d));
+            halo.setColor(s.phase == 0 ? 0xCC4DE4FF : 0x334DE4FF);
+            float pulse = s.phase == 0 ? s.h * 0.09f : s.h * 0.15f;
+            cv.drawCircle(cx - s.h * 0.12f, cy, pulse, halo);
+        }
+    }
+
+    /** 5x2: rejilla técnica, controles biselados y línea de escáner. */
+    private static void material(Canvas cv, S s) {
+        if (!s.transparent) materialBg(cv, s.w, s.h);
+        materialGrid(cv, s);
+        statusButtons(cv, s, s.w * 0.83f, s.h * 0.38f, false);
+        if (s.banner) banner(cv, s, s.w * 0.50f, s.h * 0.70f, s.w * 0.88f);
+        else idleBanner(cv, s, s.w * 0.50f, s.h * 0.70f, s.w * 0.88f, true);
+
+        float y = s.phase == 0 ? s.h * 0.20f : s.h * 0.82f;
+        Paint scan = paint();
+        scan.setShader(new LinearGradient(0f, y, s.w, y,
+                new int[] {0x0070FFB1, 0xFF70FFB1, 0x0070FFB1}, null,
+                Shader.TileMode.CLAMP));
+        scan.setShadowLayer(Math.max(4f, s.d * 4f), 0f, 0f, 0xFF70FFB1);
+        cv.drawRect(0f, y, s.w, y + Math.max(1f, s.d), scan);
+        scan.setShadowLayer(0f, 0f, 0f, 0);
+    }
 
     /** Anillo: reloj vivo centrado en un anillo orbital tonal; contadores glass abajo. */
     private static void anillo(Canvas cv, S s) {
@@ -182,6 +260,47 @@ final class WidgetRenderer {
     }
 
     // ------------------------------------------------------------ Fondos
+
+    private static void chromaticBg(Canvas cv, int w, int h) {
+        Paint p = paint();
+        p.setShader(new LinearGradient(0f, 0f, w, h,
+                new int[] {0xFF081226, 0xFF151B46, 0xFF21183C},
+                new float[] {0f, 0.62f, 1f}, Shader.TileMode.CLAMP));
+        cv.drawRect(0f, 0f, w, h, p);
+        p.setShader(new RadialGradient(w * 0.92f, 0f, Math.max(w, h) * 0.48f,
+                0x334DE4FF, 0x00000000, Shader.TileMode.CLAMP));
+        cv.drawRect(0f, 0f, w, h, p);
+        p.setShader(null);
+    }
+
+    private static void compactBg(Canvas cv, int w, int h) {
+        Paint p = paint();
+        p.setShader(new LinearGradient(0f, 0f, w, h,
+                new int[] {0xFF07151E, 0xFF111C38, 0xFF17132E},
+                new float[] {0f, 0.64f, 1f}, Shader.TileMode.CLAMP));
+        cv.drawRect(0f, 0f, w, h, p);
+        p.setShader(new RadialGradient(w, 0f, Math.max(w, h) * 0.44f,
+                0x2E62E2CF, 0x00000000, Shader.TileMode.CLAMP));
+        cv.drawRect(0f, 0f, w, h, p);
+        p.setShader(null);
+    }
+
+    private static void materialBg(Canvas cv, int w, int h) {
+        Paint p = paint();
+        p.setShader(new LinearGradient(0f, 0f, w, h,
+                0xFF0A261E, 0xFF040D10, Shader.TileMode.CLAMP));
+        cv.drawRect(0f, 0f, w, h, p);
+        p.setShader(null);
+    }
+
+    private static void materialGrid(Canvas cv, S s) {
+        Paint grid = paint();
+        grid.setColor(s.transparent ? 0x2570FFB1 : 0x1670FFB1);
+        grid.setStrokeWidth(Math.max(1f, s.d * 0.45f));
+        float step = Math.max(12f * s.d, s.w / 24f);
+        for (float x = 0f; x <= s.w; x += step) cv.drawLine(x, 0f, x, s.h, grid);
+        for (float y = 0f; y <= s.h; y += step) cv.drawLine(0f, y, s.w, y, grid);
+    }
 
     private static void radialBg(Canvas cv, int w, int h) {
         Paint p = paint();
@@ -322,6 +441,85 @@ final class WidgetRenderer {
         p.setTextSize(ch * 0.32f);
         cv.drawText(caption, cx, y + ch + ch * 0.46f, p);
         p.setTextAlign(Paint.Align.LEFT);
+    }
+
+    /** Accesos visuales a notificaciones, llamadas y mensajes. El widget completo abre la app. */
+    private static void statusButtons(Canvas cv, S s, float cx, float cy, boolean circular) {
+        float size = Math.max(18f * s.d, s.h * (circular ? 0.12f : 0.13f));
+        float gap = size * 1.22f;
+        float start = cx - gap;
+        for (int index = 0; index < 3; index++) {
+            float x = start + gap * index;
+            RectF bounds = new RectF(x - size * 0.5f, cy - size * 0.5f,
+                    x + size * 0.5f, cy + size * 0.5f);
+            Paint surface = paint();
+            surface.setColor(index == 0 ? 0x224DE4FF : 0x16FFFFFF);
+            cv.drawRoundRect(bounds, circular ? size * 0.5f : size * 0.28f,
+                    circular ? size * 0.5f : size * 0.28f, surface);
+            surface.setStyle(Paint.Style.STROKE);
+            surface.setStrokeWidth(Math.max(1f, s.d * 0.7f));
+            surface.setColor(index == 0 ? 0xBB4DE4FF : 0x38FFFFFF);
+            cv.drawRoundRect(bounds, circular ? size * 0.5f : size * 0.28f,
+                    circular ? size * 0.5f : size * 0.28f, surface);
+
+            Paint icon = paint();
+            icon.setStyle(Paint.Style.STROKE);
+            icon.setStrokeWidth(Math.max(1.2f, size * 0.055f));
+            icon.setStrokeCap(Paint.Cap.ROUND);
+            icon.setStrokeJoin(Paint.Join.ROUND);
+            icon.setColor(index == 0 ? CYAN : SECONDARY);
+            if (index == 0) {
+                RectF bell = new RectF(x - size * 0.17f, cy - size * 0.20f,
+                        x + size * 0.17f, cy + size * 0.13f);
+                cv.drawArc(bell, 190f, 160f, false, icon);
+                cv.drawLine(x - size * 0.22f, cy + size * 0.13f,
+                        x + size * 0.22f, cy + size * 0.13f, icon);
+                cv.drawCircle(x, cy + size * 0.20f, size * 0.025f, icon);
+            } else if (index == 1) {
+                Path phone = new Path();
+                phone.moveTo(x - size * 0.16f, cy - size * 0.20f);
+                phone.quadTo(x - size * 0.08f, cy + size * 0.14f,
+                        x + size * 0.19f, cy + size * 0.18f);
+                cv.drawPath(phone, icon);
+            } else {
+                RectF bubble = new RectF(x - size * 0.20f, cy - size * 0.17f,
+                        x + size * 0.20f, cy + size * 0.13f);
+                cv.drawRoundRect(bubble, size * 0.07f, size * 0.07f, icon);
+                cv.drawLine(x - size * 0.06f, cy + size * 0.13f,
+                        x - size * 0.14f, cy + size * 0.22f, icon);
+            }
+        }
+
+        if (s.showCounters && s.unread > 0) {
+            float bx = start + size * 0.38f;
+            float by = cy - size * 0.40f;
+            float br = size * 0.21f;
+            Paint badge = paint();
+            badge.setColor(AMBER);
+            cv.drawCircle(bx, by, br, badge);
+            badge.setColor(0xFF10131A);
+            badge.setTextAlign(Paint.Align.CENTER);
+            badge.setTextSize(br * 1.05f);
+            String value = s.unread > 99 ? "99+" : String.valueOf(s.unread);
+            fit(badge, value, br * 1.45f);
+            cv.drawText(value, bx, by - (badge.ascent() + badge.descent()) * 0.5f, badge);
+        }
+    }
+
+    /** Superficie en reposo: conserva el área del aviso sin competir con el reloj. */
+    private static void idleBanner(Canvas cv, S s, float cx, float y, float bw, boolean technical) {
+        float bh = Math.max(30f * s.d, s.h * 0.15f);
+        float x = cx - bw / 2f;
+        RectF card = new RectF(x, y, x + bw, y + bh);
+        Paint p = paint();
+        p.setColor(technical ? 0x1800FF84 : 0x12000000);
+        cv.drawRoundRect(card, technical ? bh * 0.12f : bh * 0.34f,
+                technical ? bh * 0.12f : bh * 0.34f, p);
+        p.setStyle(Paint.Style.STROKE);
+        p.setStrokeWidth(Math.max(1f, s.d * 0.65f));
+        p.setColor(technical ? 0x5570FFB1 : 0x3A4DE4FF);
+        cv.drawRoundRect(card, technical ? bh * 0.12f : bh * 0.34f,
+                technical ? bh * 0.12f : bh * 0.34f, p);
     }
 
     /** Pop-up temporal tipo glass con el remitente del nuevo mensaje. */

@@ -2,10 +2,20 @@
 <resources>
     <string name="app_name">SYNC ENGINE</string>
     <string name="widget_name">SYNC ENGINE</string>
-    <string name="widget_ciudad">Ciudad</string>
-    <string name="widget_ciudad_hint">Hora, Lima y cielo</string>
-    <string name="widget_anillo">Anillo</string>
-    <string name="widget_anillo_hint">Hora y avisos en órbita</string>
+    <string name="widget_ciudad">Hora cromática 5×2</string>
+    <string name="widget_ciudad_hint">Reloj cromático con giro de avisos</string>
+    <string name="widget_compacto">Hora compacta 3×2</string>
+    <string name="widget_compacto_hint">Reloj compacto con aviso deslizante</string>
+    <string name="widget_anillo">Hora minimalista 2×2</string>
+    <string name="widget_anillo_hint">Reloj protagonista con pulso de notificación</string>
+    <string name="widget_material">Hora material 5×2</string>
+    <string name="widget_material_hint">Reloj técnico con escáner digital</string>
+    <string name="widget_config_eyebrow">SYNC ENGINE / WIDGET</string>
+    <string name="widget_config_title">Apariencia</string>
+    <string name="widget_config_description">Elige cómo se integra esta instancia con el fondo de tu pantalla de inicio.</string>
+    <string name="widget_config_transparent">Fondo transparente</string>
+    <string name="widget_config_hint">Desactivado usa la superficie sólida propia del diseño. Activado conserva solamente el contenido y los efectos.</string>
+    <string name="widget_config_save">Guardar widget</string>
     <string name="configure_widget">Configurar widget SYNC ENGINE</string>
     <string name="setup_instructions">Mantén pulsada la pantalla de inicio, abre Widgets, busca SYNC ENGINE y arrastra el widget. La aplicación usa el servidor configurado de forma predeterminada.</string>
     <string name="save_url">Guardar URL predeterminada</string>

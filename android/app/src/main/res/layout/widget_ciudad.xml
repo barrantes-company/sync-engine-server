@@ -11,8 +11,8 @@
         android:layout_height="match_parent"
         android:autoStart="true"
         android:flipInterval="4000"
-        android:inAnimation="@anim/widget_fade_in"
-        android:outAnimation="@anim/widget_fade_out">
+        android:inAnimation="@anim/widget_flip_in"
+        android:outAnimation="@anim/widget_flip_out">
 
         <ImageView
             android:id="@+id/widget_frame_a"
@@ -48,7 +48,7 @@
             android:layout_marginBottom="2dp"
             android:fontFamily="@font/manrope_extrabold"
             android:letterSpacing="0.08"
-            android:textColor="#FF4FD1C5"
+            android:textColor="@color/widget_accent"
             android:textSize="12sp" />
 
         <TextClock
@@ -60,11 +60,11 @@
             android:format24Hour="HH:mm"
             android:includeFontPadding="false"
             android:letterSpacing="-0.02"
-            android:shadowColor="#9938BDF8"
+            android:shadowColor="@color/widget_accent"
             android:shadowDx="0"
             android:shadowDy="0"
             android:shadowRadius="16"
-            android:textColor="#FFF3F7FF"
+            android:textColor="@color/widget_text"
             android:textSize="50sp" />
 
         <TextView
@@ -74,7 +74,7 @@
             android:layout_marginTop="2dp"
             android:fontFamily="@font/manrope_extrabold"
             android:letterSpacing="0.02"
-            android:textColor="#FFAAB9D6"
+            android:textColor="@color/widget_text_secondary"
             android:textSize="12sp" />
     </LinearLayout>
 

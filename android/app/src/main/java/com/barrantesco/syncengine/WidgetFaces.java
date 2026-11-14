@@ -10,6 +10,6 @@ final class WidgetFaces {
     /** Conserva la firma histórica y dirige la representación al diseño OLED unificado. */
     static Bitmap render(Context context, int kind, int width, int height, String zone,
                          boolean use24h, int unread, int missed, boolean signedIn) {
-        return WidgetRenderer.render(context, width, height, kind, 0);
+        return WidgetRenderer.render(context, width, height, kind, 0, false);
     }
 }

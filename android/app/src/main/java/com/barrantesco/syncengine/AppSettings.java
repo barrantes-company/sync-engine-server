@@ -39,6 +39,7 @@ final class AppSettings {
     private static final String BANNER_UNTIL = "banner_until";
     private static final String BANNER_TS = "banner_ts";
     private static final String LAST_SYNC = "last_sync";
+    private static final String WIDGET_TRANSPARENT_PREFIX = "widget_transparent_";
 
     private AppSettings() {
     }
@@ -151,6 +152,21 @@ final class AppSettings {
 
     static void setAnimations(Context context, boolean value) {
         prefs(context).edit().putBoolean(ANIMATIONS, value).apply();
+    }
+
+    /** Apariencia de superficie por instancia: false = sólida, true = transparente. */
+    static boolean widgetTransparent(Context context, int widgetId) {
+        return prefs(context).getBoolean(WIDGET_TRANSPARENT_PREFIX + widgetId, false);
+    }
+
+    static void setWidgetTransparent(Context context, int widgetId, boolean value) {
+        if (widgetId < 0) return;
+        prefs(context).edit().putBoolean(WIDGET_TRANSPARENT_PREFIX + widgetId, value).apply();
+    }
+
+    static void removeWidgetPreferences(Context context, int widgetId) {
+        if (widgetId < 0) return;
+        prefs(context).edit().remove(WIDGET_TRANSPARENT_PREFIX + widgetId).apply();
     }
 
     static int unread(Context context) {

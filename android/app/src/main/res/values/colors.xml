@@ -7,4 +7,10 @@
     <color name="widget_border">#28406A</color>
     <color name="text_primary">#1B263B</color>
     <color name="text_secondary">#53627A</color>
+    <color name="widget_config_background">#05070B</color>
+    <color name="widget_config_surface">#111827</color>
+    <color name="widget_config_accent">#4DE4FF</color>
+    <color name="widget_config_button_text">#061216</color>
+    <color name="widget_material_text">#E9FFF2</color>
+    <color name="widget_material_secondary">#8FB9A0</color>
 </resources>

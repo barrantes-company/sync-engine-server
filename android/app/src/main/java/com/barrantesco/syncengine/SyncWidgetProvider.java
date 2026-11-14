@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.View;
 import android.widget.RemoteViews;
 
 /** Actualiza las variantes del widget desde la caché local y mantiene el reloj visible. */
@@ -24,15 +25,20 @@ public class SyncWidgetProvider extends AppWidgetProvider {
 
     private static final Class<?>[] PROVIDERS = {
             WidgetCiudad.class,
-            WidgetAnillo.class
+            WidgetCompacto.class,
+            WidgetAnillo.class,
+            WidgetMaterial.class
     };
 
-    /** Ciudad = 0 (ancha), Anillo = 2 (cuadrada). */
-    int styleIndex() { return 2; }
+    /** Cada proveedor fija su lenguaje visual; el fondo se configura por instancia. */
+    int styleIndex() { return WidgetRenderer.STYLE_MINIMAL; }
 
     /** Estilo de render de cada proveedor, independiente del índice del array. */
     private static int styleOf(Class<?> provider) {
-        return provider == WidgetCiudad.class ? 0 : 2;
+        if (provider == WidgetCiudad.class) return WidgetRenderer.STYLE_CHROMATIC;
+        if (provider == WidgetCompacto.class) return WidgetRenderer.STYLE_COMPACT;
+        if (provider == WidgetMaterial.class) return WidgetRenderer.STYLE_MATERIAL;
+        return WidgetRenderer.STYLE_MINIMAL;
     }
 
     @Override public void onReceive(Context context, Intent intent) {
@@ -92,7 +98,7 @@ public class SyncWidgetProvider extends AppWidgetProvider {
     }
 
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId) {
-        int style = 2;
+        int style = WidgetRenderer.STYLE_MINIMAL;
         AppWidgetProviderInfo info = manager.getAppWidgetInfo(widgetId);
         if (info != null && info.provider != null) {
             for (Class<?> provider : PROVIDERS) {
@@ -107,7 +113,9 @@ public class SyncWidgetProvider extends AppWidgetProvider {
 
     /** Compone el fondo premium, superpone el reloj vivo del sistema y enlaza los accesos. */
     static void updateWidget(Context context, AppWidgetManager manager, int widgetId, int style) {
-        if (style != 0 && style != 2) style = 2;
+        if (style < WidgetRenderer.STYLE_CHROMATIC || style > WidgetRenderer.STYLE_MATERIAL) {
+            style = WidgetRenderer.STYLE_MINIMAL;
+        }
         Bundle options = manager.getAppWidgetOptions(widgetId);
         int widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,
                 options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250));
@@ -115,15 +123,30 @@ public class SyncWidgetProvider extends AppWidgetProvider {
                 options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 180));
         int[] size = WidgetRenderer.size(context, widthDp, heightDp);
 
-        int layout = style == 0 ? R.layout.widget_ciudad : R.layout.widget_anillo;
+        int layout;
+        switch (style) {
+            case WidgetRenderer.STYLE_CHROMATIC:
+                layout = R.layout.widget_ciudad;
+                break;
+            case WidgetRenderer.STYLE_COMPACT:
+                layout = R.layout.widget_compacto;
+                break;
+            case WidgetRenderer.STYLE_MATERIAL:
+                layout = R.layout.widget_material;
+                break;
+            default:
+                layout = R.layout.widget_anillo;
+                break;
+        }
         RemoteViews views = new RemoteViews(context.getPackageName(), layout);
 
         boolean animations = AppSettings.animations(context);
-        Bitmap frameA = WidgetRenderer.render(context, size[0], size[1], style, 0);
+        boolean transparent = AppSettings.widgetTransparent(context, widgetId);
+        Bitmap frameA = WidgetRenderer.render(context, size[0], size[1], style, 0, transparent);
         views.setImageViewBitmap(R.id.widget_frame_a, frameA);
         if (animations) {
             views.setImageViewBitmap(R.id.widget_frame_b,
-                    WidgetRenderer.render(context, size[0], size[1], style, 1));
+                    WidgetRenderer.render(context, size[0], size[1], style, 1, transparent));
             views.setInt(R.id.widget_flipper, "setFlipInterval", 4000);
         } else {
             views.setImageViewBitmap(R.id.widget_frame_b, frameA);
@@ -139,14 +162,20 @@ public class SyncWidgetProvider extends AppWidgetProvider {
         views.setCharSequence(R.id.widget_clock, "setFormat12Hour", fmt12);
         views.setCharSequence(R.id.widget_clock, "setFormat24Hour", fmt24);
         views.setTextViewTextSize(R.id.widget_clock, TypedValue.COMPLEX_UNIT_DIP,
-                heightDp * (style == 2 ? 0.22f : 0.28f));
+                heightDp * (style == WidgetRenderer.STYLE_MINIMAL ? 0.30f
+                        : style == WidgetRenderer.STYLE_COMPACT ? 0.30f : 0.28f));
         views.setTextViewText(R.id.widget_date, WidgetRenderer.date(context));
         views.setTextViewTextSize(R.id.widget_date, TypedValue.COMPLEX_UNIT_DIP,
                 Math.max(10f, heightDp * 0.055f));
-        if (style == 0) {
-            views.setTextViewText(R.id.widget_city, WidgetRenderer.city(context));
-            views.setTextViewTextSize(R.id.widget_city, TypedValue.COMPLEX_UNIT_DIP,
-                    Math.max(10f, heightDp * 0.05f));
+        if (style != WidgetRenderer.STYLE_MINIMAL) {
+            views.setViewVisibility(R.id.widget_city, View.GONE);
+        }
+        if (style == WidgetRenderer.STYLE_MATERIAL) {
+            views.setTextColor(R.id.widget_clock, context.getColor(R.color.widget_material_text));
+            views.setTextColor(R.id.widget_date, context.getColor(R.color.widget_material_secondary));
+        } else {
+            views.setTextColor(R.id.widget_clock, context.getColor(R.color.widget_text));
+            views.setTextColor(R.id.widget_date, context.getColor(R.color.widget_text_secondary));
         }
 
         views.setOnClickPendingIntent(R.id.widget_root, PendingIntent.getActivity(
@@ -154,7 +183,8 @@ public class SyncWidgetProvider extends AppWidgetProvider {
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         views.setOnClickPendingIntent(R.id.widget_settings, PendingIntent.getActivity(
-                context, widgetId + 10000, new Intent(context, MainActivity.class)
+                context, widgetId + 10000, new Intent(context, WidgetConfigurationActivity.class)
+                        .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         manager.updateAppWidget(widgetId, views);
@@ -221,6 +251,7 @@ public class SyncWidgetProvider extends AppWidgetProvider {
                 .getSharedPreferences(WidgetUrls.PREFERENCES, Context.MODE_PRIVATE).edit();
         for (int widgetId : appWidgetIds) editor.remove("widget_url_" + widgetId);
         editor.apply();
+        for (int widgetId : appWidgetIds) AppSettings.removeWidgetPreferences(context, widgetId);
     }
 
     @Override public void onEnabled(Context context) {

@@ -26,6 +26,11 @@
             android:exported="true" />
 
         <activity
+            android:name=".WidgetConfigurationActivity"
+            android:exported="true"
+            android:theme="@style/AppTheme" />
+
+        <activity
             android:name=".WebAppActivity"
             android:exported="true"
             android:launchMode="singleTop"
@@ -73,6 +78,24 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_anillo" />
+        </receiver>
+        <receiver android:name=".WidgetCompacto" android:exported="true" android:label="@string/widget_compacto" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_compacto" />
+        </receiver>
+        <receiver android:name=".WidgetMaterial" android:exported="true" android:label="@string/widget_material" android:permission="android.permission.BIND_APPWIDGET">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_material" />
         </receiver>
     </application>
 </manifest>
